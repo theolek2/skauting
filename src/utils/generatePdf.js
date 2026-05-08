@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 
-export function generatePdf({ meta, activities, days }) {
+export function generatePdf({ meta, activities, days, template = [] }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
   const W = 210
@@ -65,7 +65,11 @@ export function generatePdf({ meta, activities, days }) {
     doc.setFont('helvetica', 'normal')
 
     // tabela zajęć
-    const rows = day.slots.map(slot => [
+    // Scal sloty szablonu (na górze) + sloty dnia
+    const allSlots = [...template, ...day.slots]
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+
+    const rows = allSlots.map(slot => [
       slot.time || '',
       slot.name || '',
       slot.description || '',

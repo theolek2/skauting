@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import ActivityPanel from './components/ActivityPanel'
 import DayCard from './components/DayCard'
+import TemplatePanel from './components/TemplatePanel'
 import { FIXED_ACTIVITIES, makeDay, makeSlot } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -9,6 +10,7 @@ const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '' },
   activities: [],
   days: [],
+  template: [],   // sloty powtarzane codziennie
 }
 
 export default function App() {
@@ -16,7 +18,7 @@ export default function App() {
   const [daysCount, setDaysCount] = useState('')
   const [showMeta, setShowMeta] = useState(false)
 
-  const { meta, activities, days } = state
+  const { meta, activities, days, template } = state
 
   useEffect(() => { saveState(state) }, [state])
 
@@ -59,7 +61,7 @@ export default function App() {
       alert('Uzupełnij dane na stronę tytułową (Jednostka i Kierownik).')
       return
     }
-    generatePdf({ meta, activities, days })
+    generatePdf({ meta, activities, days, template })
   }
 
   const allFilled = meta.jednostka && meta.kierownik
@@ -137,7 +139,11 @@ export default function App() {
       <div className="flex h-[calc(100vh-60px)]">
 
         {/* ── LEWA KOLUMNA: Zajęcia ── */}
-        <aside className="w-80 shrink-0 bg-white border-r border-gray-200 p-4 flex flex-col overflow-hidden">
+        <aside className="w-80 shrink-0 bg-white border-r border-gray-200 p-4 flex flex-col overflow-y-auto gap-4">
+          <TemplatePanel
+            slots={template}
+            onChange={slots => update({ template: slots })}
+          />
           <ActivityPanel
             activities={activities}
             onAdd={addActivity}
@@ -193,6 +199,7 @@ export default function App() {
               day={day}
               index={i}
               activities={activities}
+              templateSlots={template}
               onChange={updated => updateDay(day.id, updated)}
               onDelete={() => deleteDay(day.id)}
             />

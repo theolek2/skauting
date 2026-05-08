@@ -2,7 +2,7 @@ import { useState } from 'react'
 import SlotRow from './SlotRow'
 import { makeSlot } from '../utils/defaults'
 
-export default function DayCard({ day, index, activities, onChange, onDelete }) {
+export default function DayCard({ day, index, activities, templateSlots = [], onChange, onDelete }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const addSlot = () => {
@@ -49,8 +49,23 @@ export default function DayCard({ day, index, activities, onChange, onDelete }) 
             <span className="w-5"></span>
           </div>
 
-          {/* Sloty */}
-          {day.slots.length === 0 && (
+          {/* Sloty szablonu (tylko do odczytu) */}
+          {templateSlots.length > 0 && (
+            <div className="mb-1">
+              {templateSlots.map(slot => (
+                <div key={slot.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-green-50 border border-green-100 mb-0.5">
+                  <span className="w-24 shrink-0 text-xs text-green-700 font-mono">{slot.time || '—:——'}</span>
+                  <span className="flex-1 text-sm text-green-900">🔄 {slot.name}</span>
+                  <span className="flex-1 text-xs text-gray-400 truncate">{slot.description}</span>
+                  <span className="w-5"></span>
+                </div>
+              ))}
+              <div className="border-t border-dashed border-gray-200 my-2" />
+            </div>
+          )}
+
+          {/* Sloty własne dnia */}
+          {day.slots.length === 0 && templateSlots.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-4">
               Brak zajęć — kliknij „+ Dodaj zajęcie"
             </p>
