@@ -32,7 +32,8 @@ export function generatePdf({ meta, activities, days, template = [] }) {
   doc.line(20, 160, W - 20, 160)
   doc.setFontSize(9)
   doc.setTextColor(150)
-  doc.text('Wygenerowano w Aplikacji Ksiazki Obozowej', W / 2, 168, { align: 'center' })
+  doc.text('Skauci Europy · Aplikacja Ksiazki Obozowej', W / 2, 168, { align: 'center' })
+  doc.text('by Aleksander Nasilowski', W / 2, 174, { align: 'center' })
   doc.setTextColor(0)
 
   // ══════════════════════════════════════════════════════════

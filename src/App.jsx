@@ -71,22 +71,31 @@ export default function App() {
       {/* Topbar */}
       <header className="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">⛺</span>
+          {/* Logo Skautów Europy */}
+          <img
+            src="https://skauci-europy.org/wp-content/uploads/2020/09/logo-skauci-europy.png"
+            alt="Skauci Europy"
+            className="h-10 w-auto object-contain"
+            onError={e => { e.target.style.display = 'none' }}
+          />
           <div>
             <h1 className="text-lg font-bold leading-tight">Książka Obozowa</h1>
-            <p className="text-green-300 text-xs">Ramowy plan pracy obozu</p>
+            <p className="text-green-300 text-xs">Ramowy plan pracy · Skauci Europy</p>
           </div>
         </div>
-        <button
-          onClick={handleExport}
-          className={`text-sm font-bold px-5 py-2 rounded-lg transition ${
-            metaOk
-              ? 'bg-white text-green-800 hover:bg-green-50'
-              : 'bg-green-600 text-green-200 cursor-not-allowed'
-          }`}
-        >
-          📄 Eksportuj PDF
-        </button>
+        <div className="flex items-center gap-4">
+          <p className="text-green-400 text-xs hidden sm:block">by Aleksander Nasiłowski</p>
+          <button
+            onClick={handleExport}
+            className={`text-sm font-bold px-5 py-2 rounded-lg transition ${
+              metaOk
+                ? 'bg-white text-green-800 hover:bg-green-50'
+                : 'bg-green-600 text-green-200 cursor-not-allowed'
+            }`}
+          >
+            📄 Eksportuj PDF
+          </button>
+        </div>
       </header>
 
       {/* Główny układ */}
@@ -160,7 +169,24 @@ export default function App() {
           <div className="p-4 border-b border-gray-100">
             <TemplatePanel
               slots={template}
-              onChange={slots => update({ template: slots })}
+              onChange={(newSlots) => {
+                // Znajdź nowo dodane sloty (są w newSlots ale nie ma ich w template)
+                const existingIds = new Set(template.map(s => s.id))
+                const added = newSlots.filter(s => !existingIds.has(s.id))
+                // Propaguj nowe sloty do wszystkich istniejących dni
+                if (added.length > 0 && days.length > 0) {
+                  const updatedDays = days.map(day => ({
+                    ...day,
+                    slots: [
+                      ...day.slots,
+                      ...added.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}` }))
+                    ]
+                  }))
+                  update({ template: newSlots, days: updatedDays })
+                } else {
+                  update({ template: newSlots })
+                }
+              }}
               activities={activities}
             />
           </div>
