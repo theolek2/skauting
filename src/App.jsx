@@ -99,7 +99,7 @@ export default function App() {
                   className={`w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 ${
                     !meta.jednostka ? 'border-orange-300 bg-orange-50' : 'border-gray-300'
                   }`}
-                  placeholder="np. 1 DH „Leśny Wicher""
+                  placeholder={'np. 1 DH „Leśny Wicher”'}
                   value={meta.jednostka}
                   onChange={e => updateMeta({ jednostka: e.target.value })}
                 />
