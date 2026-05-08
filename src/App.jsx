@@ -36,15 +36,25 @@ export default function App() {
   const setDays = (n) => {
     const count = Math.max(1, Math.min(30, parseInt(n) || 0))
     if (!count) return
-    update({ days: Array.from({ length: count }, (_, i) => days[i] || makeDay(i)) })
+    const newDays = Array.from({ length: count }, (_, i) => {
+      if (days[i]) return days[i]
+      // Nowy dzień: skopiuj sloty szablonu jako własne sloty (edytowalne)
+      const day = makeDay(i)
+      day.slots = template.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}` }))
+      return day
+    })
+    update({ days: newDays })
     setDaysCount('')
   }
   const updateDay = (id, updated) =>
     update({ days: days.map(d => d.id === id ? updated : d) })
   const deleteDay = (id) =>
     update({ days: days.filter(d => d.id !== id) })
-  const addDay = () =>
-    update({ days: [...days, makeDay(days.length)] })
+  const addDay = () => {
+    const day = makeDay(days.length)
+    day.slots = template.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}` }))
+    update({ days: [...days, day] })
+  }
 
   const handleExport = () => {
     if (!meta.jednostka || !meta.kierownik) {
@@ -151,6 +161,7 @@ export default function App() {
             <TemplatePanel
               slots={template}
               onChange={slots => update({ template: slots })}
+              activities={activities}
             />
           </div>
 
@@ -213,7 +224,6 @@ export default function App() {
               day={day}
               index={i}
               activities={activities}
-              templateSlots={template}
               onChange={updated => updateDay(day.id, updated)}
               onDelete={() => deleteDay(day.id)}
             />

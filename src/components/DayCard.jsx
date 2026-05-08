@@ -2,7 +2,7 @@ import { useState } from 'react'
 import SlotRow from './SlotRow'
 import { makeSlot } from '../utils/defaults'
 
-export default function DayCard({ day, index, activities, templateSlots = [], onChange, onDelete }) {
+export default function DayCard({ day, index, activities, onChange, onDelete }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const addSlot = () => {
@@ -10,17 +10,23 @@ export default function DayCard({ day, index, activities, templateSlots = [], on
     onChange({ ...day, slots: [...day.slots, makeSlot('', lastTime)] })
   }
 
-  const updateSlot = (slotId, updated) => {
+  const updateSlot = (slotId, updated) =>
     onChange({ ...day, slots: day.slots.map(s => s.id === slotId ? updated : s) })
-  }
 
-  const deleteSlot = (slotId) => {
+  const deleteSlot = (slotId) =>
     onChange({ ...day, slots: day.slots.filter(s => s.id !== slotId) })
+
+  const moveSlot = (index, dir) => {
+    const arr = [...day.slots]
+    const target = index + dir
+    if (target < 0 || target >= arr.length) return
+    ;[arr[index], arr[target]] = [arr[target], arr[index]]
+    onChange({ ...day, slots: arr })
   }
 
   return (
     <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden mb-4">
-      {/* Nagłówek dnia */}
+      {/* Nagłówek */}
       <div className="flex items-center gap-3 bg-green-700 px-4 py-2.5">
         <button onClick={() => setCollapsed(c => !c)}
           className="text-white/70 hover:text-white text-lg w-5 text-center">
@@ -34,50 +40,52 @@ export default function DayCard({ day, index, activities, templateSlots = [], on
           onChange={e => onChange({ ...day, label: e.target.value })}
         />
         <button onClick={onDelete}
-          className="text-white/50 hover:text-red-300 text-sm ml-2">
-          🗑 Usuń dzień
+          className="text-white/50 hover:text-red-300 text-xs ml-2">
+          🗑 Usuń
         </button>
       </div>
 
       {!collapsed && (
         <div className="p-2">
-          {/* Nagłówki kolumn */}
           <div className="flex gap-2 px-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            <span className="w-8 shrink-0"></span>
             <span className="w-24 shrink-0">Godzina</span>
             <span className="flex-1">Zajęcie</span>
             <span className="flex-1">Opis / uwagi</span>
             <span className="w-5"></span>
           </div>
 
-          {/* Sloty szablonu (tylko do odczytu) */}
-          {templateSlots.length > 0 && (
-            <div className="mb-1">
-              {templateSlots.map(slot => (
-                <div key={slot.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-green-50 border border-green-100 mb-0.5">
-                  <span className="w-24 shrink-0 text-xs text-green-700 font-mono">{slot.time || '—:——'}</span>
-                  <span className="flex-1 text-sm text-green-900">🔄 {slot.name}</span>
-                  <span className="flex-1 text-xs text-gray-400 truncate">{slot.description}</span>
-                  <span className="w-5"></span>
-                </div>
-              ))}
-              <div className="border-t border-dashed border-gray-200 my-2" />
-            </div>
-          )}
-
-          {/* Sloty własne dnia */}
-          {day.slots.length === 0 && templateSlots.length === 0 && (
+          {day.slots.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-4">
               Brak zajęć — kliknij „+ Dodaj zajęcie"
             </p>
           )}
-          {day.slots.map(slot => (
-            <SlotRow
-              key={slot.id}
-              slot={slot}
-              activities={activities}
-              onChange={updated => updateSlot(slot.id, updated)}
-              onDelete={() => deleteSlot(slot.id)}
-            />
+
+          {day.slots.map((slot, i) => (
+            <div key={slot.id} className="flex items-start gap-1 group">
+              {/* Strzałki kolejności */}
+              <div className="flex flex-col pt-1.5 shrink-0 w-7 opacity-0 group-hover:opacity-100 transition">
+                <button
+                  onClick={() => moveSlot(i, -1)}
+                  disabled={i === 0}
+                  className="text-gray-300 hover:text-green-700 disabled:opacity-0 text-xs leading-none"
+                >▲</button>
+                <button
+                  onClick={() => moveSlot(i, 1)}
+                  disabled={i === day.slots.length - 1}
+                  className="text-gray-300 hover:text-green-700 disabled:opacity-0 text-xs leading-none"
+                >▼</button>
+              </div>
+
+              <div className="flex-1">
+                <SlotRow
+                  slot={slot}
+                  activities={activities}
+                  onChange={updated => updateSlot(slot.id, updated)}
+                  onDelete={() => deleteSlot(slot.id)}
+                />
+              </div>
+            </div>
           ))}
 
           <button
