@@ -61,7 +61,7 @@ export default function App() {
       alert('Uzupełnij Jednostkę i Kierownika w lewym panelu przed eksportem.')
       return
     }
-    generatePdf({ meta, activities, days, template })
+    generatePdf({ meta, days })
   }
 
   const metaOk = meta.jednostka && meta.kierownik
@@ -71,13 +71,14 @@ export default function App() {
       {/* Topbar */}
       <header className="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow shrink-0">
         <div className="flex items-center gap-3">
-          {/* Logo Skautów Europy */}
+          {/* Logo Skautów Europy — wklej plik logo.png do public/ aby zastąpić emoji */}
           <img
-            src="https://skauci-europy.org/wp-content/uploads/2020/09/logo-skauci-europy.png"
+            src="/logo.png"
             alt="Skauci Europy"
             className="h-10 w-auto object-contain"
-            onError={e => { e.target.style.display = 'none' }}
+            onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }}
           />
+          <div className="hidden items-center justify-center w-10 h-10 bg-yellow-400 rounded-full text-green-900 font-black text-lg">⚜</div>
           <div>
             <h1 className="text-lg font-bold leading-tight">Książka Obozowa</h1>
             <p className="text-green-300 text-xs">Ramowy plan pracy · Skauci Europy</p>
