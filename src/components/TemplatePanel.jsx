@@ -81,7 +81,7 @@ export default function TemplatePanel({ slots, onChange }) {
                     type="time"
                     value={slot.time}
                     onChange={e => updateSlot(slot.id, { time: e.target.value })}
-                    className="w-22 border border-gray-200 rounded px-1.5 py-0.5 text-xs focus:outline-none focus:border-green-400"
+                    className="w-24 border border-gray-200 rounded px-1.5 py-0.5 text-xs focus:outline-none focus:border-green-400"
                   />
                   <span className="flex-1 text-sm font-medium text-gray-800 truncate">{slot.name}</span>
                   {/* Strzałki do zmiany kolejności */}

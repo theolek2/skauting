@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 
 export function generatePdf({ meta, activities, days, template = [] }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -7,7 +7,6 @@ export function generatePdf({ meta, activities, days, template = [] }) {
   const W = 210
   const H = 297
 
-  // ── Czcionka (latin) ────────────────────────────────────────────────────
   doc.setFont('helvetica')
 
   // ══════════════════════════════════════════════════════════
@@ -29,18 +28,17 @@ export function generatePdf({ meta, activities, days, template = [] }) {
     doc.text(`Termin: ${meta.termin}`, W / 2, 135, { align: 'center' })
   }
 
-  // linia dolna tytułowej
   doc.setLineWidth(0.5)
   doc.line(20, 160, W - 20, 160)
-  doc.setFontSize(10)
-  doc.setTextColor(120)
-  doc.text('Wygenerowano w Aplikacji Książki Obozowej', W / 2, 168, { align: 'center' })
+  doc.setFontSize(9)
+  doc.setTextColor(150)
+  doc.text('Wygenerowano w Aplikacji Ksiazki Obozowej', W / 2, 168, { align: 'center' })
   doc.setTextColor(0)
 
   // ══════════════════════════════════════════════════════════
-  // DNI — po 2 na stronie (każdy dzień = A5 pionowo)
+  // DNI — po 2 na stronie (kazdy dzien = A5)
   // ══════════════════════════════════════════════════════════
-  const dayHeight = H / 2   // 148.5 mm — A5
+  const dayHeight = H / 2
   const marginX = 12
   const tableW = W - marginX * 2
 
@@ -54,18 +52,21 @@ export function generatePdf({ meta, activities, days, template = [] }) {
 
     const offsetY = isTop ? 0 : dayHeight
 
-    // nagłówek dnia
+    // Naglowek dnia
     doc.setFillColor(34, 85, 34)
     doc.rect(0, offsetY, W, 10, 'F')
     doc.setTextColor(255)
     doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')
-    doc.text(`Dzień ${i + 1}${day.label ? ' — ' + day.label : ''}`, W / 2, offsetY + 7, { align: 'center' })
+    doc.text(
+      `Dzien ${i + 1}${day.label ? ' — ' + day.label : ''}`,
+      W / 2, offsetY + 7,
+      { align: 'center' }
+    )
     doc.setTextColor(0)
     doc.setFont('helvetica', 'normal')
 
-    // tabela zajęć
-    // Scal sloty szablonu (na górze) + sloty dnia
+    // Scal szablon + sloty dnia, posortuj po godzinie
     const allSlots = [...template, ...day.slots]
       .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
 
@@ -75,11 +76,11 @@ export function generatePdf({ meta, activities, days, template = [] }) {
       slot.description || '',
     ])
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: offsetY + 11,
       margin: { left: marginX, right: marginX },
       tableWidth: tableW,
-      head: [['Godziny', 'Zajęcia', 'Opis / uwagi']],
+      head: [['Godziny', 'Zajecia', 'Opis / uwagi']],
       body: rows,
       styles: {
         fontSize: 9,
@@ -98,15 +99,11 @@ export function generatePdf({ meta, activities, days, template = [] }) {
         1: { cellWidth: 55 },
         2: { cellWidth: tableW - 22 - 55 },
       },
-      tableLineColor: [180, 180, 180],
+      tableLineColor: [200, 200, 200],
       tableLineWidth: 0.2,
-      // ogranicz wysokość do połowy strony
-      pageBreak: 'avoid',
-      rowPageBreak: 'avoid',
-      didDrawPage: () => {},
     })
 
-    // linia podziału między dniami
+    // Linia podzialu miedzy dniami
     if (isTop) {
       doc.setDrawColor(180)
       doc.setLineWidth(0.3)
