@@ -39,6 +39,9 @@ export default function MapTab() {
   const [selected, setSelected] = useState(null)
   const [arrowColors, setArrowColors] = useState(DEFAULT_ARROW_COLORS)
   const [customPictograms, setCustomPictograms] = useState([])
+  const [paths, setPaths]           = useState([])
+  const [paintMode, setPaintMode]   = useState(false)
+  const [paintColor, setPaintColor] = useState('#ef4444')
   const editorRef = useRef(null)
 
   const updateArrowColor = (id, label) =>
@@ -79,75 +82,60 @@ export default function MapTab() {
     const win = window.open('', '_blank')
     if (!win) { alert('Zezwól na popup'); return }
 
-    // Elementy na mapie
+    const lat = parseFloat(coords.lat).toFixed(5)
+    const lng = parseFloat(coords.lng).toFixed(5)
+
+    // Symbole na mapie
     const itemsHtml = items.map(item => {
-      const imgSrc = (item.type === 'icon' && item.icon) || (item.type === 'custom' && item.imageUrl)
+      const imgSrc = (item.type==='icon' && item.icon) || (item.type==='custom' && item.imageUrl)
+      const isArrow = item.type === 'arrow'
       const symbol = imgSrc
-        ? `<img src="${imgSrc}" style="width:2rem;height:2rem;object-fit:contain;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.6));transform:rotate(${item.rotation||0}deg);" />`
-        : `<span style="font-size:2rem;line-height:1;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.7));${item.color ? `color:${item.color};` : ''}display:inline-block;transform:rotate(${item.rotation || 0}deg);">${item.emoji}</span>`
-      return `<div style="position:absolute;left:${item.x}%;top:${item.y}%;transform:translate(-50%,-50%) scale(${item.size||1});transform-origin:center bottom;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
-        ${symbol}
-        ${item.label ? `<span style="background:rgba(255,255,255,0.9);color:#111;font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.3);">${item.label}</span>` : ''}
-      </div>`
+        ? `<img src="${imgSrc}" style="width:2rem;height:2rem;object-fit:contain;transform:rotate(${item.rotation||0}deg);filter:drop-shadow(1px 1px 2px rgba(0,0,0,.6));" />`
+        : isArrow
+          ? `<svg viewBox="0 0 24 24" style="width:2rem;height:2rem;display:block;transform:rotate(${item.rotation||0}deg);filter:drop-shadow(1px 1px 2px rgba(0,0,0,.5));"><path fill="${item.color||'#ef4444'}" d="M12 2L4 10h5v12h6V10h5z"/></svg>`
+          : `<span style="font-size:2rem;line-height:1;${item.color?`color:${item.color};`:''}display:inline-block;transform:rotate(${item.rotation||0}deg);filter:drop-shadow(1px 1px 2px rgba(0,0,0,.7));">${item.emoji||''}</span>`
+      const labelHtml = item.showLabel!==false && item.label
+        ? `<span style="background:rgba(255,255,255,.92);color:#111;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);">${item.label}</span>` : ''
+      return `<div style="position:absolute;left:${item.x}%;top:${item.y}%;transform:translate(-50%,-50%) scale(${item.size||1});transform-origin:center bottom;display:flex;flex-direction:column;align-items:center;pointer-events:none;">${symbol}${labelHtml}</div>`
     }).join('')
 
-    // Legenda — strzałki pogrupowane po kolorze, piktogramy osobno
-    const usedArrowColors = arrowColors.filter(c => items.some(i => i.type === 'arrow' && i.colorId === c.id))
-    const usedPictograms = items.filter(i => i.type === 'icon' || i.type === 'custom').reduce((acc, i) => {
-      if (!acc.find(a => a.label === i.label)) acc.push(i)
-      return acc
-    }, [])
-    const usedCustom = items.filter(i => i.type === 'custom').reduce((acc, i) => {
-      if (!acc.find(a => a.label === i.label)) acc.push(i)
-      return acc
-    }, [])
+    // Ścieżki SVG
+    const pathsSvg = paths.length ? `<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 100 100" preserveAspectRatio="none">
+      ${paths.map(p=>`<polyline points="${p.pts.map(pt=>`${pt.x},${pt.y}`).join(' ')}" fill="none" stroke="${p.color}" stroke-width="${p.width||3}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`).join('')}
+    </svg>` : ''
 
-    const legendHtml = (usedArrowColors.length || usedPictograms.length || usedCustom.length) ? `
-      <div style="padding:6mm 10mm;background:#f9f9f9;border-top:2px solid #2d6a2d;display:flex;gap:8mm;flex-wrap:wrap;">
-        <div><b style="font-size:10pt;color:#1a4a1a;">Legenda</b></div>
-        ${usedArrowColors.map(c => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
-          <span style="color:${c.hex};font-size:1.2rem;">↑</span>
-          <span>${c.label}</span></div>`).join('')}
-        ${usedPictograms.map(i => {
-          const src = i.icon || i.imageUrl
-          return `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
-            ${src ? `<img src="${src}" style="width:1.2rem;height:1.2rem;object-fit:contain;" />` : `<span>${i.emoji||''}</span>`}
-            <span>${i.label}</span></div>`
-        }).join('')}
-        ${usedCustom.map(i => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
-          <img src="${i.imageUrl}" style="width:1.2rem;height:1.2rem;object-fit:contain;" />
-          <span>${i.label}</span></div>`).join('')}
-      </div>
-    ` : ''
+    // Legenda
+    const usedArrows = arrowColors.filter(c => items.some(i=>i.type==='arrow'&&i.colorId===c.id))
+    const usedIcons  = items.filter(i=>i.type==='icon'||i.type==='custom').reduce((a,i)=>a.find(x=>x.label===i.label)?a:[...a,i],[])
+    const legendItems = [
+      ...usedArrows.map(c=>`<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;"><svg viewBox="0 0 24 24" style="width:1rem;height:1rem;flex-shrink:0;"><path fill="${c.hex}" d="M12 2L4 10h5v12h6V10h5z"/></svg><span>${c.label}</span></div>`),
+      ...usedIcons.map(i=>{const s=i.icon||i.imageUrl; return `<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;">${s?`<img src="${s}" style="width:1rem;height:1rem;object-fit:contain;"/>`:'<span>■</span>'}<span>${i.label}</span></div>`}),
+    ]
 
-    win.document.write(`<!DOCTYPE html><html lang="pl"><head>
-      <meta charset="UTF-8">
-      <title>Mapa terenu obozu</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; }
-        @media print {
-          @page { size: A4 landscape; margin: 5mm; }
-          body { margin: 0; }
-        }
-      </style>
-    </head><body>
-      <div style="padding: 5mm 15mm 3mm; background: #2d6a2d; color: white; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1 style="font-size: 16pt; font-weight: bold;">Mapa terenu obozu</h1>
-          <p style="font-size: 10pt; opacity: 0.85;">${locationName || '—'}</p>
-        </div>
-        <div style="text-align: right; font-size: 9pt; opacity: 0.8;">
-          Współrzędne: ${parseFloat(coords.lat).toFixed(5)}°N, ${parseFloat(coords.lng).toFixed(5)}°E<br>
-          Skauci Europy · by Aleksander Nasiłowski
-        </div>
+    win.document.write(`<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><title>Mapa terenu</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;height:100vh;display:flex;flex-direction:column;}
+    @media print{@page{size:A4 landscape;margin:4mm;}body{height:auto;}}
+    .header{background:#2d6a2d;color:white;padding:3mm 8mm;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+    .map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
+    .footer{background:#f0f0f0;border-top:2px solid #2d6a2d;padding:3mm 8mm;flex-shrink:0;}
+    </style></head><body>
+    <div class="header">
+      <div><b style="font-size:13pt;">Mapa terenu obozu</b><br/><span style="font-size:9pt;opacity:.85;">${locationName||'—'}</span></div>
+      <div style="text-align:right;font-size:8pt;opacity:.85;">Wsp.: ${lat}°N, ${lng}°E<br/>Skauci Europy · by Aleksander Nasiłowski</div>
+    </div>
+    <div class="map-wrap">
+      <img src="${mapImageUrl}" style="width:100%;height:100%;object-fit:fill;" crossorigin="anonymous"/>
+      ${itemsHtml}
+      ${pathsSvg}
+    </div>
+    <div class="footer">
+      <div style="display:flex;gap:6mm;flex-wrap:wrap;align-items:center;">
+        <b style="font-size:9pt;color:#1a4a1a;white-space:nowrap;">Legenda:</b>
+        ${legendItems.join('')}
+        ${legendItems.length===0?'<span style="font-size:8pt;color:#888;">Brak symboli na mapie</span>':''}
       </div>
-      <div style="position: relative; width: 100%; aspect-ratio: 3/2; overflow: hidden;">
-        <img src="${mapImageUrl}" style="width: 100%; height: 100%; object-fit: fill;" crossorigin="anonymous" />
-        ${itemsHtml}
-      </div>
-      ${legendHtml}
-      <script>window.onload = () => window.print();<\/script>
+    </div>
+    <script>window.onload=()=>window.print();<\/script>
     </body></html>`)
     win.document.close()
   }
@@ -281,23 +269,49 @@ export default function MapTab() {
           onDelete={handleDelete}
           coords={{ lat: parseFloat(coords.lat), lng: parseFloat(coords.lng) }}
           locationName={locationName}
+          paths={paths}
+          onAddPath={p => setPaths(prev => [...prev, p])}
+          paintMode={paintMode}
+          paintColor={paintColor}
         />
 
         {/* Dolny pasek */}
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-t border-gray-200 shrink-0">
-          <button onClick={() => setSelected(null)}
-            className="text-sm text-gray-500 hover:text-gray-800 border border-gray-300 px-3 py-1.5 rounded-lg">
-            🖱️ Tryb przeciągania
+        <div className="flex items-center gap-2 px-4 py-2 bg-white border-t border-gray-200 shrink-0 flex-wrap">
+          {/* Tryb malowania */}
+          <button
+            onClick={() => { setPaintMode(m => !m); setSelected(null) }}
+            className={`text-sm px-3 py-1.5 rounded-lg border font-semibold transition ${
+              paintMode ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-600 border-gray-300 hover:border-purple-400'
+            }`}
+          >
+            🖌️ Malowanie
           </button>
-          <span className="text-xs text-gray-400">Najedź na symbol aby zmienić rozmiar (−/+) lub usunąć (×)</span>
+
+          {/* Kolory pędzla */}
+          {paintMode && (
+            <div className="flex gap-1.5 items-center">
+              {['#ef4444','#3b82f6','#22c55e','#f97316','#a855f7'].map(c => (
+                <button key={c} onClick={() => setPaintColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition ${paintColor===c?'border-gray-800 scale-110':'border-transparent'}`}
+                  style={{ backgroundColor: c }} />
+              ))}
+              <button onClick={() => setPaths(prev => prev.slice(0,-1))}
+                className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-100 ml-1">
+                ↩ Cofnij
+              </button>
+              <button onClick={() => setPaths([])}
+                className="text-xs px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50">
+                Wyczyść rysunki
+              </button>
+            </div>
+          )}
+
           <button onClick={() => setItems([])}
             className="text-xs text-red-400 hover:text-red-600 ml-auto border border-red-200 px-3 py-1.5 rounded-lg">
-            🗑 Wyczyść wszystko
+            🗑 Wyczyść symbole
           </button>
-          <button
-            onClick={handleExport}
-            className="bg-green-700 text-white font-bold px-5 py-1.5 rounded-lg hover:bg-green-800 text-sm"
-          >
+          <button onClick={handleExport}
+            className="bg-green-700 text-white font-bold px-5 py-1.5 rounded-lg hover:bg-green-800 text-sm">
             📄 Eksportuj mapę PDF
           </button>
         </div>
