@@ -6,81 +6,70 @@ export const DEFAULT_ARROW_COLORS = [
   { id: 'purple', hex: '#a855f7', label: 'Trasa fioletowa' },
 ]
 
+// Piktogramy oparte na SVG z /icons/
 export const PICTOGRAM_CATEGORIES = [
-  {
-    name: 'Bezpieczeństwo',
-    items: [
-      { id: 'gasnica',     emoji: '🧯', label: 'Gaśnica' },
-      { id: 'medyczny',    emoji: '🏥', label: 'Punkt medyczny' },
-      { id: 'sanitarny',   emoji: '🚿', label: 'Punkt sanitarny' },
-      { id: 'bezpieczne',  emoji: '✅', label: 'Miejsce bezpieczne' },
-      { id: 'niebezpiecz', emoji: '⚠️', label: 'Niebezpieczeństwo' },
-      { id: 'ewakuacja',   emoji: '🚪', label: 'Wyjście ewakuacyjne' },
-    ],
-  },
   {
     name: 'Obóz',
     items: [
-      { id: 'obozowisko',  emoji: '⛺', label: 'Obozowisko' },
-      { id: 'apelowy',     emoji: '🟩', label: 'Plac apelowy' },
-      { id: 'toaleta',     emoji: '🚻', label: 'Toaleta' },
-      { id: 'woda',        emoji: '💧', label: 'Woda pitna' },
-      { id: 'smietnik',    emoji: '♻️', label: 'Śmietnik' },
-      { id: 'kuchnia',     emoji: '🍳', label: 'Kuchnia / jadłodajnia' },
+      { id: 'namiot',        icon: '/icons/namiot.svg',              label: 'Namiot / zastęp' },
+      { id: 'namiot_fiol',   icon: '/icons/namiot-fiolet-tlo.svg',   label: 'Namiot (fiolet)' },
+      { id: 'namiot_pom',    icon: '/icons/namiot-pom-tlo.svg',      label: 'Namiot (pom.)' },
+      { id: 'namiot_zol',    icon: '/icons/namiot-zolty-tlo.svg',    label: 'Namiot (żółty)' },
+      { id: 'mauzer',        icon: '/icons/mauzer.svg',              label: 'Mauzer / magazyn' },
+      { id: 'dom',           icon: '/icons/dom.svg',                 label: 'Budynek / dom' },
     ],
   },
   {
-    name: 'Dojazd i służby',
+    name: 'Bezpieczeństwo',
     items: [
-      { id: 'sluzby',      emoji: '🚒', label: 'Dojazd służb' },
-      { id: 'parking',     emoji: '🅿️', label: 'Parking' },
-      { id: 'wejscie',     emoji: '🔰', label: 'Wejście na teren' },
-      { id: 'droga',       emoji: '🛣️', label: 'Droga dojazdowa' },
-      { id: 'telefon',     emoji: '📞', label: 'Punkt telefoniczny' },
-      { id: 'ppoz',        emoji: '🔴', label: 'Punkt p.poż.' },
+      { id: 'gasnica',       icon: '/icons/gaśnica.svg',             label: 'Gaśnica' },
+      { id: 'ognisko_ppoz',  icon: '/icons/ognisko_z_pkt_ppoz.svg',  label: 'Ognisko + p.poż.' },
+      { id: 'ognisko_znak',  icon: '/icons/ognisko_znak.svg',        label: 'Znak ogniska' },
+      { id: 'ewakuacja',     icon: '/icons/Punkt-zbiorki-do-ewakuacji.svg', label: 'Punkt zbiórki ewak.' },
     ],
   },
   {
-    name: 'Sanepid / inspekcja',
+    name: 'Obozowanie',
     items: [
-      { id: 'ognisko',     emoji: '🔥', label: 'Ognisko' },
-      { id: 'kraal',       emoji: '🏕️', label: 'Kraal / obozo.' },
-      { id: 'zastep',      emoji: '⛺', label: 'Zastęp / namiot' },
-      { id: 'magazer',     emoji: '🏚️', label: 'Mauzer / magazyn' },
-      { id: 'woda_pit',    emoji: '🚰', label: 'Woda pitna' },
-      { id: 'mycie_rak',   emoji: '🧴', label: 'Mycie rąk' },
-      { id: 'prysznic',    emoji: '🚿', label: 'Prysznice' },
-      { id: 'ewak_punkt',  emoji: '🏃', label: 'Zbiórka ewakuac.' },
-      { id: 'schronienie', emoji: '⛱️', label: 'Schronienie tymcz.' },
-      { id: 'plac_apel',   emoji: '🟩', label: 'Plac apelowy' },
+      { id: 'ognisko',       icon: '/icons/ognisko.svg',             label: 'Ognisko' },
+      { id: 'kosciol',       icon: '/icons/kosciol.svg',             label: 'Kościół / msza' },
+      { id: 'stacja_kol',    icon: '/icons/stacja_kol.svg',          label: 'Stacja kolejowa' },
+      { id: 'rozne',         icon: '/icons/różne.svg',               label: 'Inne' },
+    ],
+  },
+  {
+    name: 'Sanitarno-higieniczne',
+    items: [
+      { id: 'toalety',       icon: '/icons/toalety.svg',             label: 'Toalety' },
+      { id: 'natryski',      icon: '/icons/natryski.svg',            label: 'Natryski / prysznice' },
+      { id: 'woda',          icon: '/icons/woda.svg',                label: 'Woda pitna' },
+      { id: 'smieci',        icon: '/icons/smieci.svg',              label: 'Śmietnik' },
     ],
   },
 ]
 
-export function makePlacedItem({ type, emoji, imageUrl, label, color, colorId, x, y }) {
+export function makePlacedItem({ type, icon, imageUrl, label, color, colorId, x, y }) {
   return {
     id: `item_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    type,        // 'pictogram' | 'arrow' | 'custom'
-    emoji,
+    type,        // 'icon' | 'arrow' | 'custom'
+    icon,        // path to SVG in /icons/
     imageUrl,    // for custom uploads
     label,
-    color,       // hex for arrows
-    colorId,     // id for arrows (for legend grouping)
+    color,
+    colorId,
     x, y,
     size: 1,
-    rotation: 0, // degrees, for arrows
+    rotation: 0,
+    showLabel: true,
   }
 }
 
-// Usuwa tło obrazka (uproszczone — na bazie koloru narożnika)
 export async function removeBg(file) {
   return new Promise((resolve) => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const src = e.target.result
-      // SVG — nie potrzebuje usuwania tła
       if (file.type === 'image/svg+xml') { resolve(src); return }
-
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
@@ -90,15 +79,11 @@ export async function removeBg(file) {
         ctx.drawImage(img, 0, 0)
         const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
         const px = data.data
-        // Kolor tła = lewy górny narożnik
         const bgR = px[0], bgG = px[1], bgB = px[2]
         const thr = 40
         for (let i = 0; i < px.length; i += 4) {
-          if (
-            Math.abs(px[i]   - bgR) < thr &&
-            Math.abs(px[i+1] - bgG) < thr &&
-            Math.abs(px[i+2] - bgB) < thr
-          ) { px[i+3] = 0 }
+          if (Math.abs(px[i]-bgR) < thr && Math.abs(px[i+1]-bgG) < thr && Math.abs(px[i+2]-bgB) < thr)
+            px[i+3] = 0
         }
         ctx.putImageData(data, 0, 0)
         resolve(canvas.toDataURL('image/png'))

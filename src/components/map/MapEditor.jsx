@@ -159,8 +159,8 @@ export default function MapEditor({ mapImageUrl, items, selected, onPlace, onUpd
                 borderRadius: '4px',
                 padding: '2px',
               }}>
-                {item.type === 'custom' && item.imageUrl
-                  ? <img src={item.imageUrl} alt={item.label} style={{ width: sz, height: sz, objectFit: 'contain', filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.5))' }} draggable={false} />
+                {(item.type === 'icon' && item.icon) || (item.type === 'custom' && item.imageUrl)
+                  ? <img src={item.icon || item.imageUrl} alt={item.label} style={{ width: sz, height: sz, objectFit: 'contain', filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.5))', transform: `rotate(${item.rotation||0}deg)` }} draggable={false} />
                   : <span style={{
                       fontSize: sz,
                       lineHeight: 1,

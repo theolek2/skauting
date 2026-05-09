@@ -81,8 +81,9 @@ export default function MapTab() {
 
     // Elementy na mapie
     const itemsHtml = items.map(item => {
-      const symbol = item.type === 'custom' && item.imageUrl
-        ? `<img src="${item.imageUrl}" style="width:2rem;height:2rem;object-fit:contain;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.6));" />`
+      const imgSrc = (item.type === 'icon' && item.icon) || (item.type === 'custom' && item.imageUrl)
+      const symbol = imgSrc
+        ? `<img src="${imgSrc}" style="width:2rem;height:2rem;object-fit:contain;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.6));transform:rotate(${item.rotation||0}deg);" />`
         : `<span style="font-size:2rem;line-height:1;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.7));${item.color ? `color:${item.color};` : ''}display:inline-block;transform:rotate(${item.rotation || 0}deg);">${item.emoji}</span>`
       return `<div style="position:absolute;left:${item.x}%;top:${item.y}%;transform:translate(-50%,-50%) scale(${item.size||1});transform-origin:center bottom;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
         ${symbol}
@@ -92,7 +93,7 @@ export default function MapTab() {
 
     // Legenda — strzałki pogrupowane po kolorze, piktogramy osobno
     const usedArrowColors = arrowColors.filter(c => items.some(i => i.type === 'arrow' && i.colorId === c.id))
-    const usedPictograms  = items.filter(i => i.type !== 'arrow').reduce((acc, i) => {
+    const usedPictograms = items.filter(i => i.type === 'icon' || i.type === 'custom').reduce((acc, i) => {
       if (!acc.find(a => a.label === i.label)) acc.push(i)
       return acc
     }, [])
@@ -107,9 +108,12 @@ export default function MapTab() {
         ${usedArrowColors.map(c => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
           <span style="color:${c.hex};font-size:1.2rem;">↑</span>
           <span>${c.label}</span></div>`).join('')}
-        ${usedPictograms.map(i => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
-          <span style="font-size:1.1rem;">${i.emoji}</span>
-          <span>${i.label}</span></div>`).join('')}
+        ${usedPictograms.map(i => {
+          const src = i.icon || i.imageUrl
+          return `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
+            ${src ? `<img src="${src}" style="width:1.2rem;height:1.2rem;object-fit:contain;" />` : `<span>${i.emoji||''}</span>`}
+            <span>${i.label}</span></div>`
+        }).join('')}
         ${usedCustom.map(i => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
           <img src="${i.imageUrl}" style="width:1.2rem;height:1.2rem;object-fit:contain;" />
           <span>${i.label}</span></div>`).join('')}
