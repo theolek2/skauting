@@ -105,23 +105,33 @@ export default function MapTab() {
     </svg>` : ''
 
     // Legenda
-    const usedArrows = arrowColors.filter(c => items.some(i=>i.type==='arrow'&&i.colorId===c.id))
-    const usedIcons  = items.filter(i=>i.type==='icon'||i.type==='custom').reduce((a,i)=>a.find(x=>x.label===i.label)?a:[...a,i],[])
+    // Legenda — strzałki, ikony, kolory ścieżek
+    const usedArrows     = arrowColors.filter(c => items.some(i=>i.type==='arrow'&&i.colorId===c.id))
+    const usedIcons      = items.filter(i=>i.type==='icon'||i.type==='custom').reduce((a,i)=>a.find(x=>x.label===i.label)?a:[...a,i],[])
+    const usedPathColors = [...new Set(paths.map(p=>p.color))].map(hex=>{
+      const match = arrowColors.find(c=>c.hex===hex)
+      return { hex, label: match?.label || `Linia ${hex}` }
+    })
+
     const legendItems = [
-      ...usedArrows.map(c=>`<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;"><svg viewBox="0 0 24 24" style="width:1rem;height:1rem;flex-shrink:0;"><path fill="${c.hex}" d="M12 2L4 10h5v12h6V10h5z"/></svg><span>${c.label}</span></div>`),
-      ...usedIcons.map(i=>{const s=i.icon||i.imageUrl; return `<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;">${s?`<img src="${s}" style="width:1rem;height:1rem;object-fit:contain;"/>`:'<span>■</span>'}<span>${i.label}</span></div>`}),
+      ...usedArrows.map(c=>`<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;white-space:nowrap;"><svg viewBox="0 0 24 24" style="width:1rem;height:1rem;flex-shrink:0;"><path fill="${c.hex}" d="M12 2L4 10h5v12h6V10h5z"/></svg><span>${c.label}</span></div>`),
+      ...usedPathColors.filter(p=>!usedArrows.find(a=>a.hex===p.hex)).map(p=>`<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;white-space:nowrap;"><span style="display:inline-block;width:1.5rem;height:3px;background:${p.hex};border-radius:2px;flex-shrink:0;"></span><span>${p.label}</span></div>`),
+      ...usedIcons.map(i=>{const s=i.icon||i.imageUrl; return `<div style="display:flex;align-items:center;gap:2mm;font-size:8pt;white-space:nowrap;">${s?`<img src="${s}" style="width:1rem;height:1rem;object-fit:contain;flex-shrink:0;"/>`:'<span>■</span>'}<span>${i.label}</span></div>`}),
     ]
 
+    // A4 landscape: 297mm × 210mm — SZTYWNE wymiary
     win.document.write(`<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><title>Mapa terenu</title>
-    <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;height:100vh;display:flex;flex-direction:column;}
-    @media print{@page{size:A4 landscape;margin:4mm;}body{height:auto;}}
-    .header{background:#2d6a2d;color:white;padding:3mm 8mm;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
-    .map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
-    .footer{background:#f0f0f0;border-top:2px solid #2d6a2d;padding:3mm 8mm;flex-shrink:0;}
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      html,body{width:297mm;height:210mm;overflow:hidden;font-family:Arial,sans-serif;}
+      @media print{@page{size:297mm 210mm;margin:0;}html,body{width:297mm;height:210mm;}}
+      .header{height:16mm;background:#2d6a2d;color:white;padding:0 8mm;display:flex;justify-content:space-between;align-items:center;}
+      .map-wrap{height:170mm;position:relative;overflow:hidden;width:100%;}
+      .footer{height:24mm;background:#f0f0f0;border-top:2px solid #2d6a2d;padding:2mm 8mm;display:flex;align-items:center;}
     </style></head><body>
     <div class="header">
-      <div><b style="font-size:13pt;">Mapa terenu obozu</b><br/><span style="font-size:9pt;opacity:.85;">${locationName||'—'}</span></div>
-      <div style="text-align:right;font-size:8pt;opacity:.85;">Wsp.: ${lat}°N, ${lng}°E<br/>Skauci Europy · by Aleksander Nasiłowski</div>
+      <div><b style="font-size:12pt;">Mapa terenu obozu</b>&nbsp;·&nbsp;<span style="font-size:9pt;opacity:.85;">${locationName||'—'}</span></div>
+      <div style="text-align:right;font-size:8pt;opacity:.85;">Wsp.: ${lat}°N, ${lng}°E &nbsp;·&nbsp; Skauci Europy · by Aleksander Nasiłowski</div>
     </div>
     <div class="map-wrap">
       <img src="${mapImageUrl}" style="width:100%;height:100%;object-fit:fill;" crossorigin="anonymous"/>
@@ -129,8 +139,8 @@ export default function MapTab() {
       ${pathsSvg}
     </div>
     <div class="footer">
-      <div style="display:flex;gap:6mm;flex-wrap:wrap;align-items:center;">
-        <b style="font-size:9pt;color:#1a4a1a;white-space:nowrap;">Legenda:</b>
+      <b style="font-size:9pt;color:#1a4a1a;white-space:nowrap;margin-right:6mm;">Legenda:</b>
+      <div style="display:flex;gap:5mm;flex-wrap:nowrap;overflow:hidden;align-items:center;">
         ${legendItems.join('')}
         ${legendItems.length===0?'<span style="font-size:8pt;color:#888;">Brak symboli na mapie</span>':''}
       </div>
@@ -258,8 +268,9 @@ export default function MapTab() {
           />
       </aside>
 
-      {/* Mapa */}
-      <div className="flex-1 flex flex-col overflow-hidden" ref={editorRef}>
+      {/* Mapa + prawy panel */}
+      <div className="flex-1 flex overflow-hidden" ref={editorRef}>
+      <div className="flex-1 flex flex-col overflow-hidden">
         <MapEditor
           mapImageUrl={mapImageUrl}
           items={items}
@@ -275,39 +286,47 @@ export default function MapTab() {
           paintColor={paintColor}
         />
 
-        {/* Dolny pasek */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-white border-t border-gray-200 shrink-0 flex-wrap">
-          {/* Tryb malowania */}
+        {/* Prawy panel — malowanie */}
+        <div className="w-14 shrink-0 bg-white border-l border-gray-200 flex flex-col items-center py-3 gap-2">
           <button
             onClick={() => { setPaintMode(m => !m); setSelected(null) }}
-            className={`text-sm px-3 py-1.5 rounded-lg border font-semibold transition ${
-              paintMode ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-600 border-gray-300 hover:border-purple-400'
+            title="Tryb malowania"
+            className={`w-10 h-10 rounded-lg border-2 text-xl flex items-center justify-center transition ${
+              paintMode ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 hover:border-purple-400'
             }`}
-          >
-            🖌️ Malowanie
+          >🖌️</button>
+
+          {/* Separator */}
+          <div className="w-8 border-t border-gray-200" />
+
+          {/* Kolory */}
+          {['#ef4444','#3b82f6','#22c55e','#f97316','#a855f7'].map(c => (
+            <button key={c} onClick={() => { setPaintColor(c); setPaintMode(true); setSelected(null) }}
+              title={c}
+              className={`w-8 h-8 rounded-full border-2 transition ${paintColor===c && paintMode ? 'border-gray-800 scale-110' : 'border-transparent hover:border-gray-400'}`}
+              style={{ backgroundColor: c }} />
+          ))}
+
+          {/* Separator */}
+          <div className="w-8 border-t border-gray-200 mt-1" />
+
+          {/* Cofnij */}
+          <button onClick={() => setPaths(prev => prev.slice(0,-1))}
+            title="Cofnij ostatnią linię"
+            className="w-10 h-10 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 flex items-center justify-center">
+            ↩
           </button>
+          <button onClick={() => setPaths([])}
+            title="Wyczyść rysunki"
+            className="w-10 h-10 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 text-xs flex items-center justify-center">
+            🗑
+          </button>
+        </div>
 
-          {/* Kolory pędzla */}
-          {paintMode && (
-            <div className="flex gap-1.5 items-center">
-              {['#ef4444','#3b82f6','#22c55e','#f97316','#a855f7'].map(c => (
-                <button key={c} onClick={() => setPaintColor(c)}
-                  className={`w-7 h-7 rounded-full border-2 transition ${paintColor===c?'border-gray-800 scale-110':'border-transparent'}`}
-                  style={{ backgroundColor: c }} />
-              ))}
-              <button onClick={() => setPaths(prev => prev.slice(0,-1))}
-                className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-100 ml-1">
-                ↩ Cofnij
-              </button>
-              <button onClick={() => setPaths([])}
-                className="text-xs px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50">
-                Wyczyść rysunki
-              </button>
-            </div>
-          )}
-
+        {/* Dolny pasek */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-white border-t border-gray-200 shrink-0">
           <button onClick={() => setItems([])}
-            className="text-xs text-red-400 hover:text-red-600 ml-auto border border-red-200 px-3 py-1.5 rounded-lg">
+            className="text-xs text-red-400 hover:text-red-600 border border-red-200 px-3 py-1.5 rounded-lg">
             🗑 Wyczyść symbole
           </button>
           <button onClick={handleExport}
@@ -315,7 +334,8 @@ export default function MapTab() {
             📄 Eksportuj mapę PDF
           </button>
         </div>
-      </div>
+      </div>  {/* koniec flex-1 flex-col */}
+      </div>  {/* koniec flex-1 flex (mapa + prawy panel) */}
     </div>
   )
 }
