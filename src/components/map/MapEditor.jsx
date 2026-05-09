@@ -6,40 +6,52 @@ const SIZE_STEP = 0.25
 
 export default function MapEditor({ mapImageUrl, items, selected, onPlace, onUpdate, onDelete, coords, locationName }) {
   const containerRef = useRef(null)
-  const [dragging, setDragging] = useState(null) // { id, startX, startY, origX, origY }
+  const [dragging, setDragging]     = useState(null)
+  const [activeId, setActiveId]     = useState(null)  // kliknięty element pokazuje kontrolki
 
   const getRelativePos = (e) => {
     const rect = containerRef.current.getBoundingClientRect()
     return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
+      x: ((e.clientX - rect.left) / rect.width)  * 100,
+      y: ((e.clientY - rect.top)  / rect.height) * 100,
     }
   }
 
+  // Klik w mapę — umieść piktogram lub odznacz aktywny
   const handleMapClick = (e) => {
     if (dragging) return
+    if (activeId) { setActiveId(null); return }
     if (!selected) return
     const { x, y } = getRelativePos(e)
     onPlace(x, y)
   }
 
+  // Klik w piktogram — zaznacz go (bez propagacji do mapy)
+  const handleItemClick = (e, id) => {
+    e.stopPropagation()
+    if (dragging) return
+    setActiveId(prev => prev === id ? null : id)
+  }
+
+  // Drag
   const handleMouseDown = (e, id) => {
     e.stopPropagation()
     const rect = containerRef.current.getBoundingClientRect()
+    const item = items.find(i => i.id === id)
     setDragging({
       id,
-      startX: e.clientX,
-      startY: e.clientY,
-      origX: items.find(i => i.id === id).x,
-      origY: items.find(i => i.id === id).y,
-      width: rect.width,
-      height: rect.height,
+      startX:  e.clientX,
+      startY:  e.clientY,
+      origX:   item.x,
+      origY:   item.y,
+      width:   rect.width,
+      height:  rect.height,
     })
   }
 
   const handleMouseMove = useCallback((e) => {
     if (!dragging) return
-    const dx = ((e.clientX - dragging.startX) / dragging.width) * 100
+    const dx = ((e.clientX - dragging.startX) / dragging.width)  * 100
     const dy = ((e.clientY - dragging.startY) / dragging.height) * 100
     onUpdate(dragging.id, {
       x: Math.max(0, Math.min(100, dragging.origX + dx)),
@@ -49,11 +61,18 @@ export default function MapEditor({ mapImageUrl, items, selected, onPlace, onUpd
 
   const handleMouseUp = () => setDragging(null)
 
-  const changeSize = (id, delta) => {
+  const changeSize = (e, id, delta) => {
+    e.stopPropagation()
     const item = items.find(i => i.id === id)
     if (!item) return
-    const newSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, (item.size || 1) + delta))
+    const newSize = parseFloat(Math.max(MIN_SIZE, Math.min(MAX_SIZE, (item.size || 1) + delta)).toFixed(2))
     onUpdate(id, { size: newSize })
+  }
+
+  const handleDelete = (e, id) => {
+    e.stopPropagation()
+    setActiveId(null)
+    onDelete(id)
   }
 
   return (
@@ -63,7 +82,11 @@ export default function MapEditor({ mapImageUrl, items, selected, onPlace, onUpd
         <span>📍 <b>{locationName || 'Brak nazwy'}</b></span>
         {coords && <span className="text-gray-400">{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</span>}
         <span className="ml-auto text-gray-400">
-          {selected ? `✏️ Kliknij na mapie aby umieścić: ${selected.emoji}` : 'Wybierz piktogram z lewego panelu'}
+          {activeId
+            ? '✏️ Kliknij − / + aby zmienić rozmiar, × aby usunąć. Kliknij mapę aby odznaczyć.'
+            : selected
+              ? `Kliknij na mapie aby umieścić: ${selected.emoji}`
+              : 'Kliknij piktogram na liście, potem kliknij na mapie. Kliknij umieszczony symbol aby go edytować.'}
         </span>
       </div>
 
@@ -71,71 +94,87 @@ export default function MapEditor({ mapImageUrl, items, selected, onPlace, onUpd
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden select-none"
-        style={{ cursor: selected ? 'crosshair' : 'default' }}
+        style={{ cursor: selected && !activeId ? 'crosshair' : 'default' }}
         onClick={handleMapClick}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Mapa satelitarna */}
-        {mapImageUrl ? (
-          <img
-            src={mapImageUrl}
-            alt="mapa"
-            className="absolute inset-0 w-full h-full object-fill"
-            crossOrigin="anonymous"
-            draggable={false}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500">
-            Ładowanie mapy...
-          </div>
-        )}
+        {/* Tło satelitarne */}
+        {mapImageUrl
+          ? <img src={mapImageUrl} alt="mapa" className="absolute inset-0 w-full h-full object-fill" crossOrigin="anonymous" draggable={false} />
+          : <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500">Ładowanie mapy...</div>
+        }
 
         {/* Piktogramy */}
-        {items.map(item => (
-          <div
-            key={item.id}
-            className="absolute group"
-            style={{
-              left: `${item.x}%`,
-              top: `${item.y}%`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: dragging?.id === item.id ? 100 : 10,
-              cursor: 'grab',
-            }}
-            onMouseDown={e => handleMouseDown(e, item.id)}
-          >
-            {/* Symbol */}
+        {items.map(item => {
+          const isActive = activeId === item.id
+          return (
             <div
-              className="relative flex flex-col items-center"
-              style={{ transform: `scale(${item.size || 1})`, transformOrigin: 'center bottom' }}
+              key={item.id}
+              className="absolute"
+              style={{
+                left: `${item.x}%`,
+                top:  `${item.y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: isActive ? 100 : 10,
+                cursor: dragging?.id === item.id ? 'grabbing' : 'grab',
+              }}
+              onClick={e => handleItemClick(e, item.id)}
+              onMouseDown={e => handleMouseDown(e, item.id)}
             >
-              <span
-                className="text-3xl leading-none drop-shadow-lg"
-                style={item.type === 'arrow' ? { color: item.color, fontSize: `${2 * (item.size || 1)}rem` } : {}}
-              >
-                {item.emoji}
-              </span>
-              {item.label && (
-                <span className="mt-0.5 px-1 bg-white/90 text-gray-900 text-xs rounded shadow whitespace-nowrap font-semibold">
-                  {item.label}
-                </span>
+              {/* Pasek kontrolny — widoczny TYLKO gdy zaznaczony */}
+              {isActive && (
+                <div
+                  className="absolute -top-10 left-1/2 flex gap-1 z-50 bg-white rounded-xl shadow-lg px-2 py-1.5 border border-gray-200"
+                  style={{ transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <button
+                    onClick={e => changeSize(e, item.id, -SIZE_STEP)}
+                    disabled={(item.size || 1) <= MIN_SIZE}
+                    className="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-sm flex items-center justify-center disabled:opacity-30"
+                  >−</button>
+                  <span className="text-xs self-center px-1.5 font-mono min-w-[3rem] text-center">
+                    {Math.round((item.size || 1) * 100)}%
+                  </span>
+                  <button
+                    onClick={e => changeSize(e, item.id, SIZE_STEP)}
+                    disabled={(item.size || 1) >= MAX_SIZE}
+                    className="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-sm flex items-center justify-center disabled:opacity-30"
+                  >+</button>
+                  <button
+                    onClick={e => handleDelete(e, item.id)}
+                    className="w-7 h-7 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg font-bold text-sm flex items-center justify-center ml-1"
+                  >×</button>
+                </div>
               )}
-            </div>
 
-            {/* Kontrolki (hover) */}
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:flex gap-1 z-50 bg-white rounded shadow px-1 py-0.5">
-              <button onClick={e => { e.stopPropagation(); changeSize(item.id, -SIZE_STEP) }}
-                className="w-5 h-5 text-xs bg-gray-100 rounded hover:bg-gray-200 flex items-center justify-center font-bold">−</button>
-              <span className="text-xs self-center px-1">{((item.size || 1) * 100).toFixed(0)}%</span>
-              <button onClick={e => { e.stopPropagation(); changeSize(item.id, SIZE_STEP) }}
-                className="w-5 h-5 text-xs bg-gray-100 rounded hover:bg-gray-200 flex items-center justify-center font-bold">+</button>
-              <button onClick={e => { e.stopPropagation(); onDelete(item.id) }}
-                className="w-5 h-5 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 flex items-center justify-center font-bold ml-1">×</button>
+              {/* Symbol */}
+              <div
+                style={{
+                  transform:       `scale(${item.size || 1})`,
+                  transformOrigin: 'center bottom',
+                  outline: isActive ? '2px dashed #3b82f6' : 'none',
+                  borderRadius: '4px',
+                  padding: '2px',
+                }}
+              >
+                <span
+                  className="text-3xl leading-none drop-shadow-lg block"
+                  style={item.color ? { color: item.color } : {}}
+                >
+                  {item.emoji}
+                </span>
+                {item.label && (
+                  <span className="mt-0.5 px-1.5 bg-white/90 text-gray-900 text-xs rounded shadow whitespace-nowrap font-semibold block text-center">
+                    {item.label}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
