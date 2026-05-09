@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import PictogramPanel from './map/PictogramPanel'
 import MapEditor from './map/MapEditor'
-import { makePlacedItem } from '../utils/mapPictograms'
+import { makePlacedItem, DEFAULT_ARROW_COLORS } from '../utils/mapPictograms'
 
 // Napraw domyślne ikony Leaflet w Vite
 import L from 'leaflet'
@@ -37,7 +37,12 @@ export default function MapTab() {
   const [mapImageUrl, setMapImageUrl] = useState(null)
   const [items, setItems] = useState([])
   const [selected, setSelected] = useState(null)
+  const [arrowColors, setArrowColors] = useState(DEFAULT_ARROW_COLORS)
+  const [customPictograms, setCustomPictograms] = useState([])
   const editorRef = useRef(null)
+
+  const updateArrowColor = (id, label) =>
+    setArrowColors(prev => prev.map(c => c.id === id ? { ...c, label } : c))
 
   // Walidacja współrzędnych
   const coordsOk = !isNaN(parseFloat(coords.lat)) && !isNaN(parseFloat(coords.lng))
@@ -71,55 +76,43 @@ export default function MapTab() {
   }
 
   const handleExport = () => {
-    // Buduj legendę
-    const legend = items.reduce((acc, item) => {
-      const key = `${item.emoji} ${item.label || item.direction || ''}`
-      if (!acc.includes(key)) acc.push(key)
-      return acc
-    }, [])
-
     const win = window.open('', '_blank')
     if (!win) { alert('Zezwól na popup'); return }
 
-    // Pozycje piktogramów jako elementy HTML nakładamy na obraz
-    const itemsHtml = items.map(item => `
-      <div style="
-        position: absolute;
-        left: ${item.x}%;
-        top: ${item.y}%;
-        transform: translate(-50%, -50%) scale(${item.size || 1});
-        transform-origin: center bottom;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        pointer-events: none;
-      ">
-        <span style="
-          font-size: 2rem;
-          line-height: 1;
-          filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.7));
-          ${item.color ? `color: ${item.color};` : ''}
-        ">${item.emoji}</span>
-        ${item.label ? `<span style="
-          background: rgba(255,255,255,0.9);
-          color: #111;
-          font-size: 10px;
-          font-weight: 700;
-          padding: 1px 4px;
-          border-radius: 3px;
-          margin-top: 2px;
-          white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        ">${item.label}</span>` : ''}
-      </div>
-    `).join('')
+    // Elementy na mapie
+    const itemsHtml = items.map(item => {
+      const symbol = item.type === 'custom' && item.imageUrl
+        ? `<img src="${item.imageUrl}" style="width:2rem;height:2rem;object-fit:contain;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.6));" />`
+        : `<span style="font-size:2rem;line-height:1;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.7));${item.color ? `color:${item.color};` : ''}display:inline-block;transform:rotate(${item.rotation || 0}deg);">${item.emoji}</span>`
+      return `<div style="position:absolute;left:${item.x}%;top:${item.y}%;transform:translate(-50%,-50%) scale(${item.size||1});transform-origin:center bottom;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+        ${symbol}
+        ${item.label ? `<span style="background:rgba(255,255,255,0.9);color:#111;font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;margin-top:2px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.3);">${item.label}</span>` : ''}
+      </div>`
+    }).join('')
 
-    const legendHtml = legend.length > 0 ? `
-      <div style="padding: 8mm 15mm; background: #f9f9f9; border-top: 2px solid #2d6a2d;">
-        <h3 style="font-size: 11pt; margin: 0 0 4mm; color: #1a4a1a;">Legenda</h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 4mm 8mm;">
-          ${legend.map(l => `<span style="font-size: 10pt;">${l}</span>`).join('')}
-        </div>
+    // Legenda — strzałki pogrupowane po kolorze, piktogramy osobno
+    const usedArrowColors = arrowColors.filter(c => items.some(i => i.type === 'arrow' && i.colorId === c.id))
+    const usedPictograms  = items.filter(i => i.type !== 'arrow').reduce((acc, i) => {
+      if (!acc.find(a => a.label === i.label)) acc.push(i)
+      return acc
+    }, [])
+    const usedCustom = items.filter(i => i.type === 'custom').reduce((acc, i) => {
+      if (!acc.find(a => a.label === i.label)) acc.push(i)
+      return acc
+    }, [])
+
+    const legendHtml = (usedArrowColors.length || usedPictograms.length || usedCustom.length) ? `
+      <div style="padding:6mm 10mm;background:#f9f9f9;border-top:2px solid #2d6a2d;display:flex;gap:8mm;flex-wrap:wrap;">
+        <div><b style="font-size:10pt;color:#1a4a1a;">Legenda</b></div>
+        ${usedArrowColors.map(c => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
+          <span style="color:${c.hex};font-size:1.2rem;">↑</span>
+          <span>${c.label}</span></div>`).join('')}
+        ${usedPictograms.map(i => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
+          <span style="font-size:1.1rem;">${i.emoji}</span>
+          <span>${i.label}</span></div>`).join('')}
+        ${usedCustom.map(i => `<div style="display:flex;align-items:center;gap:3mm;font-size:9pt;">
+          <img src="${i.imageUrl}" style="width:1.2rem;height:1.2rem;object-fit:contain;" />
+          <span>${i.label}</span></div>`).join('')}
       </div>
     ` : ''
 
@@ -263,7 +256,14 @@ export default function MapTab() {
           <button onClick={() => { setStep('navigate'); setItems([]) }}
             className="text-xs text-gray-400 hover:text-gray-700">← Zmień widok</button>
         </div>
-        <PictogramPanel selected={selected} onSelect={setSelected} />
+        <PictogramPanel
+            selected={selected}
+            onSelect={setSelected}
+            arrowColors={arrowColors}
+            onUpdateArrowColor={updateArrowColor}
+            customPictograms={customPictograms}
+            onAddCustom={p => setCustomPictograms(prev => [...prev, p])}
+          />
       </aside>
 
       {/* Mapa */}
