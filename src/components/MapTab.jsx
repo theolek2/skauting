@@ -29,6 +29,86 @@ function esriUrl(bounds, w = 1200, h = 800) {
   return `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=${bbox}&bboxSR=4326&size=${w},${h}&imageSR=4326&format=png32&f=image`
 }
 
+// Nakładka pokazująca kadr PDF — czerwone tło poza obszarem wydruku
+function CropOverlay({ ratio }) {
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 500 }}>
+      <svg
+        width="100%" height="100%"
+        style={{ position: 'absolute', inset: 0 }}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          {/* Maska: biała = pokazuj tło, czarna = przezroczyste (kadr) */}
+          <mask id="frame-mask">
+            <rect width="100%" height="100%" fill="white" />
+            {/* Kadr wyśrodkowany z proporcjami PDF */}
+            <CropRect ratio={ratio} />
+          </mask>
+        </defs>
+        {/* Czerwone tło maskowane — widoczne tylko POZA kadrem */}
+        <rect width="100%" height="100%" fill="rgba(220,38,38,0.45)" mask="url(#frame-mask)" />
+      </svg>
+      {/* Biała ramka kadru */}
+      <CropBorder ratio={ratio} />
+    </div>
+  )
+}
+
+// Renderuje prostokąt kadru jako czarną dziurę w masce SVG
+function CropRect({ ratio }) {
+  // Używamy foreignObject trick — liczymy przez CSS
+  // Zamiast tego użyjemy viewBox i obliczeń procentowych
+  // Kadr: wyśrodkowany, aspect-ratio = ratio
+  // Jeśli kontener W×H: jeśli W/H > ratio → kadr W'=H*ratio, H'=H; else W'=W, H'=W/ratio
+  // Wyrażamy przez SVG units (viewport = 1000×1000 dla wygody)
+  const VW = 1000, VH = 1000
+  let cw, ch
+  if (VW / VH > ratio) { ch = VH; cw = VH * ratio }
+  else { cw = VW; ch = VW / ratio }
+  const cx = (VW - cw) / 2
+  const cy = (VH - ch) / 2
+  return (
+    <svg viewBox={`0 0 ${VW} ${VH}`} width="100%" height="100%" preserveAspectRatio="none" style={{position:'absolute',inset:0}}>
+      <rect x={cx} y={cy} width={cw} height={ch} fill="black" />
+    </svg>
+  )
+}
+
+// Renderuje białą ramkę + label
+function CropBorder({ ratio }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        aspectRatio: `${ratio}`,
+        maxWidth: '100%',
+        maxHeight: '100%',
+        border: '2px dashed rgba(255,255,255,0.9)',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
+        position: 'relative',
+      }}>
+        <span style={{
+          position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 10px',
+          borderRadius: 4, fontSize: 11, whiteSpace: 'nowrap',
+        }}>
+          ✅ Ta strefa trafi do PDF
+        </span>
+        <span style={{
+          position: 'absolute', bottom: 6, right: 8,
+          background: 'rgba(220,38,38,0.8)', color: 'white', padding: '2px 8px',
+          borderRadius: 4, fontSize: 10,
+        }}>
+          A4 poziomo
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export default function MapTab() {
   const [step, setStep] = useState('coords')   // 'coords' | 'navigate' | 'edit'
   const [coords, setCoords] = useState({ lat: '', lng: '' })
@@ -208,15 +288,21 @@ export default function MapTab() {
   }
 
   // ── KROK 2: Nawiguj po mapie ──────────────────────────────────────────
+  // Proporcje kadru PDF: 297mm × 170mm (A4 landscape minus nagłówek/stopka)
+  const PDF_RATIO = 297 / 170  // ≈ 1.747
+
   if (step === 'navigate') {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Topbar */}
         <div className="flex items-center gap-4 px-4 py-2.5 bg-green-800 text-white shrink-0">
           <button onClick={() => setStep('coords')} className="text-white/70 hover:text-white text-sm">← Wróć</button>
           <span className="font-semibold text-sm">📍 {locationName || 'Brak nazwy'}</span>
           <span className="text-green-300 text-xs">{coords.lat}, {coords.lng}</span>
           <div className="ml-auto flex gap-3 items-center">
-            <p className="text-green-300 text-xs">Ustaw widok mapy, a następnie wygeneruj mapę obozu</p>
+            <p className="text-green-300 text-xs hidden md:block">
+              🔴 Czerwona strefa = poza kadrem PDF · Ustaw widok i kliknij Generuj
+            </p>
             <button
               onClick={handleGenerateMap}
               className="bg-white text-green-800 font-bold px-5 py-1.5 rounded-lg hover:bg-green-50 text-sm"
@@ -226,24 +312,29 @@ export default function MapTab() {
           </div>
         </div>
 
-        <MapContainer
-          center={[parseFloat(coords.lat), parseFloat(coords.lng)]}
-          zoom={15}
-          style={{ flex: 1 }}
-          className="flex-1"
-        >
-          <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            attribution="Tiles © Esri"
-            maxZoom={19}
-          />
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap contributors"
-            opacity={0.3}
-          />
-          <MapEventsCapture onReady={setMapRef} />
-        </MapContainer>
+        {/* Mapa z nakładką kadru */}
+        <div className="flex-1 relative overflow-hidden">
+          <MapContainer
+            center={[parseFloat(coords.lat), parseFloat(coords.lng)]}
+            zoom={15}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution="Tiles © Esri"
+              maxZoom={19}
+            />
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="© OpenStreetMap contributors"
+              opacity={0.3}
+            />
+            <MapEventsCapture onReady={setMapRef} />
+          </MapContainer>
+
+          {/* Nakładka kadru — SVG z dziurą w proporcjach PDF */}
+          <CropOverlay ratio={PDF_RATIO} />
+        </div>
       </div>
     )
   }
