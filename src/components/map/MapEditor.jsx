@@ -1,163 +1,304 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 
-const MIN_SIZE = 0.5
-const MAX_SIZE = 3.0
-const SIZE_STEP = 0.25
+const BASE_PX = 48  // rozmiar bazowy symbolu w px
 
 export default function MapEditor({ mapImageUrl, items, selected, onPlace, onUpdate, onDelete, coords, locationName }) {
   const containerRef = useRef(null)
-  const [dragging, setDragging] = useState(null)
-  const [activeId, setActiveId] = useState(null)
+  const [activeId, setActiveId]   = useState(null)
+  const [drag, setDrag]           = useState(null)  // { type: 'move'|'resize'|'rotate', ... }
 
-  const getPos = (e) => {
-    const rect = containerRef.current.getBoundingClientRect()
-    return {
-      x: ((e.clientX - rect.left) / rect.width)  * 100,
-      y: ((e.clientY - rect.top)  / rect.height) * 100,
-    }
+  // ── Helpery ──────────────────────────────────────────────────────────────
+  const getContainerRect = () => containerRef.current?.getBoundingClientRect() || { left:0, top:0, width:1, height:1 }
+
+  const pct2px = ({ x, y }) => {
+    const r = getContainerRect()
+    return { px: r.left + x / 100 * r.width, py: r.top + y / 100 * r.height }
   }
 
+  // ── Global mouse events ───────────────────────────────────────────────────
+  const handleMouseMove = useCallback((e) => {
+    if (!drag) return
+    const r = getContainerRect()
+
+    if (drag.type === 'move') {
+      const dx = (e.clientX - drag.startX) / r.width  * 100
+      const dy = (e.clientY - drag.startY) / r.height * 100
+      onUpdate(drag.id, {
+        x: Math.max(0, Math.min(100, drag.ox + dx)),
+        y: Math.max(0, Math.min(100, drag.oy + dy)),
+      })
+    }
+
+    if (drag.type === 'resize') {
+      // Odległość od centrum elementu do myszy → skaluj
+      const item = items.find(i => i.id === drag.id)
+      if (!item) return
+      const cx = r.left + item.x / 100 * r.width
+      const cy = r.top  + item.y / 100 * r.height
+      const dist = Math.sqrt((e.clientX - cx)**2 + (e.clientY - cy)**2)
+      const newSize = Math.max(0.3, Math.min(5, dist / drag.baseDist * drag.origSize))
+      onUpdate(drag.id, { size: parseFloat(newSize.toFixed(2)) })
+    }
+
+    if (drag.type === 'rotate') {
+      const item = items.find(i => i.id === drag.id)
+      if (!item) return
+      const cx = r.left + item.x / 100 * r.width
+      const cy = r.top  + item.y / 100 * r.height
+      const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90
+      onUpdate(drag.id, { rotation: Math.round(angle) % 360 })
+    }
+  }, [drag, items, onUpdate])
+
+  const handleMouseUp = useCallback(() => setDrag(null), [])
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup',   handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup',   handleMouseUp)
+    }
+  }, [handleMouseMove, handleMouseUp])
+
+  // ── Klik w mapę ───────────────────────────────────────────────────────────
   const handleMapClick = (e) => {
-    if (dragging) return
+    if (drag) return
     if (activeId) { setActiveId(null); return }
     if (!selected) return
-    const { x, y } = getPos(e)
+    const r = getContainerRect()
+    const x = (e.clientX - r.left) / r.width  * 100
+    const y = (e.clientY - r.top)  / r.height * 100
     onPlace(x, y)
   }
 
   const handleItemClick = (e, id) => {
     e.stopPropagation()
-    if (dragging) return
     setActiveId(prev => prev === id ? null : id)
   }
 
-  const handleMouseDown = (e, id) => {
+  const startMove = (e, item) => {
     e.stopPropagation()
-    const rect = containerRef.current.getBoundingClientRect()
-    const item = items.find(i => i.id === id)
-    setDragging({ id, startX: e.clientX, startY: e.clientY, origX: item.x, origY: item.y, W: rect.width, H: rect.height })
+    setDrag({ type: 'move', id: item.id, startX: e.clientX, startY: e.clientY, ox: item.x, oy: item.y })
   }
 
-  const handleMouseMove = useCallback((e) => {
-    if (!dragging) return
-    const dx = ((e.clientX - dragging.startX) / dragging.W) * 100
-    const dy = ((e.clientY - dragging.startY) / dragging.H) * 100
-    onUpdate(dragging.id, {
-      x: Math.max(0, Math.min(100, dragging.origX + dx)),
-      y: Math.max(0, Math.min(100, dragging.origY + dy)),
-    })
-  }, [dragging, onUpdate])
-
-  const handleMouseUp = () => setDragging(null)
-
-  const changeSize = (e, id, delta) => {
+  const startResize = (e, item) => {
     e.stopPropagation()
-    const item = items.find(i => i.id === id)
-    if (!item) return
-    const s = parseFloat(Math.max(MIN_SIZE, Math.min(MAX_SIZE, (item.size || 1) + delta)).toFixed(2))
-    onUpdate(id, { size: s })
+    e.preventDefault()
+    const r = getContainerRect()
+    const cx = r.left + item.x / 100 * r.width
+    const cy = r.top  + item.y / 100 * r.height
+    const dist = Math.sqrt((e.clientX - cx)**2 + (e.clientY - cy)**2)
+    setDrag({ type: 'resize', id: item.id, baseDist: dist || 1, origSize: item.size || 1 })
   }
 
-  const changeRotation = (e, id, deg) => {
+  const startRotate = (e, item) => {
     e.stopPropagation()
-    const item = items.find(i => i.id === id)
-    if (!item) return
-    onUpdate(id, { rotation: ((item.rotation || 0) + deg + 360) % 360 })
+    e.preventDefault()
+    setDrag({ type: 'rotate', id: item.id })
   }
 
-  const handleDelete = (e, id) => {
-    e.stopPropagation()
-    setActiveId(null)
-    onDelete(id)
-  }
+  // ── Rozmiar bazowy ────────────────────────────────────────────────────────
+  const itemSize = (item) => `${BASE_PX * (item.size || 1)}px`
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
+      {/* Info bar */}
       <div className="flex items-center gap-4 px-3 py-2 bg-gray-800 text-white text-xs shrink-0">
         <span>📍 <b>{locationName || '—'}</b></span>
         {coords && <span className="text-gray-400">{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</span>}
         <span className="ml-auto text-gray-400">
-          {activeId ? 'Kliknij mapę aby odznaczyć' : selected ? `Kliknij mapę: ${selected.emoji || '📌'}` : 'Wybierz piktogram z lewego panelu'}
+          {activeId ? 'Przeciągnij symbol · uchwyty do skalowania · ⟳ do rotacji'
+            : selected ? `Kliknij mapę: ${selected.emoji || '📌'}`
+            : 'Wybierz piktogram z lewego panelu'}
         </span>
       </div>
 
+      {/* Canvas obszar */}
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden select-none"
-        style={{ cursor: selected && !activeId ? 'crosshair' : 'default' }}
+        className="flex-1 relative overflow-hidden"
+        style={{ cursor: selected && !activeId ? 'crosshair' : 'default', userSelect: 'none' }}
         onClick={handleMapClick}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
       >
+        {/* Mapa satelitarna */}
         {mapImageUrl
           ? <img src={mapImageUrl} alt="mapa" className="absolute inset-0 w-full h-full object-fill" crossOrigin="anonymous" draggable={false} />
           : <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500">Ładowanie mapy...</div>
         }
 
+        {/* Piktogramy */}
         {items.map(item => {
           const isActive = activeId === item.id
-          const isArrow  = item.type === 'arrow'
+          const sz = (item.size || 1) * BASE_PX
+          const isArrow = item.type === 'arrow'
+
           return (
-            <div key={item.id} className="absolute"
-              style={{ left: `${item.x}%`, top: `${item.y}%`, transform: 'translate(-50%,-50%)', zIndex: isActive ? 100 : 10, cursor: dragging?.id === item.id ? 'grabbing' : 'grab' }}
+            <div
+              key={item.id}
+              className="absolute"
+              style={{
+                left: `${item.x}%`,
+                top:  `${item.y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: isActive ? 200 : 10,
+                cursor: drag?.id === item.id && drag?.type === 'move' ? 'grabbing' : 'grab',
+              }}
               onClick={e => handleItemClick(e, item.id)}
-              onMouseDown={e => handleMouseDown(e, item.id)}
+              onMouseDown={e => isActive && startMove(e, item)}
             >
-              {/* Pasek kontrolny */}
-              {isActive && (
-                <div
-                  className="absolute flex gap-1 z-50 bg-white rounded-xl shadow-lg px-2 py-1.5 border border-gray-200"
-                  style={{ bottom: '110%', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  {/* Rozmiar */}
-                  <button onClick={e => changeSize(e, item.id, -SIZE_STEP)} disabled={(item.size||1) <= MIN_SIZE}
-                    className="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded font-bold text-sm flex items-center justify-center disabled:opacity-30">−</button>
-                  <span className="text-xs self-center px-1 font-mono min-w-[2.5rem] text-center">{Math.round((item.size||1)*100)}%</span>
-                  <button onClick={e => changeSize(e, item.id, SIZE_STEP)} disabled={(item.size||1) >= MAX_SIZE}
-                    className="w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded font-bold text-sm flex items-center justify-center disabled:opacity-30">+</button>
-
-                  {/* Obrót — tylko dla strzałek */}
-                  {isArrow && <>
-                    <div className="w-px bg-gray-200 mx-1" />
-                    <button onClick={e => changeRotation(e, item.id, -45)}
-                      className="w-7 h-7 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-bold text-sm flex items-center justify-center">↺</button>
-                    <span className="text-xs self-center px-1 font-mono min-w-[2.5rem] text-center">{item.rotation || 0}°</span>
-                    <button onClick={e => changeRotation(e, item.id, 45)}
-                      className="w-7 h-7 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-bold text-sm flex items-center justify-center">↻</button>
-                  </>}
-
-                  <div className="w-px bg-gray-200 mx-1" />
-                  <button onClick={e => handleDelete(e, item.id)}
-                    className="w-7 h-7 bg-red-100 hover:bg-red-200 text-red-600 rounded font-bold text-sm flex items-center justify-center">×</button>
-                </div>
-              )}
-
               {/* Symbol */}
               <div style={{
-                transform: `scale(${item.size||1})`,
-                transformOrigin: 'center bottom',
+                position: 'relative',
+                display: 'inline-flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 outline: isActive ? '2px dashed #3b82f6' : 'none',
-                borderRadius: '4px', padding: '2px',
+                outlineOffset: '4px',
+                borderRadius: '4px',
+                padding: '2px',
               }}>
                 {item.type === 'custom' && item.imageUrl
-                  ? <img src={item.imageUrl} alt={item.label} className="w-10 h-10 object-contain drop-shadow-lg" />
-                  : <span className="text-3xl leading-none drop-shadow-lg block"
-                      style={{
-                        color: item.color || undefined,
-                        display: 'inline-block',
-                        transform: isArrow ? `rotate(${item.rotation || 0}deg)` : 'none',
-                      }}>
+                  ? <img src={item.imageUrl} alt={item.label} style={{ width: sz, height: sz, objectFit: 'contain', filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.5))' }} draggable={false} />
+                  : <span style={{
+                      fontSize: sz,
+                      lineHeight: 1,
+                      display: 'inline-block',
+                      color: item.color || undefined,
+                      transform: isArrow ? `rotate(${item.rotation || 0}deg)` : 'none',
+                      filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.5))',
+                    }}>
                       {item.emoji}
                     </span>
                 }
-                {item.label && (
-                  <span className="mt-0.5 px-1.5 bg-white/90 text-gray-900 text-xs rounded shadow whitespace-nowrap font-semibold block text-center">
+                {item.showLabel !== false && item.label && (
+                  <span style={{
+                    marginTop: 2,
+                    padding: '1px 5px',
+                    background: 'rgba(255,255,255,0.92)',
+                    color: '#111',
+                    fontSize: Math.max(9, sz * 0.28),
+                    fontWeight: 700,
+                    borderRadius: 3,
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  }}>
                     {item.label}
                   </span>
                 )}
               </div>
+
+              {/* ── Uchwyty Canva (tylko gdy aktywny) ── */}
+              {isActive && (() => {
+                const half = sz / 2 + 4
+                const corners = [[-1,-1],[1,-1],[1,1],[-1,1]]
+                const edges   = [[0,-1],[1,0],[0,1],[-1,0]]
+                return <>
+                  {/* Narożniki — skalowanie */}
+                  {corners.map(([cx, cy], i) => (
+                    <div key={`c${i}`}
+                      onMouseDown={e => startResize(e, item)}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(50% + ${cx * half}px)`,
+                        top:  `calc(50% + ${cy * half}px)`,
+                        transform: 'translate(-50%,-50%)',
+                        width: 12, height: 12,
+                        background: 'white',
+                        border: '2px solid #3b82f6',
+                        borderRadius: '50%',
+                        cursor: 'nwse-resize',
+                        zIndex: 300,
+                      }}
+                    />
+                  ))}
+                  {/* Środki krawędzi — skalowanie */}
+                  {edges.map(([cx, cy], i) => (
+                    <div key={`e${i}`}
+                      onMouseDown={e => startResize(e, item)}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(50% + ${cx * half}px)`,
+                        top:  `calc(50% + ${cy * half}px)`,
+                        transform: 'translate(-50%,-50%)',
+                        width: 10, height: 10,
+                        background: 'white',
+                        border: '2px solid #3b82f6',
+                        borderRadius: 2,
+                        cursor: cx === 0 ? 'ns-resize' : 'ew-resize',
+                        zIndex: 300,
+                      }}
+                    />
+                  ))}
+
+                  {/* Uchwyt rotacji (góra) */}
+                  <div
+                    onMouseDown={e => startRotate(e, item)}
+                    title="Obróć"
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: `calc(50% - ${half + 20}px)`,
+                      transform: 'translate(-50%,-50%)',
+                      width: 16, height: 16,
+                      background: '#3b82f6',
+                      borderRadius: '50%',
+                      cursor: 'grab',
+                      zIndex: 300,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', fontSize: 10,
+                    }}
+                  >↻</div>
+
+                  {/* Pasek akcji */}
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      bottom: `calc(100% + ${half}px)`,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 10,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      padding: '4px 8px',
+                      display: 'flex',
+                      gap: 6,
+                      alignItems: 'center',
+                      whiteSpace: 'nowrap',
+                      zIndex: 400,
+                    }}
+                  >
+                    {/* Rotacja stopnie */}
+                    {item.rotation !== undefined && (
+                      <span style={{ fontSize: 11, color: '#555', minWidth: 36, textAlign: 'center' }}>
+                        {item.rotation || 0}°
+                      </span>
+                    )}
+
+                    {/* Toggle etykiety */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, cursor: 'pointer', color: '#555' }}>
+                      <input
+                        type="checkbox"
+                        checked={item.showLabel !== false}
+                        onChange={e => onUpdate(item.id, { showLabel: e.target.checked })}
+                        style={{ width: 12, height: 12 }}
+                      />
+                      Opis
+                    </label>
+
+                    <div style={{ width: 1, background: '#e5e7eb', height: 16 }} />
+
+                    {/* Usuń */}
+                    <button
+                      onClick={e => { e.stopPropagation(); setActiveId(null); onDelete(item.id) }}
+                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+                    >×</button>
+                  </div>
+                </>
+              })()}
             </div>
           )
         })}
