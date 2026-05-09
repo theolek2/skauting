@@ -43,6 +43,18 @@ export default function MapEditor({
       const d = Math.sqrt((e.clientX-cx)**2+(e.clientY-cy)**2)
       onUpdate(drag.id, { size: parseFloat(Math.max(0.3,Math.min(5,d/drag.baseDist*drag.origSize)).toFixed(2)) })
     }
+    if (drag.type === 'stretchX') {
+      const item = items.find(i=>i.id===drag.id); if (!item) return
+      const dx = (e.clientX - drag.startX) / r.width * 100
+      const newSX = Math.max(0.2, Math.min(8, drag.origSX + dx * drag.dir * 0.05))
+      onUpdate(drag.id, { scaleX: parseFloat(newSX.toFixed(2)) })
+    }
+    if (drag.type === 'stretchY') {
+      const item = items.find(i=>i.id===drag.id); if (!item) return
+      const dy = (e.clientY - drag.startY) / r.height * 100
+      const newSY = Math.max(0.2, Math.min(8, drag.origSY + dy * drag.dir * 0.05))
+      onUpdate(drag.id, { scaleY: parseFloat(newSY.toFixed(2)) })
+    }
     if (drag.type === 'rotate') {
       const item = items.find(i=>i.id===drag.id); if (!item) return
       const cx = r.left + item.x/100*r.width, cy = r.top + item.y/100*r.height
@@ -84,6 +96,8 @@ export default function MapEditor({
   const startMove = (e,item) => { e.stopPropagation(); const r=getRect(); setDrag({type:'move',id:item.id,startX:e.clientX,startY:e.clientY,ox:item.x,oy:item.y,W:r.width,H:r.height}) }
   const startResize = (e,item) => { e.stopPropagation(); e.preventDefault(); const r=getRect(); const cx=r.left+item.x/100*r.width,cy=r.top+item.y/100*r.height; const d=Math.sqrt((e.clientX-cx)**2+(e.clientY-cy)**2); setDrag({type:'resize',id:item.id,baseDist:d||1,origSize:item.size||1}) }
   const startRotate = (e,item) => { e.stopPropagation(); e.preventDefault(); setDrag({type:'rotate',id:item.id}) }
+  const startStretchX = (e,item,dir) => { e.stopPropagation(); e.preventDefault(); setDrag({type:'stretchX',id:item.id,startX:e.clientX,origSX:item.scaleX||1,dir}) }
+  const startStretchY = (e,item,dir) => { e.stopPropagation(); e.preventDefault(); setDrag({type:'stretchY',id:item.id,startY:e.clientY,origSY:item.scaleY||1,dir}) }
 
   // ── Render SVG paths ──────────────────────────────────────────────────────
   const renderPaths = (allPaths, extraPts, extraColor) => (
@@ -181,9 +195,10 @@ export default function MapEditor({
                       style={{ width:sz, height:sz, objectFit:'contain', filter:'drop-shadow(1px 1px 2px rgba(0,0,0,.5))',
                         transform:`rotate(${item.rotation||0}deg)` }} />
                   : isArrow
-                    ? <svg viewBox="0 0 24 24" style={{ width:sz, height:sz, display:'block',
+                    ? <svg viewBox="0 0 24 24" style={{ width:sz*(item.scaleX||1), height:sz*(item.scaleY||1), display:'block',
                         filter:'drop-shadow(1px 1px 2px rgba(0,0,0,.5))',
-                        transform:`rotate(${item.rotation||0}deg)` }}>
+                        transform:`rotate(${item.rotation||0}deg)`,
+                        transformOrigin:'center center' }}>
                         <path fill={item.color||'#ef4444'} d="M12 2L4 10h5v12h6V10h5z"/>
                       </svg>
                     : <span style={{ fontSize:sz, lineHeight:1, display:'inline-block',
@@ -219,6 +234,24 @@ export default function MapEditor({
                     transform:'translate(-50%,-50%)', width:16, height:16,
                     background:'#3b82f6', borderRadius:'50%', cursor:'grab', zIndex:300,
                     display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:10 }}>↻</div>
+
+                  {/* Uchwyty rozciągania (tylko strzałki) */}
+                  {isArrow && <>
+                    {/* Lewa/prawa — scaleX */}
+                    <div onMouseDown={e=>startStretchX(e,item,-1)} title="Rozciągnij ←"
+                      style={{position:'absolute',left:`calc(50% - ${half}px)`,top:'50%',transform:'translate(-50%,-50%)',
+                        width:14,height:20,background:'#f97316',borderRadius:3,cursor:'ew-resize',zIndex:300,opacity:.8}}/>
+                    <div onMouseDown={e=>startStretchX(e,item,1)} title="Rozciągnij →"
+                      style={{position:'absolute',left:`calc(50% + ${half}px)`,top:'50%',transform:'translate(-50%,-50%)',
+                        width:14,height:20,background:'#f97316',borderRadius:3,cursor:'ew-resize',zIndex:300,opacity:.8}}/>
+                    {/* Góra/dół — scaleY */}
+                    <div onMouseDown={e=>startStretchY(e,item,-1)} title="Rozciągnij ↑"
+                      style={{position:'absolute',left:'50%',top:`calc(50% - ${half}px)`,transform:'translate(-50%,-50%)',
+                        width:20,height:14,background:'#f97316',borderRadius:3,cursor:'ns-resize',zIndex:300,opacity:.8}}/>
+                    <div onMouseDown={e=>startStretchY(e,item,1)} title="Rozciągnij ↓"
+                      style={{position:'absolute',left:'50%',top:`calc(50% + ${half}px)`,transform:'translate(-50%,-50%)',
+                        width:20,height:14,background:'#f97316',borderRadius:3,cursor:'ns-resize',zIndex:300,opacity:.8}}/>
+                  </>}
                 </>
               })()}
             </div>

@@ -261,8 +261,6 @@ export default function MapTab() {
         <PictogramPanel
             selected={selected}
             onSelect={setSelected}
-            arrowColors={arrowColors}
-            onUpdateArrowColor={updateArrowColor}
             customPictograms={customPictograms}
             onAddCustom={p => setCustomPictograms(prev => [...prev, p])}
           />
@@ -286,20 +284,41 @@ export default function MapTab() {
           paintColor={paintColor}
         />
 
-        {/* Prawy panel — malowanie */}
-        <div className="w-14 shrink-0 bg-white border-l border-gray-200 flex flex-col items-center py-3 gap-2">
+        {/* Prawy panel — strzałki + malowanie */}
+        <div className="w-16 shrink-0 bg-white border-l border-gray-200 flex flex-col items-center py-2 gap-1.5 overflow-y-auto">
+
+          {/* STRZAŁKI */}
+          <p className="text-gray-400 text-center leading-tight" style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>Strzałki</p>
+          {arrowColors.map(color => {
+            const isActive = selected?.type === 'arrow' && selected?.colorId === color.id
+            return (
+              <button key={color.id}
+                onClick={() => { setSelected({ type:'arrow', color:color.hex, colorId:color.id, label:color.label }); setPaintMode(false) }}
+                title={color.label}
+                className={`w-11 h-11 rounded-lg border-2 flex items-center justify-center transition ${
+                  isActive ? 'border-gray-700 scale-110' : 'border-gray-200 hover:border-gray-500'
+                }`}
+                style={{ backgroundColor: color.hex + '18' }}
+              >
+                <svg viewBox="0 0 24 24" style={{width:24,height:24}}>
+                  <path fill={color.hex} d="M12 2L4 10h5v12h6V10h5z"/>
+                </svg>
+              </button>
+            )
+          })}
+
+          <div className="w-10 border-t border-gray-200 my-1" />
+
+          {/* MALOWANIE */}
+          <p className="text-gray-400 text-center leading-tight" style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>Maluj</p>
           <button
             onClick={() => { setPaintMode(m => !m); setSelected(null) }}
             title="Tryb malowania"
-            className={`w-10 h-10 rounded-lg border-2 text-xl flex items-center justify-center transition ${
+            className={`w-11 h-11 rounded-lg border-2 text-xl flex items-center justify-center transition ${
               paintMode ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 hover:border-purple-400'
             }`}
           >🖌️</button>
 
-          {/* Separator */}
-          <div className="w-8 border-t border-gray-200" />
-
-          {/* Kolory */}
           {['#ef4444','#3b82f6','#22c55e','#f97316','#a855f7'].map(c => (
             <button key={c} onClick={() => { setPaintColor(c); setPaintMode(true); setSelected(null) }}
               title={c}
@@ -307,18 +326,16 @@ export default function MapTab() {
               style={{ backgroundColor: c }} />
           ))}
 
-          {/* Separator */}
-          <div className="w-8 border-t border-gray-200 mt-1" />
+          <div className="w-10 border-t border-gray-200 my-1" />
 
-          {/* Cofnij */}
           <button onClick={() => setPaths(prev => prev.slice(0,-1))}
             title="Cofnij ostatnią linię"
-            className="w-10 h-10 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 flex items-center justify-center">
+            className="w-11 h-9 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 flex items-center justify-center">
             ↩
           </button>
           <button onClick={() => setPaths([])}
             title="Wyczyść rysunki"
-            className="w-10 h-10 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 text-xs flex items-center justify-center">
+            className="w-11 h-9 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 text-xs flex items-center justify-center">
             🗑
           </button>
         </div>

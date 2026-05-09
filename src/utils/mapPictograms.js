@@ -59,6 +59,8 @@ export function makePlacedItem({ type, icon, imageUrl, label, color, colorId, x,
     colorId,
     x, y,
     size: 1,
+    scaleX: 1,
+    scaleY: 1,
     rotation: 0,
     showLabel: true,
   }
