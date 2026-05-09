@@ -341,109 +341,89 @@ export default function MapTab() {
 
   // ── KROK 3: Edytor piktogramów ────────────────────────────────────────
   return (
-    <div className="flex-1 flex overflow-hidden">
-      {/* Lewy panel */}
-      <aside className="w-64 shrink-0 bg-white border-r border-gray-200 p-3 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-green-800">🗂️ Piktogramy</h2>
+    <div className="flex-1 relative overflow-hidden" ref={editorRef}>
+
+      {/* MAPA — zajmuje całą przestrzeń */}
+      <MapEditor
+        mapImageUrl={mapImageUrl}
+        items={items}
+        selected={selected}
+        onPlace={handlePlace}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        coords={{ lat: parseFloat(coords.lat), lng: parseFloat(coords.lng) }}
+        locationName={locationName}
+        paths={paths}
+        onAddPath={p => setPaths(prev => [...prev, p])}
+        paintMode={paintMode}
+        paintColor={paintColor}
+      />
+
+      {/* LEWY PANEL — floating */}
+      <div className="absolute top-10 left-2 bottom-12 w-56 bg-white/95 backdrop-blur rounded-xl shadow-xl border border-gray-200 flex flex-col overflow-hidden z-40"
+        style={{maxHeight:'calc(100% - 56px)'}}>
+        <div className="flex items-center justify-between px-3 py-2 bg-green-700 rounded-t-xl shrink-0">
+          <span className="text-sm font-bold text-white">🗂️ Piktogramy</span>
           <button onClick={() => { setStep('navigate'); setItems([]) }}
-            className="text-xs text-gray-400 hover:text-gray-700">← Zmień widok</button>
+            className="text-white/70 hover:text-white text-xs">← Widok</button>
         </div>
-        <PictogramPanel
+        <div className="flex-1 overflow-y-auto p-2">
+          <PictogramPanel
             selected={selected}
             onSelect={setSelected}
             customPictograms={customPictograms}
             onAddCustom={p => setCustomPictograms(prev => [...prev, p])}
           />
-      </aside>
-
-      {/* Mapa + prawy panel */}
-      <div className="flex-1 flex overflow-hidden" ref={editorRef}>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <MapEditor
-          mapImageUrl={mapImageUrl}
-          items={items}
-          selected={selected}
-          onPlace={handlePlace}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          coords={{ lat: parseFloat(coords.lat), lng: parseFloat(coords.lng) }}
-          locationName={locationName}
-          paths={paths}
-          onAddPath={p => setPaths(prev => [...prev, p])}
-          paintMode={paintMode}
-          paintColor={paintColor}
-        />
-
-        {/* Prawy panel — strzałki + malowanie */}
-        <div className="w-16 shrink-0 bg-white border-l border-gray-200 flex flex-col items-center py-2 gap-1.5 overflow-y-auto">
-
-          {/* STRZAŁKI */}
-          <p className="text-gray-400 text-center leading-tight" style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>Strzałki</p>
-          {arrowColors.map(color => {
-            const isActive = selected?.type === 'arrow' && selected?.colorId === color.id
-            return (
-              <button key={color.id}
-                onClick={() => { setSelected({ type:'arrow', color:color.hex, colorId:color.id, label:color.label }); setPaintMode(false) }}
-                title={color.label}
-                className={`w-11 h-11 rounded-lg border-2 flex items-center justify-center transition ${
-                  isActive ? 'border-gray-700 scale-110' : 'border-gray-200 hover:border-gray-500'
-                }`}
-                style={{ backgroundColor: color.hex + '18' }}
-              >
-                <svg viewBox="0 0 24 24" style={{width:24,height:24}}>
-                  <path fill={color.hex} d="M12 2L4 10h5v12h6V10h5z"/>
-                </svg>
-              </button>
-            )
-          })}
-
-          <div className="w-10 border-t border-gray-200 my-1" />
-
-          {/* MALOWANIE */}
-          <p className="text-gray-400 text-center leading-tight" style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>Maluj</p>
-          <button
-            onClick={() => { setPaintMode(m => !m); setSelected(null) }}
-            title="Tryb malowania"
-            className={`w-11 h-11 rounded-lg border-2 text-xl flex items-center justify-center transition ${
-              paintMode ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 hover:border-purple-400'
-            }`}
-          >🖌️</button>
-
-          {['#ef4444','#3b82f6','#22c55e','#f97316','#a855f7'].map(c => (
-            <button key={c} onClick={() => { setPaintColor(c); setPaintMode(true); setSelected(null) }}
-              title={c}
-              className={`w-8 h-8 rounded-full border-2 transition ${paintColor===c && paintMode ? 'border-gray-800 scale-110' : 'border-transparent hover:border-gray-400'}`}
-              style={{ backgroundColor: c }} />
-          ))}
-
-          <div className="w-10 border-t border-gray-200 my-1" />
-
-          <button onClick={() => setPaths(prev => prev.slice(0,-1))}
-            title="Cofnij ostatnią linię"
-            className="w-11 h-9 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 flex items-center justify-center">
-            ↩
-          </button>
-          <button onClick={() => setPaths([])}
-            title="Wyczyść rysunki"
-            className="w-11 h-9 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 text-xs flex items-center justify-center">
-            🗑
-          </button>
         </div>
+      </div>
 
-        {/* Dolny pasek */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-white border-t border-gray-200 shrink-0">
-          <button onClick={() => setItems([])}
-            className="text-xs text-red-400 hover:text-red-600 border border-red-200 px-3 py-1.5 rounded-lg">
-            🗑 Wyczyść symbole
-          </button>
-          <button onClick={handleExport}
-            className="bg-green-700 text-white font-bold px-5 py-1.5 rounded-lg hover:bg-green-800 text-sm">
-            📄 Eksportuj mapę PDF
-          </button>
-        </div>
-      </div>  {/* koniec flex-1 flex-col */}
-      </div>  {/* koniec flex-1 flex (mapa + prawy panel) */}
+      {/* PRAWY PANEL — floating strzałki + malowanie */}
+      <div className="absolute top-10 right-2 bottom-12 w-14 bg-white/95 backdrop-blur rounded-xl shadow-xl border border-gray-200 flex flex-col items-center py-2 gap-1.5 overflow-y-auto z-40"
+        style={{maxHeight:'calc(100% - 56px)'}}>
+        <p style={{fontSize:8,fontWeight:700,textTransform:'uppercase',letterSpacing:1,color:'#9ca3af'}}>↑</p>
+        {arrowColors.map(color => {
+          const isActive = selected?.type === 'arrow' && selected?.colorId === color.id
+          return (
+            <button key={color.id}
+              onClick={() => { setSelected({ type:'arrow', color:color.hex, colorId:color.id, label:color.label }); setPaintMode(false) }}
+              title={color.label}
+              className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center transition ${isActive ? 'border-gray-700 scale-110' : 'border-gray-200 hover:border-gray-500'}`}
+              style={{ backgroundColor: color.hex + '18' }}
+            >
+              <svg viewBox="0 0 24 24" style={{width:22,height:22}}>
+                <path fill={color.hex} d="M12 2L4 10h5v12h6V10h5z"/>
+              </svg>
+            </button>
+          )
+        })}
+        <div className="w-8 border-t border-gray-200 my-1" />
+        <button onClick={() => { setPaintMode(m => !m); setSelected(null) }} title="Malowanie"
+          className={`w-10 h-10 rounded-lg border-2 text-lg flex items-center justify-center transition ${paintMode ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 hover:border-purple-400'}`}>
+          🖌️
+        </button>
+        {['#ef4444','#3b82f6','#22c55e','#f97316','#a855f7'].map(c => (
+          <button key={c} onClick={() => { setPaintColor(c); setPaintMode(true); setSelected(null) }}
+            className={`w-7 h-7 rounded-full border-2 transition ${paintColor===c&&paintMode?'border-gray-800 scale-110':'border-transparent hover:border-gray-400'}`}
+            style={{ backgroundColor: c }} />
+        ))}
+        <div className="w-8 border-t border-gray-200 my-1" />
+        <button onClick={() => setPaths(prev => prev.slice(0,-1))} title="Cofnij"
+          className="w-10 h-8 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 flex items-center justify-center">↩</button>
+        <button onClick={() => setPaths([])} title="Wyczyść rysunki"
+          className="w-10 h-8 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 text-xs flex items-center justify-center">🗑</button>
+      </div>
+
+      {/* DOLNY PASEK — floating */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 px-4 py-2 bg-white/95 backdrop-blur border-t border-gray-200 z-40">
+        <button onClick={() => setItems([])}
+          className="text-xs text-red-400 hover:text-red-600 border border-red-200 px-3 py-1.5 rounded-lg">
+          🗑 Wyczyść symbole
+        </button>
+        <button onClick={handleExport}
+          className="ml-auto bg-green-700 text-white font-bold px-5 py-1.5 rounded-lg hover:bg-green-800 text-sm">
+          📄 Eksportuj mapę PDF
+        </button>
+      </div>
     </div>
   )
 }
