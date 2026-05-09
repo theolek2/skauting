@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import ActivityPanel from './components/ActivityPanel'
 import DayCard from './components/DayCard'
 import TemplatePanel from './components/TemplatePanel'
+import MapTab from './components/MapTab'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -16,6 +17,7 @@ const DEFAULT_STATE = {
 export default function App() {
   const [state, setState] = useState(() => loadState() || DEFAULT_STATE)
   const [daysCount, setDaysCount] = useState('')
+  const [activeTab, setActiveTabMain] = useState('plan')  // 'plan' | 'map'
 
   const { meta, activities, days, template } = state
 
@@ -84,23 +86,50 @@ export default function App() {
             <p className="text-green-300 text-xs">Ramowy plan pracy · Skauci Europy</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Zakładki */}
+          <div className="flex bg-green-900 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setActiveTabMain('plan')}
+              className={`px-4 py-1.5 text-sm font-semibold transition ${
+                activeTab === 'plan' ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
+              }`}
+            >
+              📋 Plan zajęć
+            </button>
+            <button
+              onClick={() => setActiveTabMain('map')}
+              className={`px-4 py-1.5 text-sm font-semibold transition ${
+                activeTab === 'map' ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
+              }`}
+            >
+              🗺️ Mapa terenu
+            </button>
+          </div>
           <p className="text-green-400 text-xs hidden sm:block">by Aleksander Nasiłowski</p>
-          <button
-            onClick={handleExport}
-            className={`text-sm font-bold px-5 py-2 rounded-lg transition ${
-              metaOk
-                ? 'bg-white text-green-800 hover:bg-green-50'
-                : 'bg-green-600 text-green-200 cursor-not-allowed'
-            }`}
-          >
-            📄 Eksportuj PDF
-          </button>
+          {activeTab === 'plan' && (
+            <button
+              onClick={handleExport}
+              disabled={!metaOk}
+              className={`text-sm font-bold px-5 py-2 rounded-lg transition ${
+                metaOk ? 'bg-white text-green-800 hover:bg-green-50' : 'bg-green-600 text-green-200 cursor-not-allowed'
+              }`}
+            >
+              📄 Eksportuj PDF
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Główny układ */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Zakładka mapy */}
+      {activeTab === 'map' && (
+        <div className="flex flex-1 overflow-hidden">
+          <MapTab />
+        </div>
+      )}
+
+      {/* Główny układ — Plan zajęć */}
+      {activeTab !== 'map' && <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEWA KOLUMNA ── */}
         <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
@@ -270,7 +299,7 @@ export default function App() {
             </button>
           )}
         </main>
-      </div>
+      </div>}
     </div>
   )
 }
