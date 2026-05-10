@@ -4,9 +4,12 @@ import DayCard from './components/DayCard'
 import TemplatePanel from './components/TemplatePanel'
 import MapTab from './components/MapTab'
 import CampDataTab from './components/CampDataTab'
+import CampsMapTab from './components/CampsMapTab'
+import AuthModal from './components/AuthModal'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
+import { supabase, signOut } from './lib/supabase'
 
 const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '' },
@@ -18,7 +21,18 @@ const DEFAULT_STATE = {
 export default function App() {
   const [state, setState] = useState(() => loadState() || DEFAULT_STATE)
   const [daysCount, setDaysCount] = useState('')
-  const [activeTab, setActiveTabMain] = useState('plan')  // 'plan' | 'map'
+  const [activeTab, setActiveTabMain] = useState('plan')
+  const [user, setUser]           = useState(null)
+  const [showAuth, setShowAuth]   = useState(false)
+
+  // Supabase auth session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user || null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const { meta, activities, days, template } = state
 
@@ -91,19 +105,39 @@ export default function App() {
           {/* Zakładki */}
           <div className="flex bg-green-900 rounded-lg overflow-hidden">
             {[
-              { id: 'camp', label: '🏕️ Dane obozu' },
-              { id: 'plan', label: '📋 Plan zajęć' },
-              { id: 'map',  label: '🗺️ Mapa terenu' },
+              { id: 'camp',      label: '🏕️ Dane obozu' },
+              { id: 'plan',      label: '📋 Plan zajęć' },
+              { id: 'map',       label: '🗺️ Mapa terenu' },
+              { id: 'campsmap',  label: '🌍 Mapa obozów', auth: true },
             ].map(t => (
               <button key={t.id}
-                onClick={() => setActiveTabMain(t.id)}
+                onClick={() => {
+                  if (t.auth && !user) { setShowAuth(true); return }
+                  setActiveTabMain(t.id)
+                }}
                 className={`px-4 py-1.5 text-sm font-semibold transition ${
-                  activeTab === t.id ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
+                  activeTab === t.id ? 'bg-white text-green-800'
+                  : t.auth && !user ? 'text-green-500/60 hover:text-green-300'
+                  : 'text-green-300 hover:text-white'
                 }`}
-              >{t.label}</button>
+                title={t.auth && !user ? 'Wymagane logowanie' : undefined}
+              >{t.label}{t.auth && !user ? ' 🔒' : ''}</button>
             ))}
           </div>
           <p className="text-green-400 text-xs hidden sm:block">by Aleksander Nasiłowski</p>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-green-300 text-xs hidden md:block">{user.email}</span>
+              <button onClick={() => signOut()} className="text-xs text-green-300 border border-green-600 px-3 py-1 rounded-lg hover:bg-green-700">
+                Wyloguj
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setShowAuth(true)}
+              className="text-sm font-semibold bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg transition">
+              🔐 Zaloguj się
+            </button>
+          )}
           {activeTab === 'plan' && (
             <button
               onClick={handleExport}
@@ -118,9 +152,34 @@ export default function App() {
         </div>
       </header>
 
+      {/* AuthModal */}
+      {showAuth && (
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onAuth={(u) => { setUser(u); setShowAuth(false); setActiveTabMain('campsmap') }}
+        />
+      )}
+
       {/* Zakładka: Dane obozu */}
       {activeTab === 'camp' && (
         <CampDataTab meta={meta} onUpdateMeta={updateMeta} />
+      )}
+
+      {/* Zakładka: Mapa obozów (wymaga logowania) */}
+      {activeTab === 'campsmap' && user && (
+        <CampsMapTab user={user} meta={meta} />
+      )}
+      {activeTab === 'campsmap' && !user && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-5xl mb-4">🔒</div>
+            <p className="text-lg font-semibold text-gray-700">Wymagane logowanie</p>
+            <p className="text-sm text-gray-500 mt-1">Dostęp tylko dla @skauci-europy.pl</p>
+            <button onClick={() => setShowAuth(true)} className="mt-4 bg-green-700 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-800">
+              Zaloguj się
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Zakładka: Mapa */}
