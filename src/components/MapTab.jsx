@@ -1,9 +1,44 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import PictogramPanel from './map/PictogramPanel'
 import MapEditor from './map/MapEditor'
 import { makePlacedItem, DEFAULT_ARROW_COLORS } from '../utils/mapPictograms'
+
+// Dostawcy map satelitarnych
+const MAP_PROVIDERS = [
+  {
+    id: 'google',
+    name: 'Google Satellite',
+    url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    subdomains: '0123',
+    attribution: '© Google',
+    maxZoom: 21,
+  },
+  {
+    id: 'google_hybrid',
+    name: 'Google Hybrid (sat + drogi)',
+    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    subdomains: '0123',
+    attribution: '© Google',
+    maxZoom: 21,
+  },
+  {
+    id: 'esri',
+    name: 'ESRI World Imagery',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '© Esri',
+    maxZoom: 19,
+  },
+  {
+    id: 'esri_labels',
+    name: 'ESRI + opisy',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '© Esri',
+    maxZoom: 19,
+    labels: true,
+  },
+]
 
 // Napraw domyślne ikony Leaflet w Vite
 import L from 'leaflet'
@@ -115,6 +150,7 @@ export default function MapTab() {
   const [locationName, setLocationName] = useState('')
   const [mapRef, setMapRef] = useState(null)
   const [mapImageUrl, setMapImageUrl] = useState(null)
+  const [providerId, setProviderId] = useState('google')
   const [items, setItems] = useState([])
   const [selected, setSelected] = useState(null)
   const [arrowColors, setArrowColors] = useState(DEFAULT_ARROW_COLORS)
@@ -295,18 +331,28 @@ export default function MapTab() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
-        <div className="flex items-center gap-4 px-4 py-2.5 bg-green-800 text-white shrink-0">
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-green-800 text-white shrink-0 flex-wrap">
           <button onClick={() => setStep('coords')} className="text-white/70 hover:text-white text-sm">← Wróć</button>
           <span className="font-semibold text-sm">📍 {locationName || 'Brak nazwy'}</span>
-          <span className="text-green-300 text-xs">{coords.lat}, {coords.lng}</span>
+          <span className="text-green-300 text-xs hidden sm:block">{coords.lat}, {coords.lng}</span>
+
+          {/* Wybór dostawcy mapy */}
+          <select
+            value={providerId}
+            onChange={e => setProviderId(e.target.value)}
+            className="ml-2 bg-green-700 text-white text-xs border border-green-500 rounded px-2 py-1 focus:outline-none"
+          >
+            {MAP_PROVIDERS.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
           <div className="ml-auto flex gap-3 items-center">
             <p className="text-green-300 text-xs hidden md:block">
-              🔴 Czerwona strefa = poza kadrem PDF · Ustaw widok i kliknij Generuj
+              🔴 poza kadrem · ustaw widok → Generuj
             </p>
-            <button
-              onClick={handleGenerateMap}
-              className="bg-white text-green-800 font-bold px-5 py-1.5 rounded-lg hover:bg-green-50 text-sm"
-            >
+            <button onClick={handleGenerateMap}
+              className="bg-white text-green-800 font-bold px-5 py-1.5 rounded-lg hover:bg-green-50 text-sm">
               📸 Generuj mapę obozu
             </button>
           </div>
@@ -319,16 +365,25 @@ export default function MapTab() {
             zoom={15}
             style={{ width: '100%', height: '100%' }}
           >
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution="Tiles © Esri"
-              maxZoom={19}
-            />
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="© OpenStreetMap contributors"
-              opacity={0.3}
-            />
+            {(() => {
+              const p = MAP_PROVIDERS.find(x => x.id === providerId) || MAP_PROVIDERS[0]
+              return <>
+                <TileLayer
+                  key={p.id}
+                  url={p.url}
+                  attribution={p.attribution}
+                  maxZoom={p.maxZoom || 19}
+                  subdomains={p.subdomains || 'abc'}
+                />
+                {p.labels && (
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution="© OpenStreetMap"
+                    opacity={0.4}
+                  />
+                )}
+              </>
+            })()}
             <MapEventsCapture onReady={setMapRef} />
           </MapContainer>
 
