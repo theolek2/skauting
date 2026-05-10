@@ -3,6 +3,7 @@ import ActivityPanel from './components/ActivityPanel'
 import DayCard from './components/DayCard'
 import TemplatePanel from './components/TemplatePanel'
 import MapTab from './components/MapTab'
+import CampDataTab from './components/CampDataTab'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -89,22 +90,18 @@ export default function App() {
         <div className="flex items-center gap-3">
           {/* Zakładki */}
           <div className="flex bg-green-900 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setActiveTabMain('plan')}
-              className={`px-4 py-1.5 text-sm font-semibold transition ${
-                activeTab === 'plan' ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
-              }`}
-            >
-              📋 Plan zajęć
-            </button>
-            <button
-              onClick={() => setActiveTabMain('map')}
-              className={`px-4 py-1.5 text-sm font-semibold transition ${
-                activeTab === 'map' ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
-              }`}
-            >
-              🗺️ Mapa terenu
-            </button>
+            {[
+              { id: 'camp', label: '🏕️ Dane obozu' },
+              { id: 'plan', label: '📋 Plan zajęć' },
+              { id: 'map',  label: '🗺️ Mapa terenu' },
+            ].map(t => (
+              <button key={t.id}
+                onClick={() => setActiveTabMain(t.id)}
+                className={`px-4 py-1.5 text-sm font-semibold transition ${
+                  activeTab === t.id ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
+                }`}
+              >{t.label}</button>
+            ))}
           </div>
           <p className="text-green-400 text-xs hidden sm:block">by Aleksander Nasiłowski</p>
           {activeTab === 'plan' && (
@@ -121,7 +118,12 @@ export default function App() {
         </div>
       </header>
 
-      {/* Zakładka mapy */}
+      {/* Zakładka: Dane obozu */}
+      {activeTab === 'camp' && (
+        <CampDataTab meta={meta} onUpdateMeta={updateMeta} />
+      )}
+
+      {/* Zakładka: Mapa */}
       {activeTab === 'map' && (
         <div className="flex flex-1 overflow-hidden">
           <MapTab />
@@ -135,67 +137,17 @@ export default function App() {
         <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
 
           {/* 1. DANE OBOZU */}
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <span className="text-green-700">🏕️</span> Dane obozu
-            </h2>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-0.5">
-                  Jednostka <span className="text-red-500">*</span>
-                </label>
-                <input
-                  className={`w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 ${
-                    !meta.jednostka ? 'border-orange-300 bg-orange-50' : 'border-gray-300'
-                  }`}
-                  placeholder={'np. 1 DH „Leśny Wicher”'}
-                  value={meta.jednostka}
-                  onChange={e => updateMeta({ jednostka: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-0.5">
-                  Kierownik obozu <span className="text-red-500">*</span>
-                </label>
-                <input
-                  className={`w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 ${
-                    !meta.kierownik ? 'border-orange-300 bg-orange-50' : 'border-gray-300'
-                  }`}
-                  placeholder="Imię i nazwisko"
-                  value={meta.kierownik}
-                  onChange={e => updateMeta({ kierownik: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-0.5">Miejsce</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
-                  placeholder="np. Zakopane"
-                  value={meta.miejsce}
-                  onChange={e => updateMeta({ miejsce: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-0.5">Termin</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
-                  placeholder="np. 1–14 lipca 2025"
-                  value={meta.termin}
-                  onChange={e => updateMeta({ termin: e.target.value })}
-                />
-              </div>
-              {!metaOk && (
-                <p className="text-xs text-orange-600">
-                  ⚠️ Uzupełnij Jednostkę i Kierownika aby eksportować PDF
-                </p>
-              )}
-              {metaOk && (
-                <p className="text-xs text-green-600">✅ Dane kompletne — możesz eksportować PDF</p>
-              )}
+          {/* Skrót do danych obozu */}
+          {!metaOk && (
+            <div className=”p-3 border-b border-gray-100”>
+              <button onClick={() => setActiveTabMain('camp')}
+                className=”w-full text-xs text-orange-600 border border-orange-200 bg-orange-50 rounded-lg py-2 hover:bg-orange-100 transition”>
+                ⚠️ Uzupełnij dane obozu → zakładka 🏕️
+              </button>
             </div>
-          </div>
+          )}
 
-          {/* 2. SZABLON DNIA */}
+          {/* SZABLON DNIA */}
           <div className="p-4 border-b border-gray-100">
             <TemplatePanel
               slots={template}
