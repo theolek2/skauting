@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { useState, useEffect, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getTerrains, addTerrain, addCamp } from '../lib/supabase'
 import L from 'leaflet'
 
-// Fix Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -17,14 +16,27 @@ function LocationPicker({ onPick }) {
   return null
 }
 
-export default function CampRegistrationModal({ onClose, onSaved, userId, prefill = {} }) {
-  const [step, setStep]         = useState('terrain')   // 'terrain' | 'camp'
+// Komponent do centrowania mapy gdy zmienią się koordynaty
+function MapFlyTo({ pos }) {
+  const map = useMap()
+  useEffect(() => {
+    if (pos) map.flyTo([pos.lat, pos.lng], 14, { animate: true, duration: 1 })
+  }, [pos])
+  return null
+}
+
+export default function CampRegistrationModal({ onClose, onSaved, userId, prefill = {}, initialTerrain = null }) {
+  // Jeśli initialTerrain podany → od razu do kroku 'camp'
+  const [step, setStep]         = useState(initialTerrain ? 'camp' : 'terrain')
   const [terrains, setTerrains] = useState([])
-  const [selectedTerrain, setSelectedTerrain] = useState(null)
+  const [selectedTerrain, setSelectedTerrain] = useState(initialTerrain)
   const [newTerrain, setNewTerrain] = useState(false)
   const [pickedPos, setPickedPos] = useState(null)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
+
+  // Koordynaty wpisywane ręcznie
+  const [coordInput, setCoordInput] = useState('')
 
   // Teren fields
   const [tName, setTName]       = useState('')
@@ -46,8 +58,21 @@ export default function CampRegistrationModal({ onClose, onSaved, userId, prefil
     getTerrains().then(setTerrains).catch(() => {})
   }, [])
 
+  // Parsuj koordynaty wpisane ręcznie: "50.7658, 22.5287" lub "50.7658 22.5287"
+  const handleCoordInput = (val) => {
+    setCoordInput(val)
+    const parts = val.replace(',', ' ').trim().split(/\s+/)
+    if (parts.length >= 2) {
+      const lat = parseFloat(parts[0])
+      const lng = parseFloat(parts[1])
+      if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+        setPickedPos({ lat, lng })
+      }
+    }
+  }
+
   const handleAddTerrain = async () => {
-    if (!tName || !pickedPos) { setError('Podaj nazwę i kliknij lokalizację na mapie'); return }
+    if (!tName || !pickedPos) { setError('Podaj nazwę i wskaż lokalizację na mapie (lub wpisz koordynaty)'); return }
     setLoading(true)
     try {
       const t = await addTerrain({
@@ -86,7 +111,7 @@ export default function CampRegistrationModal({ onClose, onSaved, userId, prefil
   const inp = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{zIndex: 2000}}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{zIndex:2000}}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="bg-green-700 text-white px-6 py-4 rounded-t-2xl flex items-center justify-between shrink-0">
           <h2 className="text-lg font-bold">
@@ -149,18 +174,34 @@ export default function CampRegistrationModal({ onClose, onSaved, userId, prefil
                 </div>
               </div>
 
+              {/* Wpisz koordynaty */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Kliknij lokalizację na mapie * {pickedPos && <span className="text-green-600">✓ {pickedPos.lat.toFixed(4)}, {pickedPos.lng.toFixed(4)}</span>}
+                  📌 Koordynaty (wklej lub kliknij mapę)
+                  {pickedPos && <span className="text-green-600 ml-2">✓ {pickedPos.lat.toFixed(4)}, {pickedPos.lng.toFixed(4)}</span>}
                 </label>
-                <div className="h-48 rounded-xl overflow-hidden border border-gray-300">
-                  <MapContainer center={[52, 20]} zoom={6} style={{width:'100%',height:'100%'}}>
-                    <TileLayer url="https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}" subdomains="0123" />
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" opacity={0.4}/>
-                    <LocationPicker onPick={setPickedPos} />
-                    {pickedPos && <Marker position={pickedPos} />}
-                  </MapContainer>
-                </div>
+                <input className={inp} placeholder="np. 50.7658, 22.5287 (skopiuj z Google Maps)"
+                  value={coordInput}
+                  onChange={e => handleCoordInput(e.target.value)}
+                />
+                <p className="text-xs text-gray-400 mt-1">Lub kliknij bezpośrednio na mapie poniżej</p>
+              </div>
+
+              {/* Mapa */}
+              <div className="h-48 rounded-xl overflow-hidden border border-gray-300">
+                <MapContainer
+                  center={pickedPos ? [pickedPos.lat, pickedPos.lng] : [52, 20]}
+                  zoom={pickedPos ? 13 : 6}
+                  style={{width:'100%',height:'100%'}}
+                >
+                  <TileLayer url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" subdomains="0123" />
+                  <LocationPicker onPick={(pos) => {
+                    setPickedPos(pos)
+                    setCoordInput(`${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`)
+                  }} />
+                  {pickedPos && <Marker position={pickedPos} />}
+                  {pickedPos && <MapFlyTo pos={pickedPos} />}
+                </MapContainer>
               </div>
 
               <div className="flex gap-3">
@@ -179,14 +220,14 @@ export default function CampRegistrationModal({ onClose, onSaved, userId, prefil
               {selectedTerrain && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
                   <b>Teren:</b> {selectedTerrain.name} &nbsp;·&nbsp;
-                  <button onClick={() => setStep('terrain')} className="text-green-700 underline text-xs">Zmień</button>
+                  {!initialTerrain && <button onClick={() => setStep('terrain')} className="text-green-700 underline text-xs">Zmień</button>}
                   {selectedTerrain.owner_name && <div className="text-xs text-gray-500 mt-1">Właściciel: {selectedTerrain.owner_name} · {selectedTerrain.owner_contact}</div>}
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Nazwa jednostki *</label>
-                  <input className={inp} placeholder='np. 1 DH "Leśny Wicher"' value={unitName} onChange={e=>setUnitName(e.target.value)} />
+                  <input className={inp} placeholder='np. 1 DH' value={unitName} onChange={e=>setUnitName(e.target.value)} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Osoba kontaktowa</label>
@@ -209,11 +250,10 @@ export default function CampRegistrationModal({ onClose, onSaved, userId, prefil
                   <input type="number" min="1" className={inp} value={teams} onChange={e=>setTeams(e.target.value)} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Uwagi (opcjonalne)</label>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Uwagi</label>
                   <textarea className={inp + ' resize-none'} rows={2} value={notes} onChange={e=>setNotes(e.target.value)} />
                 </div>
               </div>
-
               <button onClick={handleSaveCamp} disabled={loading}
                 className="w-full bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800 disabled:opacity-50 text-base">
                 {loading ? 'Zapisuję...' : '✅ Dodaj obóz na mapę'}

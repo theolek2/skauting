@@ -59,11 +59,12 @@ function TerrainHistory({ terrainId }) {
 }
 
 export default function CampsMapTab({ user, meta }) {
-  const [camps, setCamps]           = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [showModal, setShowModal]   = useState(false)
-  const [filter, setFilter]         = useState('all')  // 'all' | 'active' | 'planned' | 'ended'
-  const [search, setSearch]         = useState('')
+  const [camps, setCamps]                 = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [showModal, setShowModal]         = useState(false)
+  const [addToTerrain, setAddToTerrain]   = useState(null)  // terrain do dodania kolejnego obozu
+  const [filter, setFilter]               = useState('all')
+  const [search, setSearch]               = useState('')
 
   const load = () => {
     setLoading(true)
@@ -185,12 +186,23 @@ export default function CampsMapTab({ user, meta }) {
                     ))}
 
                     {/* Historia */}
-                    <details className="mt-1">
+                    <details className="mt-1 mb-3">
                       <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
                         📜 Historia obozów na tym terenie
                       </summary>
                       <TerrainHistory terrainId={terrain.id} />
                     </details>
+
+                    {/* Dodaj kolejny obóz */}
+                    <button
+                      onClick={() => {
+                        setAddToTerrain(terrain)
+                        setShowModal(true)
+                      }}
+                      className="w-full bg-green-700 text-white text-xs font-bold py-2 px-3 rounded-lg hover:bg-green-800 transition"
+                    >
+                      + Dodaj kolejny obóz na tym terenie
+                    </button>
                   </div>
                 </Popup>
               </Marker>
@@ -213,9 +225,10 @@ export default function CampsMapTab({ user, meta }) {
       {/* Modal rejestracji */}
       {showModal && (
         <CampRegistrationModal
-          onClose={() => setShowModal(false)}
-          onSaved={() => { setShowModal(false); load() }}
+          onClose={() => { setShowModal(false); setAddToTerrain(null) }}
+          onSaved={() => { setShowModal(false); setAddToTerrain(null); load() }}
           userId={user?.id}
+          initialTerrain={addToTerrain}
           prefill={{
             jednostka: meta?.jednostka,
             kierownik: meta?.kierownik,
