@@ -198,9 +198,9 @@ export default function App() {
           {/* 1. DANE OBOZU */}
           {/* Skrót do danych obozu */}
           {!metaOk && (
-            <div className=”p-3 border-b border-gray-100”>
+            <div className="p-3 border-b border-gray-100">
               <button onClick={() => setActiveTabMain('camp')}
-                className=”w-full text-xs text-orange-600 border border-orange-200 bg-orange-50 rounded-lg py-2 hover:bg-orange-100 transition”>
+                className="w-full text-xs text-orange-600 border border-orange-200 bg-orange-50 rounded-lg py-2 hover:bg-orange-100 transition">
                 ⚠️ Uzupełnij dane obozu → zakładka 🏕️
               </button>
             </div>
