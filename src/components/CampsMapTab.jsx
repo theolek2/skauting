@@ -135,7 +135,7 @@ export default function CampsMapTab({ user, meta }) {
       </div>
 
       {/* Mapa */}
-      <div className="flex-1 relative">
+      <div className="relative" style={{height:'calc(100vh - 100px)'}}>
         {loading && (
           <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center">
             <p className="text-green-700 font-semibold">Ładowanie obozów...</p>
