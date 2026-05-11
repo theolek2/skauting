@@ -34,6 +34,11 @@ export async function getTerrains() {
 }
 
 export async function addTerrain(terrain) {
+  // Upewnij się że profil istnieje przed dodaniem terenu
+  if (terrain.created_by) {
+    await supabase.from('profiles')
+      .upsert([{ id: terrain.created_by }], { onConflict: 'id', ignoreDuplicates: true })
+  }
   const { data, error } = await supabase
     .from('terrains')
     .insert([terrain])
@@ -54,7 +59,10 @@ export async function getCamps() {
       organizer:profiles(display_name, organization, phone)
     `)
     .order('date_start', { ascending: false })
-  if (error) throw error
+  if (error) {
+    console.warn('getCamps error:', error.message)
+    return []
+  }
 
   // Wylicz status na podstawie dat
   return (data || []).map(camp => ({

@@ -60,6 +60,31 @@ export default function CampDataTab({ meta, onUpdateMeta }) {
         {/* Moduł 1: Podstawowe dane */}
         <Module icon="📋" title="Podstawowe dane obozu">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Typ obozu */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-2">Typ obozu <span className="text-red-500">*</span></label>
+              <div className="flex gap-3 flex-wrap">
+                {[
+                  { val: 'wilczkowy', label: '🐺 Obóz wilczkowy', sub: 'Zuchy 6–10 lat' },
+                  { val: 'harcerski', label: '⚜️ Drużyna harcerska', sub: 'Harcerze 10–16 lat' },
+                  { val: 'starszoharcerski', label: '🏔️ Starszoharcerski', sub: '16+ lat' },
+                  { val: 'wędrowniczy', label: '🎒 Wędrowniczy', sub: 'Wędrownicy 18+ lat' },
+                ].map(opt => (
+                  <button key={opt.val} type="button"
+                    onClick={() => onUpdateMeta({ typ_obozu: opt.val })}
+                    className={`flex-1 min-w-[140px] px-4 py-3 rounded-xl border-2 text-left transition ${
+                      meta.typ_obozu === opt.val
+                        ? 'border-green-600 bg-green-50'
+                        : 'border-gray-200 hover:border-green-400'
+                    }`}>
+                    <div className="font-semibold text-sm">{opt.label}</div>
+                    <div className="text-xs text-gray-400">{opt.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Field label="Jednostka / nazwa szczepu" required>
               <input className={inputCls}
                 placeholder={'np. 1 DH „Leśny Wicher"'}
@@ -74,7 +99,7 @@ export default function CampDataTab({ meta, onUpdateMeta }) {
                 onChange={e => onUpdateMeta({ kierownik: e.target.value })}
               />
             </Field>
-            <Field label="Miejsce obozu">
+            <Field label="Miejsce obozu" required>
               <input className={inputCls}
                 placeholder="np. Leśniczówka Pisary, gmina Olesno"
                 value={meta.miejsce}

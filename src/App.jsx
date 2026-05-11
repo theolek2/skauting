@@ -264,42 +264,19 @@ export default function App() {
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">🏕️</div>
               <h2 className="text-xl font-bold text-green-800">Witaj w CampOS!</h2>
-              <p className="text-sm text-gray-500 mt-1">Powiedz nam gdzie planujesz obóz</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Uzupełnij dane swojego obozu w zakładce <b>Dane obozu</b>
+              </p>
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Miejscowość / teren obozu *</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
-                  placeholder="np. Leśniczówka Pisary k. Nowego Sącza"
-                  value={meta.miejsce || ''}
-                  onChange={e => updateMeta({ miejsce: e.target.value })}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Termin</label>
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
-                  placeholder="np. 1–14 lipca 2025"
-                  value={meta.termin || ''}
-                  onChange={e => updateMeta({ termin: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => { if (meta.miejsce) setShowFirstLogin(false) }}
-                disabled={!meta.miejsce}
-                className="flex-1 bg-green-700 text-white py-2.5 rounded-xl font-bold hover:bg-green-800 disabled:opacity-40"
-              >
-                Dalej →
-              </button>
-              <button onClick={() => setShowFirstLogin(false)}
-                className="px-4 py-2.5 border rounded-xl text-gray-500 hover:bg-gray-50 text-sm">
-                Pomiń
-              </button>
-            </div>
+            <p className="text-sm text-gray-600 bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              📋 Wypełnij m.in. miejsce obozu, typ (wilczkowy / harcerski) oraz dane kierownika — będą potrzebne do ramowego planu pracy i mapy obozów.
+            </p>
+            <button
+              onClick={() => { setShowFirstLogin(false); setActiveTabMain('camp') }}
+              className="w-full bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800"
+            >
+              Przejdź do Danych obozu →
+            </button>
           </div>
         </div>
       )}
