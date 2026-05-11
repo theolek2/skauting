@@ -90,6 +90,11 @@ export async function getCampsForTerrain(terrainId) {
 }
 
 export async function addCamp(camp) {
+  // Upewnij się że profil organizatora istnieje
+  if (camp.organizer_id) {
+    await supabase.from('profiles')
+      .upsert([{ id: camp.organizer_id }], { onConflict: 'id', ignoreDuplicates: true })
+  }
   const { data, error } = await supabase
     .from('camps')
     .insert([camp])

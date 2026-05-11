@@ -9,7 +9,7 @@ import AuthModal from './components/AuthModal'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
-import { supabase, signOut, getProfile, saveCampMeta, loadCampMeta } from './lib/supabase'
+import { supabase, signOut, getProfile, upsertProfile, saveCampMeta, loadCampMeta } from './lib/supabase'
 
 const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '' },
@@ -30,6 +30,9 @@ export default function App() {
   const applyProfile = async (u) => {
     if (!u) return
     try {
+      // Zawsze upewnij się że profil istnieje (FK constraint)
+      await upsertProfile({ id: u.id, display_name: u.email?.split('@')[0] || '' })
+
       const profile = await getProfile(u.id)
       const savedMeta = await loadCampMeta(u.id)
 
