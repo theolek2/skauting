@@ -83,6 +83,38 @@ export default function App() {
 
   const metaOk = meta.jednostka && meta.kierownik
 
+  // ── Bramka logowania — cała aplikacja za auth ──────────────────────────────
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-green-900 flex flex-col items-center justify-center p-4">
+        <div className="mb-8 text-center">
+          <img src="/logo.png" alt="Skauci Europy" className="h-20 mx-auto mb-4"
+            onError={e => { e.currentTarget.style.display='none' }} />
+          <h1 className="text-3xl font-bold text-white">Książka Obozowa</h1>
+          <p className="text-green-300 mt-1">Skauci Europy · Ramowy plan pracy</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8">
+          <p className="text-center text-gray-600 text-sm mb-6">
+            Zaloguj się aby korzystać z aplikacji.<br/>
+            <span className="text-xs text-gray-400">Dostęp tylko dla @skauci-europy.pl</span>
+          </p>
+          <button
+            onClick={() => setShowAuth(true)}
+            className="w-full bg-green-700 text-white py-3 rounded-xl font-bold text-lg hover:bg-green-800 transition"
+          >
+            🔐 Zaloguj się
+          </button>
+        </div>
+        {showAuth && (
+          <AuthModal
+            onClose={() => setShowAuth(false)}
+            onAuth={u => { setUser(u); setShowAuth(false) }}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Topbar */}
@@ -108,13 +140,10 @@ export default function App() {
               { id: 'camp',      label: '🏕️ Dane obozu' },
               { id: 'plan',      label: '📋 Plan zajęć' },
               { id: 'map',       label: '🗺️ Mapa terenu' },
-              { id: 'campsmap',  label: '🌍 Mapa obozów', auth: true },
+              { id: 'campsmap',  label: '🌍 Mapa obozów' },
             ].map(t => (
               <button key={t.id}
-                onClick={() => {
-                  if (t.auth && !user) { setShowAuth(true); return }
-                  setActiveTabMain(t.id)
-                }}
+                onClick={() => setActiveTabMain(t.id)}
                 className={`px-4 py-1.5 text-sm font-semibold transition ${
                   activeTab === t.id ? 'bg-white text-green-800'
                   : t.auth && !user ? 'text-green-500/60 hover:text-green-300'
@@ -151,14 +180,6 @@ export default function App() {
           )}
         </div>
       </header>
-
-      {/* AuthModal */}
-      {showAuth && (
-        <AuthModal
-          onClose={() => setShowAuth(false)}
-          onAuth={(u) => { setUser(u); setShowAuth(false); setActiveTabMain('campsmap') }}
-        />
-      )}
 
       {/* Zakładka: Dane obozu */}
       {activeTab === 'camp' && (
