@@ -9,7 +9,7 @@ import AuthModal from './components/AuthModal'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
-import { supabase, signOut, getProfile } from './lib/supabase'
+import { supabase, signOut, getProfile, saveCampMeta, loadCampMeta } from './lib/supabase'
 
 const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '' },
@@ -26,19 +26,24 @@ export default function App() {
   const [showAuth, setShowAuth]       = useState(false)
   const [showFirstLogin, setShowFirstLogin] = useState(false)
 
-  // Po zalogowaniu — załaduj profil i uzupełnij meta
+  // Po zalogowaniu — załaduj profil + zapisane dane obozu z Supabase
   const applyProfile = async (u) => {
     if (!u) return
     try {
       const profile = await getProfile(u.id)
-      if (profile) {
+      const savedMeta = await loadCampMeta(u.id)
+
+      if (savedMeta && Object.keys(savedMeta).length > 0) {
+        // Przywróć pełne zapisane dane obozu
+        update({ meta: savedMeta })
+      } else if (profile) {
+        // Pierwsze logowanie — uzupełnij z profilu rejestracji
         update({
           meta: {
             ...state.meta,
-            // Wypełnij tylko puste pola
-            kierownik:     state.meta.kierownik  || profile.display_name || '',
-            jednostka:     state.meta.jednostka  || profile.organization || '',
-            tel_kierownik: state.meta.tel_kierownik || profile.phone || '',
+            kierownik:     state.meta.kierownik     || profile.display_name || '',
+            jednostka:     state.meta.jednostka     || profile.organization || '',
+            tel_kierownik: state.meta.tel_kierownik || profile.phone        || '',
           }
         })
       }
@@ -65,7 +70,14 @@ export default function App() {
   useEffect(() => { saveState(state) }, [state])
 
   const update = (patch) => setState(s => ({ ...s, ...patch }))
-  const updateMeta = (patch) => update({ meta: { ...meta, ...patch } })
+  const updateMeta = (patch) => {
+    const newMeta = { ...meta, ...patch }
+    update({ meta: newMeta })
+    // Zapisz do Supabase jeśli zalogowany
+    if (user?.id) {
+      saveCampMeta(user.id, newMeta).catch(() => {})
+    }
+  }
 
   // ── Zajęcia ──
   const addActivity = (name, description) =>
@@ -165,40 +177,50 @@ export default function App() {
             <p className="text-green-300 text-xs">Ramowy plan pracy · Skauci Europy</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Zakładki */}
-          <div className="flex bg-green-900 rounded-lg overflow-hidden">
-            {[
-              { id: 'camp',      label: '🏕️ Dane obozu' },
-              { id: 'plan',      label: '📋 Plan zajęć' },
-              { id: 'map',       label: '🗺️ Mapa terenu' },
-              { id: 'campsmap',  label: '🌍 Mapa obozów' },
-            ].map(t => (
-              <button key={t.id}
-                onClick={() => setActiveTabMain(t.id)}
-                className={`px-4 py-1.5 text-sm font-semibold transition ${
-                  activeTab === t.id ? 'bg-white text-green-800'
-                  : t.auth && !user ? 'text-green-500/60 hover:text-green-300'
-                  : 'text-green-300 hover:text-white'
-                }`}
-                title={t.auth && !user ? 'Wymagane logowanie' : undefined}
-              >{t.label}{t.auth && !user ? ' 🔒' : ''}</button>
-            ))}
-          </div>
-          <p className="text-green-400 text-xs hidden sm:block">by Aleksander Nasiłowski</p>
-          {user ? (
-            <div className="flex items-center gap-2">
-              <span className="text-green-300 text-xs hidden md:block">{user.email}</span>
-              <button onClick={() => signOut()} className="text-xs text-green-300 border border-green-600 px-3 py-1 rounded-lg hover:bg-green-700">
-                Wyloguj
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setShowAuth(true)}
-              className="text-sm font-semibold bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg transition">
-              🔐 Zaloguj się
-            </button>
+        <div className="flex items-center gap-2">
+          {/* Aktywna zakładka */}
+          <span className="text-green-200 text-sm font-semibold hidden sm:block">
+            {{ camp:'🏕️ Dane obozu', plan:'📋 Plan zajęć', map:'🗺️ Mapa terenu', campsmap:'🌍 Mapa obozów' }[activeTab]}
+          </span>
+
+          <p className="text-green-400 text-xs hidden md:block">by Aleksander Nasiłowski</p>
+
+          {user && (
+            <span className="text-green-300 text-xs hidden lg:block">{user.email}</span>
           )}
+
+          {/* Menu hamburgera */}
+          <div className="relative" id="nav-menu-wrapper">
+            <button
+              onClick={() => document.getElementById('nav-menu').classList.toggle('hidden')}
+              className="flex items-center gap-1 bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition"
+            >
+              ☰ Menu
+            </button>
+            <div id="nav-menu" className="hidden absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-200 z-50 min-w-[200px] overflow-hidden">
+              {[
+                { id: 'camp',     label: '🏕️ Dane obozu' },
+                { id: 'plan',     label: '📋 Plan zajęć' },
+                { id: 'map',      label: '🗺️ Mapa terenu' },
+                { id: 'campsmap', label: '🌍 Mapa obozów' },
+              ].map(t => (
+                <button key={t.id}
+                  onClick={() => {
+                    setActiveTabMain(t.id)
+                    document.getElementById('nav-menu').classList.add('hidden')
+                  }}
+                  className={`w-full text-left px-4 py-3 text-sm font-semibold transition border-b border-gray-100 last:border-0 ${
+                    activeTab === t.id ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >{t.label}</button>
+              ))}
+              <div className="border-t border-gray-200 px-4 py-2">
+                <button onClick={() => signOut()} className="text-xs text-red-500 hover:text-red-700 w-full text-left">
+                  Wyloguj ({user?.email?.split('@')[0]})
+                </button>
+              </div>
+            </div>
+          </div>
           {activeTab === 'plan' && (
             <button
               onClick={handleExport}
@@ -289,8 +311,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Główny układ — Plan zajęć */}
-      {activeTab !== 'map' && <div className="flex flex-1 overflow-hidden">
+      {/* Główny układ — Plan zajęć (tylko gdy zakładka plan) */}
+      {activeTab === 'plan' && <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEWA KOLUMNA ── */}
         <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">

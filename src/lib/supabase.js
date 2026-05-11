@@ -106,3 +106,21 @@ export async function upsertProfile(profile) {
   const { error } = await supabase.from('profiles').upsert([profile])
   if (error) throw error
 }
+
+// ── Dane obozu (meta) w Supabase ─────────────────────────────────────────────
+export async function saveCampMeta(userId, meta) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ camp_meta: meta })
+    .eq('id', userId)
+  if (error) throw error
+}
+
+export async function loadCampMeta(userId) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('camp_meta')
+    .eq('id', userId)
+    .single()
+  return data?.camp_meta || null
+}
