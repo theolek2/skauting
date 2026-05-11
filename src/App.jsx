@@ -200,7 +200,7 @@ export default function App() {
             >
               ☰ Menu
             </button>
-            <div id="nav-menu" className="hidden absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-200 z-50 min-w-[200px] overflow-hidden">
+            <div id="nav-menu" className="hidden absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-200 min-w-[200px] overflow-hidden" style={{zIndex:2000}}>
               {[
                 { id: 'camp',     label: '🏕️ Dane obozu' },
                 { id: 'plan',     label: '📋 Plan zajęć' },
@@ -262,7 +262,7 @@ export default function App() {
 
       {/* Modal pierwszego logowania */}
       {showFirstLogin && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{zIndex:2000}}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">🏕️</div>
