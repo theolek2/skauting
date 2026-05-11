@@ -9,7 +9,7 @@ import AuthModal from './components/AuthModal'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
-import { supabase, signOut } from './lib/supabase'
+import { supabase, signOut, getProfile } from './lib/supabase'
 
 const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '' },
@@ -22,14 +22,40 @@ export default function App() {
   const [state, setState] = useState(() => loadState() || DEFAULT_STATE)
   const [daysCount, setDaysCount] = useState('')
   const [activeTab, setActiveTabMain] = useState('plan')
-  const [user, setUser]           = useState(null)
-  const [showAuth, setShowAuth]   = useState(false)
+  const [user, setUser]               = useState(null)
+  const [showAuth, setShowAuth]       = useState(false)
+  const [showFirstLogin, setShowFirstLogin] = useState(false)
+
+  // Po zalogowaniu — załaduj profil i uzupełnij meta
+  const applyProfile = async (u) => {
+    if (!u) return
+    try {
+      const profile = await getProfile(u.id)
+      if (profile) {
+        update({
+          meta: {
+            ...state.meta,
+            // Wypełnij tylko puste pola
+            kierownik:     state.meta.kierownik  || profile.display_name || '',
+            jednostka:     state.meta.jednostka  || profile.organization || '',
+            tel_kierownik: state.meta.tel_kierownik || profile.phone || '',
+          }
+        })
+      }
+    } catch {}
+  }
 
   // Supabase auth session
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
+    supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user || null
+      setUser(u)
+      if (u) applyProfile(u)
+    })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user || null)
+      const u = session?.user || null
+      setUser(u)
+      if (u) applyProfile(u)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -108,7 +134,13 @@ export default function App() {
         {showAuth && (
           <AuthModal
             onClose={() => setShowAuth(false)}
-            onAuth={u => { setUser(u); setShowAuth(false) }}
+            onAuth={u => {
+              setUser(u)
+              setShowAuth(false)
+              applyProfile(u)
+              // Pokaż modal pierwszego logowania jeśli brak lokalizacji
+              if (!state.meta.miejsce) setShowFirstLogin(true)
+            }}
           />
         )}
       </div>
@@ -199,6 +231,53 @@ export default function App() {
             <button onClick={() => setShowAuth(true)} className="mt-4 bg-green-700 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-800">
               Zaloguj się
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pierwszego logowania */}
+      {showFirstLogin && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-2">🏕️</div>
+              <h2 className="text-xl font-bold text-green-800">Witaj w CampOS!</h2>
+              <p className="text-sm text-gray-500 mt-1">Powiedz nam gdzie planujesz obóz</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Miejscowość / teren obozu *</label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
+                  placeholder="np. Leśniczówka Pisary k. Nowego Sącza"
+                  value={meta.miejsce || ''}
+                  onChange={e => updateMeta({ miejsce: e.target.value })}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Termin</label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
+                  placeholder="np. 1–14 lipca 2025"
+                  value={meta.termin || ''}
+                  onChange={e => updateMeta({ termin: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => { if (meta.miejsce) setShowFirstLogin(false) }}
+                disabled={!meta.miejsce}
+                className="flex-1 bg-green-700 text-white py-2.5 rounded-xl font-bold hover:bg-green-800 disabled:opacity-40"
+              >
+                Dalej →
+              </button>
+              <button onClick={() => setShowFirstLogin(false)}
+                className="px-4 py-2.5 border rounded-xl text-gray-500 hover:bg-gray-50 text-sm">
+                Pomiń
+              </button>
+            </div>
           </div>
         </div>
       )}

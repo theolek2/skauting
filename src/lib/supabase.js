@@ -7,7 +7,13 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON)
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const signUp = (email, password) =>
-  supabase.auth.signUp({ email, password })
+  supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin,  // wraca na stronę po kliknięciu w link
+    },
+  })
 
 export const signIn = (email, password) =>
   supabase.auth.signInWithPassword({ email, password })
