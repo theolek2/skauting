@@ -6,13 +6,14 @@ import MapTab from './components/MapTab'
 import CampDataTab from './components/CampDataTab'
 import CampsMapTab from './components/CampsMapTab'
 import AuthModal from './components/AuthModal'
+import OnboardingWizard from './components/OnboardingWizard'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
 import { supabase, signOut, getProfile, upsertProfile, saveCampMeta, loadCampMeta } from './lib/supabase'
 
 const DEFAULT_STATE = {
-  meta: { jednostka: '', kierownik: '', miejsce: '', termin: '' },
+  meta: { jednostka: '', kierownik: '', miejsce: '', termin: '', date_start: '', date_end: '' },
   activities: [],
   days: [],
   template: [],
@@ -24,7 +25,7 @@ export default function App() {
   const [activeTab, setActiveTabMain] = useState('plan')
   const [user, setUser]               = useState(null)
   const [showAuth, setShowAuth]       = useState(false)
-  const [showFirstLogin, setShowFirstLogin] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // Po zalogowaniu — załaduj profil + zapisane dane obozu z Supabase
   const applyProfile = async (u) => {
@@ -154,7 +155,7 @@ export default function App() {
               setShowAuth(false)
               applyProfile(u)
               // Pokaż modal pierwszego logowania jeśli brak lokalizacji
-              if (!state.meta.miejsce) setShowFirstLogin(true)
+              if (!state.meta.miejsce) setShowOnboarding(true)
             }}
           />
         )}
@@ -240,7 +241,7 @@ export default function App() {
 
       {/* Zakładka: Dane obozu */}
       {activeTab === 'camp' && (
-        <CampDataTab meta={meta} onUpdateMeta={updateMeta} />
+        <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
       )}
 
       {/* Zakładka: Mapa obozów (wymaga logowania) */}
@@ -260,27 +261,15 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal pierwszego logowania */}
-      {showFirstLogin && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{zIndex:2000}}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-            <div className="text-center mb-6">
-              <div className="text-4xl mb-2">🏕️</div>
-              <h2 className="text-xl font-bold text-green-800">Witaj w CampOS!</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Uzupełnij dane swojego obozu w zakładce <b>Dane obozu</b>
-              </p>
-            </div>
-            <p className="text-sm text-gray-600 bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-              📋 Wypełnij m.in. miejsce obozu, typ (wilczkowy / harcerski) oraz dane kierownika — będą potrzebne do ramowego planu pracy i mapy obozów.
-            </p>
-            <button
-              onClick={() => { setShowFirstLogin(false); setActiveTabMain('camp') }}
-              className="w-full bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800"
-            >
-              Przejdź do Danych obozu →
-            </button>
-          </div>
+      {/* Onboarding wizard — pierwsza wizyta */}
+      {showOnboarding && (
+        <div className="fixed inset-0 overflow-y-auto" style={{zIndex:2000}}>
+          <OnboardingWizard
+            meta={meta}
+            userId={user?.id}
+            updateMeta={(newMeta) => update({ meta: newMeta })}
+            onDone={() => { setShowOnboarding(false); setActiveTabMain('plan') }}
+          />
         </div>
       )}
 

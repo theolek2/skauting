@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { getCamps, getCampsForTerrain } from '../lib/supabase'
+import { getCamps } from '../lib/supabase'
 import CampRegistrationModal from './CampRegistrationModal'
 
 // Fix Leaflet icons
@@ -32,19 +32,10 @@ const makeIcon = (color) => L.divIcon({
 const STATUS_COLOR = { active: '#22c55e', planned: '#f59e0b', ended: '#6b7280' }
 const STATUS_LABEL = { active: '🟢 Aktywny', planned: '🟡 Planowany', ended: '⚫ Zakończony' }
 
-function TerrainHistory({ terrainId }) {
-  const [history, setHistory] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    getCampsForTerrain(terrainId)
-      .then(setHistory)
-      .finally(() => setLoading(false))
-  }, [terrainId])
-
-  if (loading) return <p className="text-xs text-gray-400">Ładowanie historii...</p>
+// TerrainHistory używa już załadowanych campów — brak zbędnego fetch
+function TerrainHistory({ terrainId, allCamps }) {
+  const history = allCamps.filter(c => c.terrain?.id === terrainId)
   if (!history.length) return <p className="text-xs text-gray-400">Brak poprzednich obozów</p>
-
   return (
     <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
       {history.map(c => (
@@ -190,7 +181,7 @@ export default function CampsMapTab({ user, meta }) {
                       <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
                         📜 Historia obozów na tym terenie
                       </summary>
-                      <TerrainHistory terrainId={terrain.id} />
+                      <TerrainHistory terrainId={terrain.id} allCamps={camps} />
                     </details>
 
                     {/* Dodaj kolejny obóz */}

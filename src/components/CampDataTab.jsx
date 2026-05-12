@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CampRegistrationModal from './CampRegistrationModal'
 
 // ── Moduł bazowy: karta z tytułem i możliwością zwijania ─────────────────────
 function Module({ icon, title, children, defaultOpen = true }) {
@@ -32,7 +33,8 @@ function Field({ label, required, children }) {
 const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
 
 // ── Główna zakładka ──────────────────────────────────────────────────────────
-export default function CampDataTab({ meta, onUpdateMeta }) {
+export default function CampDataTab({ meta, onUpdateMeta, userId }) {
+  const [showCampModal, setShowCampModal] = useState(false)
   const metaOk = meta.jednostka && meta.kierownik
 
   return (
@@ -106,11 +108,22 @@ export default function CampDataTab({ meta, onUpdateMeta }) {
                 onChange={e => onUpdateMeta({ miejsce: e.target.value })}
               />
             </Field>
-            <Field label="Termin">
-              <input className={inputCls}
-                placeholder="np. 1–14 lipca 2025"
-                value={meta.termin}
-                onChange={e => onUpdateMeta({ termin: e.target.value })}
+            <Field label="Data rozpoczęcia">
+              <input className={inputCls} type="date"
+                value={meta.date_start || ''}
+                onChange={e => onUpdateMeta({
+                  date_start: e.target.value,
+                  termin: `${e.target.value}${meta.date_end ? ' – ' + meta.date_end : ''}`,
+                })}
+              />
+            </Field>
+            <Field label="Data zakończenia">
+              <input className={inputCls} type="date"
+                value={meta.date_end || ''}
+                onChange={e => onUpdateMeta({
+                  date_end: e.target.value,
+                  termin: `${meta.date_start || ''}${e.target.value ? ' – ' + e.target.value : ''}`,
+                })}
               />
             </Field>
             <Field label="Liczba uczestników">
@@ -220,6 +233,23 @@ export default function CampDataTab({ meta, onUpdateMeta }) {
           </div>
         </Module>
 
+        {/* Opublikuj na mapie */}
+        <div className="bg-gradient-to-r from-green-700 to-green-600 rounded-2xl p-6 text-white">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">🌍</span>
+            <h3 className="font-bold text-lg">Mapa obozów Skautów Europy</h3>
+          </div>
+          <p className="text-green-200 text-sm mb-4">
+            Opublikuj swój obóz na wspólnej mapie — inni drużynowi zobaczą gdzie i kiedy jesteś.
+          </p>
+          <button
+            onClick={() => setShowCampModal(true)}
+            className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-green-50 transition text-sm"
+          >
+            + Dodaj obóz na mapę
+          </button>
+        </div>
+
         {/* Placeholder na przyszłe moduły */}
         <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center text-gray-400">
           <div className="text-3xl mb-2">＋</div>
@@ -228,6 +258,21 @@ export default function CampDataTab({ meta, onUpdateMeta }) {
         </div>
 
       </div>
+
+      {showCampModal && (
+        <CampRegistrationModal
+          onClose={() => setShowCampModal(false)}
+          onSaved={() => setShowCampModal(false)}
+          userId={userId}
+          prefill={{
+            jednostka:    meta.jednostka,
+            kierownik:    meta.kierownik,
+            tel_kierownik: meta.tel_kierownik,
+            date_start:   meta.date_start,
+            date_end:     meta.date_end,
+          }}
+        />
+      )}
     </div>
   )
 }
