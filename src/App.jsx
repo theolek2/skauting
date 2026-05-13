@@ -9,6 +9,7 @@ import AuthModal from './components/AuthModal'
 import OnboardingWizard from './components/OnboardingWizard'
 import DashboardTab from './components/DashboardTab'
 import DuringCampTab from './components/DuringCampTab'
+import DiaryTab from './components/DiaryTab'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -190,6 +191,7 @@ export default function App() {
     { id: 'dashboard', label: 'Pulpit' },
     { id: 'camp',      label: 'Dane obozu' },
     { id: 'plan',      label: 'Plan zajęć' },
+    { id: 'diary',     label: 'Dziennik' },
     { id: 'map',       label: 'Mapa terenu' },
     { id: 'campsmap',  label: 'Mapa obozów' },
   ]
@@ -275,6 +277,9 @@ export default function App() {
           )}
           {activeTab === 'camp' && (
             <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
+          )}
+          {activeTab === 'diary' && (
+            <DiaryTab meta={meta} days={days} activities={activities} />
           )}
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab /></div>
