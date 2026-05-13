@@ -7,6 +7,7 @@ import CampDataTab from './components/CampDataTab'
 import CampsMapTab from './components/CampsMapTab'
 import AuthModal from './components/AuthModal'
 import OnboardingWizard from './components/OnboardingWizard'
+import DashboardTab from './components/DashboardTab'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -22,10 +23,24 @@ const DEFAULT_STATE = {
 export default function App() {
   const [state, setState] = useState(() => loadState() || DEFAULT_STATE)
   const [daysCount, setDaysCount] = useState('')
-  const [activeTab, setActiveTabMain] = useState('plan')
+  // Główne sekcje: 'before' | 'during' | 'tasks' | 'settings'
+  const [mainSection, setMainSection] = useState('before')
+  // Pod-zakładki w sekcji "Przed obozem"
+  const [activeTab, setActiveTabMain] = useState('dashboard')
   const [user, setUser]               = useState(null)
   const [showAuth, setShowAuth]       = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+
+  // Nawigacja z DashboardTab
+  const navigateToSection = (section) => {
+    const map = {
+      'Dane obozu':  'camp',
+      'Plan zajęć':  'plan',
+      'Mapa terenu': 'map',
+      'Mapa obozów': 'campsmap',
+    }
+    if (map[section]) { setActiveTabMain(map[section]); setMainSection('before') }
+  }
 
   // Po zalogowaniu — załaduj profil + zapisane dane obozu z Supabase
   const applyProfile = async (u) => {
@@ -163,245 +178,222 @@ export default function App() {
     )
   }
 
+  const MAIN_SECTIONS = [
+    { id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
+    { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' },
+    { id: 'tasks',    label: 'Zadania',           icon: '📌' },
+    { id: 'settings', label: 'Ustawienia',        icon: '⚙️' },
+  ]
+
+  const BEFORE_TABS = [
+    { id: 'dashboard', label: 'Pulpit' },
+    { id: 'camp',      label: 'Dane obozu' },
+    { id: 'plan',      label: 'Plan zajęć' },
+    { id: 'map',       label: 'Mapa terenu' },
+    { id: 'campsmap',  label: 'Mapa obozów' },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Topbar */}
-      <header className="bg-green-800 text-white px-6 py-3 flex items-center justify-between shadow shrink-0">
-        <div className="flex items-center gap-3">
-          {/* Logo Skautów Europy — wklej plik logo.png do public/ aby zastąpić emoji */}
-          <img
-            src="/logo.png"
-            alt="Skauci Europy"
-            className="h-10 w-auto object-contain"
-            onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }}
-          />
-          <div className="hidden items-center justify-center w-10 h-10 bg-yellow-400 rounded-full text-green-900 font-black text-lg">⚜</div>
-          <div>
-            <h1 className="text-lg font-bold leading-tight">Książka Obozowa</h1>
-            <p className="text-green-300 text-xs">Ramowy plan pracy · Skauci Europy</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Aktywna zakładka */}
-          <span className="text-green-200 text-sm font-semibold hidden sm:block">
-            {{ camp:'🏕️ Dane obozu', plan:'📋 Plan zajęć', map:'🗺️ Mapa terenu', campsmap:'🌍 Mapa obozów' }[activeTab]}
-          </span>
-
-          <p className="text-green-400 text-xs hidden md:block">by Aleksander Nasiłowski</p>
-
-          {user && (
-            <span className="text-green-300 text-xs hidden lg:block">{user.email}</span>
-          )}
-
-          {/* Menu hamburgera */}
-          <div className="relative" id="nav-menu-wrapper">
-            <button
-              onClick={() => document.getElementById('nav-menu').classList.toggle('hidden')}
-              className="flex items-center gap-1 bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition"
-            >
-              ☰ Menu
-            </button>
-            <div id="nav-menu" className="hidden absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-200 min-w-[200px] overflow-hidden" style={{zIndex:2000}}>
-              {[
-                { id: 'camp',     label: '🏕️ Dane obozu' },
-                { id: 'plan',     label: '📋 Plan zajęć' },
-                { id: 'map',      label: '🗺️ Mapa terenu' },
-                { id: 'campsmap', label: '🌍 Mapa obozów' },
-              ].map(t => (
-                <button key={t.id}
-                  onClick={() => {
-                    setActiveTabMain(t.id)
-                    document.getElementById('nav-menu').classList.add('hidden')
-                  }}
-                  className={`w-full text-left px-4 py-3 text-sm font-semibold transition border-b border-gray-100 last:border-0 ${
-                    activeTab === t.id ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >{t.label}</button>
-              ))}
-              <div className="border-t border-gray-200 px-4 py-2">
-                <button onClick={() => signOut()} className="text-xs text-red-500 hover:text-red-700 w-full text-left">
-                  Wyloguj ({user?.email?.split('@')[0]})
-                </button>
-              </div>
-            </div>
-          </div>
-          {activeTab === 'plan' && (
-            <button
-              onClick={handleExport}
-              disabled={!metaOk}
-              className={`text-sm font-bold px-5 py-2 rounded-lg transition ${
-                metaOk ? 'bg-white text-green-800 hover:bg-green-50' : 'bg-green-600 text-green-200 cursor-not-allowed'
-              }`}
-            >
-              📄 Eksportuj PDF
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Zakładka: Dane obozu */}
-      {activeTab === 'camp' && (
-        <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
-      )}
-
-      {/* Zakładka: Mapa obozów (wymaga logowania) */}
-      {activeTab === 'campsmap' && user && (
-        <CampsMapTab user={user} meta={meta} />
-      )}
-      {activeTab === 'campsmap' && !user && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-5xl mb-4">🔒</div>
-            <p className="text-lg font-semibold text-gray-700">Wymagane logowanie</p>
-            <p className="text-sm text-gray-500 mt-1">Dostęp tylko dla @skauci-europy.pl</p>
-            <button onClick={() => setShowAuth(true)} className="mt-4 bg-green-700 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-800">
-              Zaloguj się
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Onboarding wizard — pierwsza wizyta */}
+      {/* Onboarding wizard */}
       {showOnboarding && (
         <div className="fixed inset-0 overflow-y-auto" style={{zIndex:2000}}>
           <OnboardingWizard
-            meta={meta}
-            userId={user?.id}
+            meta={meta} userId={user?.id}
             updateMeta={(newMeta) => update({ meta: newMeta })}
-            onDone={() => { setShowOnboarding(false); setActiveTabMain('plan') }}
+            onDone={() => { setShowOnboarding(false); setMainSection('before'); setActiveTabMain('dashboard') }}
           />
         </div>
       )}
 
-      {/* Zakładka: Mapa */}
-      {activeTab === 'map' && (
-        <div className="flex flex-1 overflow-hidden">
-          <MapTab />
+      {/* Header z nawigacją */}
+      <header className="bg-green-800 text-white shadow shrink-0">
+        {/* Top row */}
+        <div className="px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Skauci Europy" className="h-8 w-auto object-contain"
+              onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }} />
+            <div className="hidden items-center justify-center w-8 h-8 bg-yellow-400 rounded-full text-green-900 font-black text-sm">⚜</div>
+            <div>
+              <h1 className="text-sm font-bold leading-tight">CampOS</h1>
+              <p className="text-green-400 text-xs">Skauci Europy</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-green-300 text-xs hidden md:block">{user?.email?.split('@')[0]}</span>
+            {activeTab === 'plan' && mainSection === 'before' && (
+              <button onClick={handleExport} disabled={!metaOk}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
+                  metaOk ? 'bg-white text-green-800 hover:bg-green-50' : 'bg-green-700 text-green-400 cursor-not-allowed'
+                }`}>
+                📄 PDF
+              </button>
+            )}
+            <button onClick={() => signOut()}
+              className="text-xs text-green-400 hover:text-white px-2 py-1 rounded border border-green-700 hover:border-green-400 transition">
+              Wyloguj
+            </button>
+          </div>
+        </div>
+
+        {/* 4 główne sekcje */}
+        <div className="flex border-t border-green-700">
+          {MAIN_SECTIONS.map(s => (
+            <button key={s.id} onClick={() => setMainSection(s.id)}
+              className={`flex-1 py-2.5 text-xs font-bold transition flex flex-col items-center gap-0.5 ${
+                mainSection === s.id ? 'bg-white text-green-800' : 'text-green-300 hover:text-white hover:bg-green-700'
+              }`}>
+              <span className="text-base">{s.icon}</span>
+              <span className="hidden sm:block">{s.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Sub-nawigacja — widoczna tylko w sekcji "Przed obozem" */}
+        {mainSection === 'before' && (
+          <div className="flex overflow-x-auto border-t border-green-700 bg-green-900">
+            {BEFORE_TABS.map(t => (
+              <button key={t.id} onClick={() => setActiveTabMain(t.id)}
+                className={`px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                  activeTab === t.id ? 'bg-green-600 text-white' : 'text-green-400 hover:text-white'
+                }`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </header>
+
+      {/* ── Treść sekcji ── */}
+
+      {/* PRZED OBOZEM */}
+      {mainSection === 'before' && (
+        <>
+          {activeTab === 'dashboard' && (
+            <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} />
+          )}
+          {activeTab === 'camp' && (
+            <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
+          )}
+          {activeTab === 'map' && (
+            <div className="flex flex-1 overflow-hidden"><MapTab /></div>
+          )}
+          {activeTab === 'campsmap' && (
+            <CampsMapTab user={user} meta={meta} />
+          )}
+          {activeTab === 'plan' && (
+            <div className="flex flex-1 overflow-hidden">
+              <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+                {!metaOk && (
+                  <div className="p-3 border-b border-gray-100">
+                    <button onClick={() => setActiveTabMain('camp')}
+                      className="w-full text-xs text-orange-600 border border-orange-200 bg-orange-50 rounded-lg py-2 hover:bg-orange-100 transition">
+                      ⚠️ Uzupełnij dane obozu
+                    </button>
+                  </div>
+                )}
+                <div className="p-4 border-b border-gray-100">
+                  <TemplatePanel
+                    slots={template}
+                    onChange={(newSlots) => {
+                      const existingIds = new Set(template.map(s => s.id))
+                      const added = newSlots.filter(s => !existingIds.has(s.id))
+                      if (added.length > 0 && days.length > 0) {
+                        update({ template: newSlots, days: days.map(day => ({
+                          ...day,
+                          slots: [...day.slots, ...added.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}` }))]
+                        })) })
+                      } else { update({ template: newSlots }) }
+                    }}
+                    activities={activities}
+                  />
+                </div>
+                <div className="p-4 flex-1">
+                  <ActivityPanel activities={activities} onAdd={addActivity} onEdit={editActivity} onDelete={deleteActivity} />
+                </div>
+              </aside>
+              <main className="flex-1 overflow-y-auto p-5">
+                <div className="flex items-center gap-3 mb-5 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                  <span className="text-sm font-semibold text-gray-700">Liczba dni obozu:</span>
+                  <input type="number" min={1} max={30}
+                    className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
+                    placeholder="np. 10" value={daysCount}
+                    onChange={e => setDaysCount(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && setDays(daysCount)} />
+                  <button onClick={() => setDays(daysCount)}
+                    className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-800">
+                    Ustaw
+                  </button>
+                  {days.length > 0 && <span className="text-sm text-gray-500">Zaplanowane: <b>{days.length}</b> dni</span>}
+                  <button onClick={addDay}
+                    className="ml-auto text-sm text-green-700 border border-green-400 px-3 py-1.5 rounded-lg hover:bg-green-50">
+                    + Dodaj dzień
+                  </button>
+                </div>
+                {days.length === 0 && (
+                  <div className="text-center py-24 text-gray-400">
+                    <div className="text-5xl mb-4">⛺</div>
+                    <p className="text-lg font-semibold">Wpisz liczbę dni i kliknij „Ustaw"</p>
+                  </div>
+                )}
+                {days.map((day, i) => (
+                  <DayCard key={day.id} day={day} index={i} activities={activities}
+                    onChange={updated => updateDay(day.id, updated)}
+                    onDelete={() => deleteDay(day.id)} />
+                ))}
+                {days.length > 0 && (
+                  <button onClick={handleExport} disabled={!metaOk}
+                    className={`w-full mt-2 py-3 rounded-xl font-bold text-base transition shadow ${
+                      metaOk ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}>
+                    📄 Eksportuj PDF — Ramowy Plan Pracy
+                  </button>
+                )}
+              </main>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* W TRAKCIE OBOZU */}
+      {mainSection === 'during' && (
+        <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="text-center">
+            <div className="text-5xl mb-3">⛺</div>
+            <p className="font-semibold">W trakcie obozu</p>
+            <p className="text-sm mt-1">Kalendarz, plan dnia i przyjazdy — wkrótce</p>
+          </div>
         </div>
       )}
 
-      {/* Główny układ — Plan zajęć (tylko gdy zakładka plan) */}
-      {activeTab === 'plan' && <div className="flex flex-1 overflow-hidden">
+      {/* ZADANIA */}
+      {mainSection === 'tasks' && (
+        <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="text-center">
+            <div className="text-5xl mb-3">📌</div>
+            <p className="font-semibold">Zadania</p>
+            <p className="text-sm mt-1">Tablica zadań dla kadry — wkrótce</p>
+          </div>
+        </div>
+      )}
 
-        {/* ── LEWA KOLUMNA ── */}
-        <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-
-          {/* 1. DANE OBOZU */}
-          {/* Skrót do danych obozu */}
-          {!metaOk && (
-            <div className="p-3 border-b border-gray-100">
-              <button onClick={() => setActiveTabMain('camp')}
-                className="w-full text-xs text-orange-600 border border-orange-200 bg-orange-50 rounded-lg py-2 hover:bg-orange-100 transition">
-                ⚠️ Uzupełnij dane obozu → zakładka 🏕️
-              </button>
+      {/* USTAWIENIA */}
+      {mainSection === 'settings' && (
+        <div className="flex-1 overflow-y-auto p-6 max-w-lg mx-auto w-full">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Ustawienia</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
+            <div>
+              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
+              <div className="font-medium">{user?.email}</div>
             </div>
-          )}
-
-          {/* SZABLON DNIA */}
-          <div className="p-4 border-b border-gray-100">
-            <TemplatePanel
-              slots={template}
-              onChange={(newSlots) => {
-                // Znajdź nowo dodane sloty (są w newSlots ale nie ma ich w template)
-                const existingIds = new Set(template.map(s => s.id))
-                const added = newSlots.filter(s => !existingIds.has(s.id))
-                // Propaguj nowe sloty do wszystkich istniejących dni
-                if (added.length > 0 && days.length > 0) {
-                  const updatedDays = days.map(day => ({
-                    ...day,
-                    slots: [
-                      ...day.slots,
-                      ...added.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}` }))
-                    ]
-                  }))
-                  update({ template: newSlots, days: updatedDays })
-                } else {
-                  update({ template: newSlots })
-                }
-              }}
-              activities={activities}
-            />
-          </div>
-
-          {/* 3. ZAJĘCIA WŁASNE */}
-          <div className="p-4 flex-1">
-            <ActivityPanel
-              activities={activities}
-              onAdd={addActivity}
-              onEdit={editActivity}
-              onDelete={deleteActivity}
-            />
-          </div>
-        </aside>
-
-        {/* ── PRAWA KOLUMNA: Plan ── */}
-        <main className="flex-1 overflow-y-auto p-5">
-          {/* Pasek ustawiania dni */}
-          <div className="flex items-center gap-3 mb-5 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <span className="text-sm font-semibold text-gray-700">Liczba dni obozu:</span>
-            <input
-              type="number" min={1} max={30}
-              className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
-              placeholder="np. 10"
-              value={daysCount}
-              onChange={e => setDaysCount(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && setDays(daysCount)}
-            />
-            <button
-              onClick={() => setDays(daysCount)}
-              className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-800"
-            >
-              Ustaw
-            </button>
-            {days.length > 0 && (
-              <span className="text-sm text-gray-500">
-                Zaplanowane: <b>{days.length}</b> {days.length === 1 ? 'dzień' : days.length < 5 ? 'dni' : 'dni'}
-              </span>
-            )}
-            <button
-              onClick={addDay}
-              className="ml-auto text-sm text-green-700 border border-green-400 px-3 py-1.5 rounded-lg hover:bg-green-50"
-            >
-              + Dodaj dzień
+            <hr />
+            <button onClick={() => signOut()}
+              className="w-full text-left text-red-500 hover:text-red-700 text-sm font-semibold py-2">
+              🚪 Wyloguj się
             </button>
           </div>
-
-          {/* Puste */}
-          {days.length === 0 && (
-            <div className="text-center py-24 text-gray-400">
-              <div className="text-5xl mb-4">⛺</div>
-              <p className="text-lg font-semibold">Wpisz liczbę dni i kliknij „Ustaw"</p>
-              <p className="text-sm mt-1">Pamiętaj też uzupełnić dane w lewym panelu</p>
-            </div>
-          )}
-
-          {/* Karty dni */}
-          {days.map((day, i) => (
-            <DayCard
-              key={day.id}
-              day={day}
-              index={i}
-              activities={activities}
-              onChange={updated => updateDay(day.id, updated)}
-              onDelete={() => deleteDay(day.id)}
-            />
-          ))}
-
-          {days.length > 0 && (
-            <button
-              onClick={handleExport}
-              disabled={!metaOk}
-              className={`w-full mt-2 py-3 rounded-xl font-bold text-base transition shadow ${
-                metaOk
-                  ? 'bg-green-700 text-white hover:bg-green-800'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              📄 Eksportuj PDF — Ramowy Plan Pracy
-            </button>
-          )}
-        </main>
-      </div>}
+        </div>
+      )}
     </div>
   )
 }
