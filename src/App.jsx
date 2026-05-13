@@ -8,6 +8,7 @@ import CampsMapTab from './components/CampsMapTab'
 import AuthModal from './components/AuthModal'
 import OnboardingWizard from './components/OnboardingWizard'
 import DashboardTab from './components/DashboardTab'
+import DuringCampTab from './components/DuringCampTab'
 import { makeDay } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -357,13 +358,7 @@ export default function App() {
 
       {/* W TRAKCIE OBOZU */}
       {mainSection === 'during' && (
-        <div className="flex-1 flex items-center justify-center text-gray-400">
-          <div className="text-center">
-            <div className="text-5xl mb-3">⛺</div>
-            <p className="font-semibold">W trakcie obozu</p>
-            <p className="text-sm mt-1">Kalendarz, plan dnia i przyjazdy — wkrótce</p>
-          </div>
-        </div>
+        <DuringCampTab meta={meta} days={days} />
       )}
 
       {/* ZADANIA */}

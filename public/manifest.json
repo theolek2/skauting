@@ -1,0 +1,22 @@
+{
+  "name": "CampOS — Skauci Europy",
+  "short_name": "CampOS",
+  "description": "Książka obozowa Skautów Europy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a4a1a",
+  "theme_color": "#2d6a2d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
