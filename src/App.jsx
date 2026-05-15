@@ -20,6 +20,7 @@ const DEFAULT_STATE = {
   activities: [],
   days: [],
   template: [],
+  activityLog: [],
 }
 
 export default function App() {
@@ -86,11 +87,22 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const { meta, activities, days, template } = state
+  const { meta, activities, days, template, activityLog = [] } = state
 
   useEffect(() => { saveState(state) }, [state])
 
   const update = (patch) => setState(s => ({ ...s, ...patch }))
+
+  const logActivity = (action, icon = '📌') => {
+    setState(s => ({
+      ...s,
+      activityLog: [
+        { id: `al_${Date.now()}`, action, icon, time: new Date().toISOString() },
+        ...(s.activityLog || []).slice(0, 19),
+      ]
+    }))
+  }
+
   const updateMeta = (patch) => {
     const newMeta = { ...meta, ...patch }
     update({ meta: newMeta })
@@ -120,6 +132,7 @@ export default function App() {
       return day
     })
     update({ days: newDays })
+    logActivity(`Ustawiono plan na ${count} ${count === 1 ? 'dzień' : 'dni'}`, '📋')
     setDaysCount('')
   }
   const updateDay = (id, updated) =>
@@ -130,6 +143,7 @@ export default function App() {
     const day = makeDay(days.length)
     day.slots = template.map(s => ({ ...s, id: `slot_${Date.now()}_${Math.random()}` }))
     update({ days: [...days, day] })
+    logActivity('Dodano nowy dzień do planu', '➕')
   }
 
   const handleExport = () => {
@@ -138,6 +152,7 @@ export default function App() {
       return
     }
     generatePdf({ meta, days })
+    logActivity('Wyeksportowano PDF — Ramowy Plan Pracy', '📄')
   }
 
   const metaOk = meta.jednostka && meta.kierownik
@@ -204,7 +219,7 @@ export default function App() {
           <OnboardingWizard
             meta={meta} userId={user?.id}
             updateMeta={(newMeta) => update({ meta: newMeta })}
-            onDone={() => { setShowOnboarding(false); setMainSection('before'); setActiveTabMain('dashboard') }}
+            onDone={() => { setShowOnboarding(false); setMainSection('before'); setActiveTabMain('dashboard'); logActivity('Ukończono konfigurację obozu', '✅') }}
           />
         </div>
       )}
@@ -273,7 +288,7 @@ export default function App() {
       {mainSection === 'before' && (
         <>
           {activeTab === 'dashboard' && (
-            <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} />
+            <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} />
           )}
           {activeTab === 'camp' && (
             <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
