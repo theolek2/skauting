@@ -79,7 +79,7 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
         <div className="flex items-center justify-between px-4 py-2 max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
             <h2 className="font-bold text-gray-800 text-sm truncate max-w-xs">{docLabel || 'Dokument'}</h2>
-            <span className="text-xs text-gray-400 hidden sm:block">Edytuj tekst bezpo\u015brednio — kliknij i pisz</span>
+            <span className="text-xs text-gray-400 hidden sm:block">Edytuj tekst bezpośrednio — kliknij i pisz</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handleSaveDraft} disabled={saving}
@@ -91,7 +91,7 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
               \uD83D\uDCE5 Eksportuj PDF
             </button>
             <button onClick={onClose}
-              className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 text-lg leading-none">\u2715</button>
+              className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 transition font-bold text-lg leading-none">×</button>
           </div>
         </div>
       </div>

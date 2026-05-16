@@ -2,32 +2,89 @@ import { useState, useRef, useCallback } from 'react'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 
+let pdfjsLib = null
+
+function loadPdfJs() {
+  return new Promise((resolve, reject) => {
+    if (pdfjsLib) return resolve(pdfjsLib)
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+    script.onload = () => {
+      // ustaw workera
+      if (window.pdfjsLib) {
+        pdfjsLib = window.pdfjsLib
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+        resolve(pdfjsLib)
+      } else {
+        reject(new Error('pdf.js nie załadowany'))
+      }
+    }
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
+async function pdfToImage(file) {
+  await loadPdfJs()
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const page = await pdf.getPage(1)
+  const viewport = page.getViewport({ scale: 1.5 })
+  const canvas = document.createElement('canvas')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+  const ctx = canvas.getContext('2d')
+  await page.render({ canvasContext: ctx, viewport }).promise
+  return { dataUrl: canvas.toDataURL(), width: viewport.width, height: viewport.height }
+}
+
 export default function ImportDocumentEditor({ onClose, onDocumentSaved }) {
   const [image, setImage] = useState(null)
   const [imageSize, setImageSize] = useState(null)
   const [fields, setFields] = useState([])
   const [dragField, setDragField] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [loading, setLoading] = useState(false)
   const containerRef = useRef(null)
   const fileRef = useRef(null)
   const [docName, setDocName] = useState('')
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setDocName(file.name.replace(/\.[^.]+$/, ''))
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const img = new Image()
-      img.onload = () => {
+    setLoading(true)
+    setFields([])
+
+    try {
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const result = await pdfToImage(file)
         const maxW = 794
-        const scale = Math.min(1, maxW / img.width)
-        setImageSize({ width: img.width * scale, height: img.height * scale })
-        setImage(ev.target.result)
+        const scale = Math.min(1, maxW / result.width)
+        setImageSize({ width: result.width * scale, height: result.height * scale })
+        setImage(result.dataUrl)
+      } else {
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = (ev) => resolve(ev.target.result)
+          reader.readAsDataURL(file)
+        })
+        const img = new Image()
+        img.onload = () => {
+          const maxW = 794
+          const scale = Math.min(1, maxW / img.width)
+          setImageSize({ width: img.width * scale, height: img.height * scale })
+          setImage(dataUrl)
+        }
+        img.src = dataUrl
       }
-      img.src = ev.target.result
+    } catch {
+      alert('Nie udało się wczytać pliku. Spróbuj innego formatu.')
+    } finally {
+      setLoading(false)
     }
-    reader.readAsDataURL(file)
+    // reset input aby można było wybrać ten sam plik ponownie
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   const handleCanvasClick = (e) => {
@@ -90,14 +147,15 @@ export default function ImportDocumentEditor({ onClose, onDocumentSaved }) {
         <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto">
           <div className="flex items-center gap-3">
             <h2 className="font-bold text-gray-800 text-sm">Importuj dokument</h2>
-            {!image && <span className="text-xs text-gray-400">Wybierz obraz lub zeskanowany dokument</span>}
+            {!image && !loading && <span className="text-xs text-gray-400">Wybierz obraz, PDF lub zeskanowany dokument</span>}
+            {loading && <span className="text-xs text-gray-400">Wczytywanie pliku...</span>}
             {image && <span className="text-xs text-gray-400">Kliknij na dokumencie by dodać pole tekstowe</span>}
           </div>
           <div className="flex items-center gap-2">
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFile} className="hidden" />
             <button onClick={() => fileRef.current?.click()}
               className="text-xs text-gray-600 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition">
-              {image ? 'Zmień obraz' : 'Wybierz plik'}
+              {image ? 'Zmień plik' : 'Wybierz plik'}
             </button>
             {fields.length > 0 && (
               <button onClick={handleExport}
@@ -106,23 +164,34 @@ export default function ImportDocumentEditor({ onClose, onDocumentSaved }) {
               </button>
             )}
             <button onClick={onClose}
-              className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 text-lg">×</button>
+              className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 transition font-bold text-lg leading-none">×</button>
           </div>
         </div>
       </div>
 
       {/* Obszar dokumentu */}
       <div className="flex-1 overflow-auto flex justify-center p-4">
-        {!image ? (
+        {!image && !loading && (
           <div className="flex items-center justify-center w-full max-w-2xl">
             <button onClick={() => fileRef.current?.click()}
               className="border-2 border-dashed border-gray-300 rounded-2xl p-16 text-center hover:border-green-400 transition bg-white">
               <div className="text-5xl mb-4">📥</div>
-              <p className="font-semibold text-gray-600">Kliknij aby wybrać obraz dokumentu</p>
-              <p className="text-sm text-gray-400 mt-1">JPG, PNG — skan lub zdjęcie formularza</p>
+              <p className="font-semibold text-gray-600">Kliknij aby wybrać dokument</p>
+              <p className="text-sm text-gray-400 mt-1">JPG, PNG, PDF — skan lub zdjęcie formularza</p>
             </button>
           </div>
-        ) : (
+        )}
+
+        {loading && (
+          <div className="flex items-center justify-center w-full max-w-2xl">
+            <div className="text-center">
+              <div className="animate-spin text-4xl mb-3">⏳</div>
+              <p className="text-sm text-gray-500">Wczytywanie dokumentu...</p>
+            </div>
+          </div>
+        )}
+
+        {image && !loading && (
           <div
             ref={containerRef}
             onClick={handleCanvasClick}
@@ -144,7 +213,6 @@ export default function ImportDocumentEditor({ onClose, onDocumentSaved }) {
                     onChange={e => updateFieldText(f.id, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     placeholder="..."
-                    autoFocus
                   />
                   <button onClick={e => { e.stopPropagation(); removeField(f.id) }}
                     className="text-red-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100">×</button>
