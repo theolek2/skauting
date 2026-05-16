@@ -5,7 +5,7 @@ import { LATO_REGULAR_BASE64 } from '../assets/fonts/latoBase64.js'
 const FONT_NAME = 'Lato'
 const FONT = 'Lato'
 
-export function generateDiary({ meta, days, wychowawca, planItems, campDays }) {
+export function generateDiary({ meta, days, wychowawca, planItems, campDays, activities }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' })
   const W = 148
   const H = 210
@@ -56,7 +56,40 @@ export function generateDiary({ meta, days, wychowawca, planItems, campDays }) {
   doc.setTextColor(150)
   doc.text('Dokument wygenerowany przez CampOS \u00b7 Skauci Europy \u00b7 by Aleksander Nasi\u0142owski', W / 2, H - 8, { align: 'center' })
 
-  // ── STRONA 2: Lista uczestnik\u00f3w (RODO) ─────────────────────────────────
+  // ── STRONA 2: Spis zaj\u0119\u0107 ────────────────────────────────────────────────
+  doc.addPage()
+
+  doc.setFillColor(34, 85, 34)
+  doc.rect(0, 0, W, 12, 'F')
+  doc.setFont(FONT, 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(255)
+  doc.text('SPIS ZAJ\u0118\u0106', W / 2, 8.5, { align: 'center' })
+  doc.setTextColor(0)
+
+  if (!activities || activities.length === 0) {
+    doc.setFont(FONT, 'italic')
+    doc.setFontSize(9)
+    doc.setTextColor(150)
+    doc.text('Brak zaj\u0119\u0107 w spisie', W / 2, 30, { align: 'center' })
+  } else {
+    const spisRows = activities.map((a, i) => [
+      `${i + 1}.`,
+      a.name || '',
+      a.description || '',
+    ])
+    autoTable(doc, {
+      startY: 15,
+      margin: { left: 12, right: 12 },
+      head: [['Nr', 'Nazwa zaj\u0119cia', 'Opis']],
+      body: spisRows,
+      styles: { fontSize: 8, cellPadding: 2.5, font: FONT, fontStyle: 'normal' },
+      headStyles: { fillColor: [60, 120, 60], textColor: 255, fontSize: 8, font: FONT, fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 48 } },
+    })
+  }
+
+  // ── STRONA 3: Lista uczestnik\u00f3w (RODO) ─────────────────────────────────
   doc.addPage()
 
   doc.setFillColor(34, 85, 34)

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { FIXED_ACTIVITIES, DEFAULT_CAMP_ACTIVITIES } from '../utils/defaults'
+import { FIXED_ACTIVITIES } from '../utils/defaults'
 import { generateDiary } from '../utils/generateDiary'
 
 export default function DiaryTab({ meta, days, activities, onNavigate }) {
@@ -48,13 +48,12 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
   const sorted = [...planItems].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
 
   const handleGenerate = () => {
-    generateDiary({ meta, days, wychowawca: wybranyWychowawca, planItems, campDays })
+    generateDiary({ meta, days, wychowawca: wybranyWychowawca, planItems, campDays, activities })
   }
 
   const allTileActivities = [
     ...FIXED_ACTIVITIES.map(a => ({ id: a.id, name: a.name, description: a.description, source: 'fixed' })),
-    ...DEFAULT_CAMP_ACTIVITIES.map(a => ({ id: a.id, name: a.name, description: a.description, source: 'default' })),
-    ...(activities || []).map(a => ({ id: a.id, name: a.name, description: a.description, source: 'custom' })),
+    ...(activities || []).map((a, i) => ({ id: a.id, name: a.name, description: a.description, source: 'spis', label: `${i + 1}. ${a.name}` })),
   ]
 
   // deduplicate by name (keep first occurrence)
@@ -148,13 +147,12 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
                 const added = planItems.some(p => p.name === a.name && !p.isBlok)
                 const colorClass = a.source === 'fixed'
                   ? (added ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-300 hover:border-green-500')
-                  : a.source === 'default'
-                  ? (added ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-600 border-emerald-300 hover:border-emerald-500')
-                  : (added ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-blue-600 border-blue-300 hover:border-blue-500')
+                  : (added ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-600 border-emerald-300 hover:border-emerald-500')
+                const displayName = a.label || a.name
                 return (
                   <button key={a.id} onClick={() => quickAdd(a.name, a.description)}
                     className={`text-xs px-2 py-1 rounded-full border transition ${colorClass}`}>
-                    {added ? '✓ ' : '+ '}{a.name}
+                    {added ? '✓ ' : '+ '}{displayName}
                   </button>
                 )
               })}
