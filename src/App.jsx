@@ -10,6 +10,7 @@ import OnboardingWizard from './components/OnboardingWizard'
 import DashboardTab from './components/DashboardTab'
 import DuringCampTab from './components/DuringCampTab'
 import DiaryTab from './components/DiaryTab'
+import DocumentsTab from './components/DocumentsTab'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -39,6 +40,7 @@ export default function App() {
     const map = {
       'Dane obozu':  'camp',
       'Plan zajęć':  'plan',
+      'Dokumenty':   'docs',
       'Mapa terenu': 'map',
       'Mapa obozów': 'campsmap',
     }
@@ -212,6 +214,7 @@ export default function App() {
     { id: 'camp',      label: 'Dane obozu' },
     { id: 'plan',      label: 'Plan zajęć' },
     { id: 'diary',     label: 'Dziennik zajęć' },
+    { id: 'docs',      label: 'Dokumenty' },
     { id: 'map',       label: 'Mapa terenu' },
     { id: 'campsmap',  label: 'Mapa obozów' },
   ]
@@ -303,6 +306,9 @@ export default function App() {
           {activeTab === 'diary' && (
             <DiaryTab meta={meta} days={days} activities={activities} onNavigate={navigateToSection}
               onAddActivity={addActivity} onEditActivity={editActivity} onDeleteActivity={deleteActivity} />
+          )}
+          {activeTab === 'docs' && (
+            <DocumentsTab meta={meta} onNavigate={navigateToSection} />
           )}
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab /></div>
