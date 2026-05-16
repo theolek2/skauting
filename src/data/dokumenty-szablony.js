@@ -188,11 +188,20 @@ export const DOC_TEMPLATES = {
   zawiadomienie: {
     label: 'Zawiadomienie o obozie',
     icon: '\uD83D\uDCE8',
+    multiRecipient: true,
+    recipients: [
+      { id: 'policja', label: 'Policja', addr: 'Komenda Powiatowa Policji w .........................' },
+      { id: 'psp', label: 'Straż Pożarna', addr: 'Komenda Powiatowa PSP w .........................' },
+      { id: 'szpital', label: 'Szpital / Przychodnia', addr: 'Przychodnia / Szpital w .........................' },
+      { id: 'wojt', label: 'Wójt / Sołtys', addr: 'Wójt Gminy / Sołtys wsi .........................' },
+      { id: 'nadlesnictwo', label: 'Nadleśnictwo', addr: 'Nadleśnictwo .........................' },
+    ],
     html: `
 <p style="text-align:center;font-weight:bold;">Skauci Europy</p>
 <p style="text-align:center;">Stowarzyszenie Harcerstwa Katolickiego &bdquo;Zawisza&rdquo;</p>
 <p style="text-align:center;">Federacja Skautingu Europejskiego</p>
-<p style="margin-top:12px;"><b>Hufiec:</b> {{hufiec}}</p>
+<p style="margin-top:12px;">{{recipient_header}}</p>
+<p style="margin-top:16px;"><b>Hufiec:</b> {{hufiec}}</p>
 <p><b>Kierownik wypoczynku:</b></p>
 <p>Imi\u0119 i nazwisko: {{kierownik}}</p>
 <p>E-mail: .............................................</p>

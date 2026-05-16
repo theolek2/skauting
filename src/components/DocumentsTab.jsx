@@ -71,7 +71,8 @@ export default function DocumentsTab({ meta, onNavigate }) {
           docLabel={selectedDoc.label}
           onClose={() => setSelectedDoc(null)}
           onSave={() => {}}
-        />
+          recipients={selectedDoc.recipients || null}
+          multiRecipient={selectedDoc.multiRecipient || false}
       )}
 
       {/* Import dokumentu */}
