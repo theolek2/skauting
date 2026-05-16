@@ -2,12 +2,16 @@ import { useState, useCallback } from 'react'
 import { FIXED_ACTIVITIES } from '../utils/defaults'
 import { generateDiary } from '../utils/generateDiary'
 
-export default function DiaryTab({ meta, days, activities, onNavigate }) {
+export default function DiaryTab({ meta, days, activities, onNavigate, onAddActivity, onEditActivity, onDeleteActivity }) {
   const wychowawcyList = meta.wychowawcy?.filter(w => w.name) || []
   const [wybranyWychowawca, setWybranyWychowawca] = useState(wychowawcyList[0]?.name || '')
 
   const [planItems, setPlanItems] = useState([])
   const [dragIdx, setDragIdx] = useState(null)
+
+  // Stan dla dodawania nowego zajecia do spisu
+  const [newSpisName, setNewSpisName] = useState('')
+  const [newSpisDesc, setNewSpisDesc] = useState('')
 
   const canGenerate = wybranyWychowawca.trim().length > 0
 
@@ -56,13 +60,20 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
     ...(activities || []).map((a, i) => ({ id: a.id, name: a.name, description: a.description, source: 'spis', label: `${i + 1}. ${a.name}` })),
   ]
 
-  // deduplicate by name (keep first occurrence)
   const seen = new Set()
   const tileActivities = allTileActivities.filter(a => {
     if (seen.has(a.name)) return false
     seen.add(a.name)
     return true
   })
+
+  const handleAddSpis = () => {
+    const name = newSpisName.trim()
+    if (!name) return
+    onAddActivity(name, newSpisDesc.trim())
+    setNewSpisName('')
+    setNewSpisDesc('')
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -71,7 +82,7 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
         <div>
           <h2 className="text-2xl font-bold text-green-900">📓 Dziennik zajęć</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Wygeneruj dziennik zajęć dla wychowawcy — gotowy do druku (format A5)
+            Zarządzaj spisem zajęć i wygeneruj dziennik dla wychowawcy — gotowy do druku (A5)
           </p>
         </div>
 
@@ -129,10 +140,75 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
           )}
         </div>
 
-        {/* Sekcja 2: Plan dnia dziennika */}
+        {/* Sekcja 2: Spis zajęć */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+            Spis zajęć
+            <span className="text-gray-400 font-normal text-sm ml-1">({activities ? activities.length : 0})</span>
+          </h3>
+          <p className="text-xs text-gray-400 mb-4">
+            Katalog zajęć — pojawi się na stronie 2 dziennika. Numeracja automatyczna.
+          </p>
+
+          {/* Dodaj nowe */}
+          <div className="flex gap-2 items-end mb-4">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Nazwa</label>
+              <input className={inp} placeholder="np. Plener malarski"
+                value={newSpisName}
+                onChange={e => setNewSpisName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddSpis()}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Opis (opcjonalnie)</label>
+              <input className={inp} placeholder="Krótki opis..."
+                value={newSpisDesc}
+                onChange={e => setNewSpisDesc(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddSpis()}
+              />
+            </div>
+            <button onClick={handleAddSpis}
+              className="shrink-0 bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-green-800 transition">
+              + Dodaj
+            </button>
+          </div>
+
+          {/* Lista spisu */}
+          {(activities || []).length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4 border border-dashed border-gray-300 rounded-lg">
+              Brak zajęć w spisie — dodaj pierwsze powyżej
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {(activities || []).map((a, i) => (
+                <div key={a.id} className="flex items-center gap-2 group">
+                  <div className="w-8 h-8 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <input className={inp + ' font-medium'} placeholder="Nazwa zajęcia"
+                      value={a.name}
+                      onChange={e => onEditActivity(a.id, e.target.value, a.description)}
+                    />
+                    <input className={inp} placeholder="Opis (opcjonalnie)"
+                      value={a.description}
+                      onChange={e => onEditActivity(a.id, a.name, e.target.value)}
+                    />
+                  </div>
+                  <button onClick={() => onDeleteActivity(a.id)}
+                    className="text-gray-300 hover:text-red-500 text-lg leading-none shrink-0 opacity-0 group-hover:opacity-100 transition">×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sekcja 3: Plan dnia dziennika */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <h3 className="font-bold text-gray-800 mb-1 flex items-center gap-2">
-            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
             Plan dnia dziennika
           </h3>
           <p className="text-xs text-gray-400 mb-4">
@@ -177,36 +253,26 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
                 }}
                 className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1.5 group hover:border-green-300 transition cursor-default"
               >
-                {/* Drag handle */}
-                <span className="text-gray-300 group-hover:text-green-600 cursor-grab active:cursor-grabbing text-sm select-none shrink-0" title="Przeciągnij aby zmienić kolejność">⠿</span>
-
-                {/* Time */}
+                <span className="text-gray-300 group-hover:text-green-600 cursor-grab active:cursor-grabbing text-sm select-none shrink-0">⠿</span>
                 <input type="time" value={item.time}
                   onChange={e => updateItem(item.id, 'time', e.target.value)}
                   className="w-24 border border-gray-200 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-green-400 shrink-0" />
-
-                {/* Name */}
                 <input className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs font-medium text-gray-800 focus:outline-none focus:border-green-400 min-w-0"
                   placeholder={item.isBlok ? 'Blok zajęciowy' : 'Nazwa zajęcia'}
                   value={item.isBlok ? `Blok: ${item.name || ''}` : item.name}
                   onChange={e => updateItem(item.id, 'name', e.target.value.replace(/^Blok: /, ''))}
                 />
-
-                {/* Description */}
                 <textarea className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs text-gray-600 focus:outline-none focus:border-green-400 resize-none min-w-0" rows={1}
                   placeholder="Opis..."
                   value={item.description}
                   onChange={e => updateItem(item.id, 'description', e.target.value)}
                 />
-
-                {/* Delete */}
                 <button onClick={() => removeItem(item.id)}
                   className="text-gray-300 hover:text-red-500 text-lg leading-none shrink-0 opacity-0 group-hover:opacity-100 transition">×</button>
               </div>
             ))}
           </div>
 
-          {/* Przyciski dodawania */}
           <div className="flex gap-2">
             <button onClick={() => addItem()}
               className="flex-1 border-2 border-dashed border-green-400 rounded-xl py-2 text-xs text-green-700 hover:bg-green-50 transition">
@@ -222,14 +288,15 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
         {/* Podgląd struktury */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">4</span>
             Struktura dziennika
           </h3>
           <div className="space-y-2 text-sm">
             {[
               ['📄 Strona 1', 'Strona tytułowa (wychowawca, obóz, termin)'],
-              ['✍️ Strona 2', 'Lista uczestników — Lp. / Imię i nazwisko / Rok urodzenia'],
-              [`📅 Strony 3–${2 + campDays}`, `${campDays} ${campDays === 1 ? 'dzień' : 'dni'} obozu · ${planItems.length} elementów w planie dnia`],
+              ['📋 Strona 2', `Spis zajęć (${activities ? activities.length : 0} pozycji)`],
+              ['✍️ Strona 3', 'Lista uczestników — Lp. / Imię i nazwisko / Rok urodzenia'],
+              [`📅 Strony 4–${3 + campDays}`, `${campDays} ${campDays === 1 ? 'dzień' : 'dni'} obozu · ${planItems.length} elementów w planie dnia`],
             ].map(([page, desc]) => (
               <div key={page} className="flex gap-3 py-1.5 border-b border-gray-100 last:border-0">
                 <span className="font-semibold text-gray-700 w-28 shrink-0 text-xs">{page}</span>
