@@ -27,7 +27,7 @@ export default function App() {
   const [state, setState] = useState(() => loadState() || DEFAULT_STATE)
   const [daysCount, setDaysCount] = useState('')
   // Główne sekcje: 'before' | 'during' | 'tasks' | 'settings'
-  const [mainSection, setMainSection] = useState('before')
+  const [mainSection, setMainSection] = useState('dashboard')
   // Pod-zakładki w sekcji "Przed obozem"
   const [activeTab, setActiveTabMain] = useState('dashboard')
   const [user, setUser]               = useState(null)
@@ -43,6 +43,11 @@ export default function App() {
       'Mapa obozów': 'campsmap',
     }
     if (map[section]) { setActiveTabMain(map[section]); setMainSection('before') }
+  }
+
+  const goMainSection = (id) => {
+    setMainSection(id)
+    if (id === 'before') setActiveTabMain('camp')
   }
 
   // Po zalogowaniu — załaduj profil + zapisane dane obozu z Supabase
@@ -196,6 +201,7 @@ export default function App() {
   }
 
   const MAIN_SECTIONS = [
+    { id: 'dashboard', label: 'Pulpit',           icon: '🏠' },
     { id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
     { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' },
     { id: 'tasks',    label: 'Zadania',           icon: '📌' },
@@ -203,7 +209,6 @@ export default function App() {
   ]
 
   const BEFORE_TABS = [
-    { id: 'dashboard', label: 'Pulpit' },
     { id: 'camp',      label: 'Dane obozu' },
     { id: 'plan',      label: 'Plan zajęć' },
     { id: 'diary',     label: 'Dziennik' },
@@ -219,7 +224,7 @@ export default function App() {
           <OnboardingWizard
             meta={meta} userId={user?.id}
             updateMeta={(newMeta) => update({ meta: newMeta })}
-            onDone={() => { setShowOnboarding(false); setMainSection('before'); setActiveTabMain('dashboard'); logActivity('Ukończono konfigurację obozu', '✅') }}
+            onDone={() => { setShowOnboarding(false); setMainSection('dashboard'); logActivity('Ukończono konfigurację obozu', '✅') }}
           />
         </div>
       )}
@@ -257,7 +262,7 @@ export default function App() {
         {/* 4 główne sekcje */}
         <div className="flex border-t border-green-700">
           {MAIN_SECTIONS.map(s => (
-            <button key={s.id} onClick={() => setMainSection(s.id)}
+            <button key={s.id} onClick={() => goMainSection(s.id)}
               className={`flex-1 py-2.5 text-xs font-bold transition flex flex-col items-center gap-0.5 ${
                 mainSection === s.id ? 'bg-white text-green-800' : 'text-green-300 hover:text-white hover:bg-green-700'
               }`}>
@@ -284,12 +289,14 @@ export default function App() {
 
       {/* ── Treść sekcji ── */}
 
+      {/* PULPIT */}
+      {mainSection === 'dashboard' && (
+        <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} />
+      )}
+
       {/* PRZED OBOZEM */}
       {mainSection === 'before' && (
         <>
-          {activeTab === 'dashboard' && (
-            <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} />
-          )}
           {activeTab === 'camp' && (
             <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
           )}
