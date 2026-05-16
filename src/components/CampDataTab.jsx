@@ -143,16 +143,86 @@ export default function CampDataTab({ meta, onUpdateMeta, userId }) {
           </div>
         </Module>
 
-        {/* Moduł 2: Kontakty */}
-        <Module icon="📞" title="Kontakty alarmowe" defaultOpen={false}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Telefon kierownika">
+        {/* Moduł 3: Kadra — kierownik + wychowawcy */}
+        <Module icon="👥" title="Kadra obozu">
+          <p className="text-xs text-gray-400 mb-4">
+            Uzupełnij dane kierownika i wychowawców — będą widoczni w dzienniku zajęć i dokumentach.
+          </p>
+
+          {/* Kierownik */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <Field label="Kierownik obozu" required>
+              <input className={inputCls}
+                placeholder="Imię i nazwisko"
+                value={meta.kierownik || ''}
+                onChange={e => onUpdateMeta({ kierownik: e.target.value })}
+              />
+            </Field>
+            <Field label="Telefon kierownika" required>
               <input className={inputCls}
                 placeholder="+48 000 000 000"
                 value={meta.tel_kierownik || ''}
                 onChange={e => onUpdateMeta({ tel_kierownik: e.target.value })}
               />
             </Field>
+          </div>
+
+          {/* Wychowawcy */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-700">Wychowawcy</h4>
+              <button type="button"
+                onClick={() => onUpdateMeta({ wychowawcy: [...(meta.wychowawcy || []), { name: '', phone: '' }] })}
+                className="text-xs text-green-700 border border-green-400 px-3 py-1 rounded-lg hover:bg-green-50 transition">
+                + Dodaj wychowawcę
+              </button>
+            </div>
+
+            {(meta.wychowawcy || []).length === 0 && (
+              <p className="text-xs text-gray-400 py-3 text-center border border-dashed border-gray-300 rounded-lg">
+                Brak wychowawców — kliknij „Dodaj wychowawcę"
+              </p>
+            )}
+
+            <div className="space-y-2">
+              {(meta.wychowawcy || []).map((w, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <div className="w-7 h-7 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <input className={inputCls} placeholder="Imię i nazwisko"
+                      value={w.name || ''}
+                      onChange={e => {
+                        const arr = [...(meta.wychowawcy || [])]
+                        arr[i] = { ...arr[i], name: e.target.value }
+                        onUpdateMeta({ wychowawcy: arr })
+                      }}
+                    />
+                    <input className={inputCls} placeholder="+48 000 000 000"
+                      value={w.phone || ''}
+                      onChange={e => {
+                        const arr = [...(meta.wychowawcy || [])]
+                        arr[i] = { ...arr[i], phone: e.target.value }
+                        onUpdateMeta({ wychowawcy: arr })
+                      }}
+                    />
+                  </div>
+                  <button type="button"
+                    onClick={() => {
+                      const arr = (meta.wychowawcy || []).filter((_, idx) => idx !== i)
+                      onUpdateMeta({ wychowawcy: arr })
+                    }}
+                    className="text-red-400 hover:text-red-600 text-lg shrink-0">×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Module>
+
+        {/* Moduł 4: Kontakty alarmowe */}
+        <Module icon="📞" title="Kontakty alarmowe" defaultOpen={false}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Telefon zastępcy kierownika">
               <input className={inputCls}
                 placeholder="+48 000 000 000"
