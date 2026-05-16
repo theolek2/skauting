@@ -211,7 +211,7 @@ export default function App() {
   const BEFORE_TABS = [
     { id: 'camp',      label: 'Dane obozu' },
     { id: 'plan',      label: 'Plan zajęć' },
-    { id: 'diary',     label: 'Dziennik' },
+    { id: 'diary',     label: 'Dziennik zajęć' },
     { id: 'map',       label: 'Mapa terenu' },
     { id: 'campsmap',  label: 'Mapa obozów' },
   ]
@@ -301,7 +301,7 @@ export default function App() {
             <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
           )}
           {activeTab === 'diary' && (
-            <DiaryTab meta={meta} days={days} activities={activities} />
+            <DiaryTab meta={meta} days={days} activities={activities} onNavigate={navigateToSection} />
           )}
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab /></div>
