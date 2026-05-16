@@ -73,6 +73,7 @@ export default function DocumentsTab({ meta, onNavigate }) {
           onSave={() => {}}
           recipients={selectedDoc.recipients || null}
           multiRecipient={selectedDoc.multiRecipient || false}
+        />
       )}
 
       {/* Import dokumentu */}
