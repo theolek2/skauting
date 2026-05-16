@@ -1,6 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { DOC_TEMPLATES } from '../data/dokumenty-szablony.js'
 import DocumentEditor from './DocumentEditor.jsx'
+import ImportDocumentEditor from './ImportDocumentEditor.jsx'
 
 const STORAGE_KEY = 'skauting_custom_docs'
 
@@ -22,6 +23,7 @@ export default function DocumentsTab({ meta, onNavigate }) {
 
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [customDocs, setCustomDocs] = useState(loadCustomDocs)
+  const [showImport, setShowImport] = useState(false)
 
   const allDocs = [...BUILTIN_DOCS, ...customDocs.map(d => ({ ...d, builtin: false }))]
 
@@ -57,7 +59,7 @@ export default function DocumentsTab({ meta, onNavigate }) {
         <div>
           <h2 className="text-2xl font-bold text-green-900">{'\uD83D\uDCC4'} Dokumenty</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Generuj pisma i dokumenty wymagane do organizacji obozu — dane pobierane automatycznie
+            Generuj pisma i dokumenty wymagane do organizacji obozu â€” dane pobierane automatycznie
           </p>
         </div>
 
@@ -90,7 +92,7 @@ export default function DocumentsTab({ meta, onNavigate }) {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm text-gray-800 leading-tight truncate">{doc.label}</div>
                   <div className="text-xs text-gray-400 mt-0.5">
-                    {doc.builtin ? 'Szablon wbudowany' : `W\u0142asny \u2022 ${new Date(doc.updatedAt).toLocaleDateString('pl-PL')}`}
+                    {doc.builtin ? 'Szablon wbudowany' : `Własny \u2022 ${new Date(doc.updatedAt).toLocaleDateString('pl-PL')}`}
                   </div>
                 </div>
               </button>
@@ -105,10 +107,16 @@ export default function DocumentsTab({ meta, onNavigate }) {
         </div>
 
         {metaOk && (
-          <button onClick={handleAddCustom}
-            className="w-full border-2 border-dashed border-gray-300 rounded-2xl py-4 text-sm text-gray-400 hover:border-green-400 hover:text-green-600 transition">
-            + Dodaj w\u0142asny dokument
-          </button>
+          <div className="flex gap-3">
+            <button onClick={handleAddCustom}
+              className="flex-1 border-2 border-dashed border-gray-300 rounded-2xl py-4 text-sm text-gray-400 hover:border-green-400 hover:text-green-600 transition">
+              + Dodaj własny dokument
+            </button>
+            <button onClick={() => setShowImport(true)}
+              className="flex-1 border-2 border-dashed border-gray-300 rounded-2xl py-4 text-sm text-gray-400 hover:border-green-400 hover:text-green-600 transition">
+              📥 Importuj z pliku
+            </button>
+          </div>
         )}
       </div>
 
@@ -122,6 +130,21 @@ export default function DocumentsTab({ meta, onNavigate }) {
           onSave={handleSave}
         />
       )}
+
+      {/* Import dokumentu */}
+      {showImport && (
+        <ImportDocumentEditor
+          onClose={() => setShowImport(false)}
+          onDocumentSaved={(label, html) => {
+            const doc = { id: `cd_${Date.now()}`, label, html, updatedAt: new Date().toISOString() }
+            const updated = [doc, ...customDocs]
+            setCustomDocs(updated)
+            saveCustomDocs(updated)
+            setShowImport(false)
+          }}
+        />
+      )}
     </div>
   )
 }
+
