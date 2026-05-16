@@ -7,7 +7,7 @@ const FONT = 'Lato'
 const FONT_BOLD = 'Lato'
 const FONT_ITALIC = 'Lato'
 
-export function generateDiary({ meta, days, wychowawca, blokiZajeciowe }) {
+export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz1, blokGodz2 }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' })
   const W = 148
   const H = 210
@@ -110,22 +110,21 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe }) {
   doc.text('Uczestnicy wype\u0142niaj\u0105 list\u0119 samodzielnie (RODO)', W / 2, 18, { align: 'center' })
   doc.setTextColor(0)
 
-  const dotImie = '\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9'
-  const dotPodpis = '\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9'
-  const dotUwagi = '\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9'
+  const dotImie = '\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9'
+  const dotRok = '\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9\u02d9'
 
-  const emptyRows = Array.from({ length: 20 }, (_, i) => [`${i + 1}.`, dotImie, dotPodpis, dotUwagi])
+  const emptyRows = Array.from({ length: 20 }, (_, i) => [`${i + 1}.`, dotImie, dotRok])
   autoTable(doc, {
     startY: 22,
     margin: { left: 12, right: 12 },
-    head: [['Lp.', 'Imi\u0119 i nazwisko', 'Podpis', 'Uwagi']],
+    head: [['Lp.', 'Imi\u0119 i nazwisko', 'Rok urodzenia']],
     body: emptyRows,
     styles: { fontSize: 8, cellPadding: 3, font: FONT, fontStyle: 'normal', textColor: [160, 160, 160] },
     headStyles: { fillColor: [60, 120, 60], textColor: 255, fontSize: 8, font: FONT, fontStyle: 'bold' },
     columnStyles: {
       0: { cellWidth: 10 },
-      1: { cellWidth: 55 },
-      2: { cellWidth: 35 },
+      1: { cellWidth: 75 },
+      2: { cellWidth: 40 },
     },
   })
 
@@ -156,15 +155,16 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe }) {
     doc.setTextColor(0)
 
     // Sloty z planu zaj\u0119\u0107
-    const sorted = [...(day.slots || [])].sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+    const planRows = (day.slots || []).map(s => [s.time || '', s.name || '', s.description || ''])
 
-    const planRows = sorted.map(s => [s.time || '', s.name || '', s.description || ''])
-
-    // Dodaj 2 puste bloki zaj\u0119ciowe do wpisania przez wychowawc\u0119
+    // Dodaj 2 puste bloki zaj\u0119ciowe z godzin\u0105 (je\u015bli ustawiona)
     planRows.push(
-      ['', `Blok zaj\u0119ciowy nr ......`, '(wychowawca wpisuje numer bloku)'],
-      ['', `Blok zaj\u0119ciowy nr ......`, '(wychowawca wpisuje numer bloku)'],
+      [blokGodz1 || '', `Blok zaj\u0119ciowy nr ......`, '(wychowawca wpisuje numer bloku)'],
+      [blokGodz2 || '', `Blok zaj\u0119ciowy nr ......`, '(wychowawca wpisuje numer bloku)'],
     )
+
+    // Sortuj wszystkie wiersze po czasie
+    planRows.sort((a, b) => (a[0] || '99:99').localeCompare(b[0] || '99:99'))
 
     autoTable(doc, {
       startY: 17,

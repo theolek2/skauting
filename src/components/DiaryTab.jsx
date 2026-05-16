@@ -10,6 +10,8 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
 
   // Bloki zajęciowe — kaflami
   const [bloki, setBloki] = useState([{ id: 1, nazwa: '', opis: '' }])
+  const [blokGodz1, setBlokGodz1] = useState('')
+  const [blokGodz2, setBlokGodz2] = useState('')
 
   const addBlok = (nazwa = '', opis = '') =>
     setBloki(prev => [...prev, { id: Date.now(), nazwa, opis }])
@@ -36,7 +38,7 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
   const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500'
 
   const handleGenerate = () => {
-    generateDiary({ meta, days, wychowawca, blokiZajeciowe: bloki })
+    generateDiary({ meta, days, wychowawca, blokiZajeciowe: bloki, blokGodz1, blokGodz2 })
   }
 
   const canGenerate = wychowawca.trim().length > 0
@@ -194,10 +196,33 @@ export default function DiaryTab({ meta, days, activities, onNavigate }) {
           </button>
         </div>
 
+        {/* Sekcja 3: Godziny bloków dziennych */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <h3 className="font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+            Godziny bloków w planie dnia
+          </h3>
+          <p className="text-xs text-gray-400 mb-4">
+            Ustaw godzinę, o której 2 bloki zajęciowe mają się pojawić na stronie każdego dnia dziennika. Jeśli nie ustawisz — bloki będą na końcu planu.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Blok zajęciowy nr 1</label>
+              <input type="time" value={blokGodz1} onChange={e => setBlokGodz1(e.target.value)}
+                className={inp} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Blok zajęciowy nr 2</label>
+              <input type="time" value={blokGodz2} onChange={e => setBlokGodz2(e.target.value)}
+                className={inp} />
+            </div>
+          </div>
+        </div>
+
         {/* Podgląd struktury */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+            <span className="bg-green-100 text-green-800 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">4</span>
             Struktura dziennika
           </h3>
           <div className="space-y-2 text-sm">
