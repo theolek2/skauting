@@ -4,10 +4,8 @@ import { LATO_REGULAR_BASE64 } from '../assets/fonts/latoBase64.js'
 
 const FONT_NAME = 'Lato'
 const FONT = 'Lato'
-const FONT_BOLD = 'Lato'
-const FONT_ITALIC = 'Lato'
 
-export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz1, blokGodz2 }) {
+export function generateDiary({ meta, days, wychowawca, planItems, campDays }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' })
   const W = 148
   const H = 210
@@ -17,9 +15,7 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz
   doc.addFont(`${FONT_NAME}-Regular.ttf`, FONT_NAME, 'bold')
   doc.addFont(`${FONT_NAME}-Regular.ttf`, FONT_NAME, 'italic')
 
-  const campDays = (meta.date_start && meta.date_end)
-    ? Math.max(1, Math.ceil((new Date(meta.date_end) - new Date(meta.date_start)) / 86400000) + 1)
-    : days.length
+  const totalDays = campDays || days.length
 
   // ── STRONA 1: Strona tytułowa ──────────────────────────────────────────────
   doc.setFillColor(34, 85, 34)
@@ -60,40 +56,7 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz
   doc.setTextColor(150)
   doc.text('Dokument wygenerowany przez CampOS \u00b7 Skauci Europy \u00b7 by Aleksander Nasi\u0142owski', W / 2, H - 8, { align: 'center' })
 
-  // ── STRONA 2: Bloki zaj\u0119ciowe ──────────────────────────────────────────────
-  doc.addPage()
-
-  doc.setFillColor(34, 85, 34)
-  doc.rect(0, 0, W, 12, 'F')
-  doc.setFont(FONT, 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(255)
-  doc.text('BLOKI ZAJ\u0118CIOWE', W / 2, 8.5, { align: 'center' })
-  doc.setTextColor(0)
-
-  if (blokiZajeciowe.length === 0) {
-    doc.setFont(FONT, 'italic')
-    doc.setFontSize(9)
-    doc.setTextColor(150)
-    doc.text('Brak zdefiniowanych blok\u00f3w zaj\u0119ciowych', W / 2, 30, { align: 'center' })
-  } else {
-    const rows = blokiZajeciowe.map((b, i) => [
-      `${i + 1}.`,
-      b.nazwa || '',
-      b.opis || '',
-    ])
-    autoTable(doc, {
-      startY: 15,
-      margin: { left: 12, right: 12 },
-      head: [['Nr', 'Nazwa zaj\u0119cia', 'Opis / cele']],
-      body: rows,
-      styles: { fontSize: 8, cellPadding: 2.5, font: FONT, fontStyle: 'normal' },
-      headStyles: { fillColor: [60, 120, 60], textColor: 255, fontSize: 8, font: FONT, fontStyle: 'bold' },
-      columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 45 } },
-    })
-  }
-
-  // ── STRONA 3: Lista uczestnik\u00f3w (RODO — wype\u0142niaj\u0105 sami) ─────────────────
+  // ── STRONA 2: Lista uczestnik\u00f3w (RODO) ─────────────────────────────────
   doc.addPage()
 
   doc.setFillColor(34, 85, 34)
@@ -121,15 +84,13 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz
     body: emptyRows,
     styles: { fontSize: 8, cellPadding: 3, font: FONT, fontStyle: 'normal', textColor: [160, 160, 160] },
     headStyles: { fillColor: [60, 120, 60], textColor: 255, fontSize: 8, font: FONT, fontStyle: 'bold' },
-    columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 75 },
-      2: { cellWidth: 40 },
-    },
+    columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 75 }, 2: { cellWidth: 40 } },
   })
 
-  // ── STRONY 4+: Plan dnia dla ka\u017cdego dnia obozu ──────────────────────────
-  for (let i = 0; i < campDays; i++) {
+  // ── STRONY 3+: Plan dnia dla ka\u017cdego dnia obozu ──────────────────────────
+  const sortedItems = [...(planItems || [])].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
+
+  for (let i = 0; i < totalDays; i++) {
     doc.addPage()
 
     const dayDate = meta.date_start
@@ -154,17 +115,12 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz
     if (dayDate) doc.text(dayDate, W / 2, 12, { align: 'center' })
     doc.setTextColor(0)
 
-    // Sloty z planu zaj\u0119\u0107
-    const planRows = (day.slots || []).map(s => [s.time || '', s.name || '', s.description || ''])
-
-    // Dodaj 2 puste bloki zaj\u0119ciowe z godzin\u0105 (je\u015bli ustawiona)
-    planRows.push(
-      [blokGodz1 || '', `Blok zaj\u0119ciowy nr ......`, '(wychowawca wpisuje numer bloku)'],
-      [blokGodz2 || '', `Blok zaj\u0119ciowy nr ......`, '(wychowawca wpisuje numer bloku)'],
-    )
-
-    // Sortuj wszystkie wiersze po czasie
-    planRows.sort((a, b) => (a[0] || '99:99').localeCompare(b[0] || '99:99'))
+    // Wiersze planu dnia z planItems
+    const planRows = sortedItems.map(item => [
+      item.time || '',
+      item.isBlok ? `Blok zaj\u0119ciowy nr ..........` : (item.name || ''),
+      item.description || '',
+    ])
 
     autoTable(doc, {
       startY: 17,
@@ -173,12 +129,10 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz
       body: planRows,
       styles: { fontSize: 8, cellPadding: 2.5, valign: 'top', overflow: 'linebreak', font: FONT, fontStyle: 'normal' },
       headStyles: { fillColor: [60, 120, 60], textColor: 255, fontSize: 8, font: FONT, fontStyle: 'bold' },
-      columnStyles: {
-        0: { cellWidth: 18 },
-        1: { cellWidth: 50 },
-      },
+      columnStyles: { 0: { cellWidth: 18 }, 1: { cellWidth: 50 } },
       didParseCell(data) {
-        if (data.row.index >= planRows.length - 2 && data.section === 'body') {
+        const item = sortedItems[data.row.index]
+        if (item && item.isBlok && data.section === 'body') {
           data.cell.styles.fontStyle = 'italic'
           data.cell.styles.textColor = [100, 100, 100]
           data.cell.styles.fillColor = [245, 245, 245]
@@ -186,7 +140,7 @@ export function generateDiary({ meta, days, wychowawca, blokiZajeciowe, blokGodz
       },
     })
 
-    // Podpisy na dole ka\u017cdej strony dnia
+    // Podpisy na dole strony
     const finalY = doc.lastAutoTable?.finalY || 160
     if (finalY < H - 28) {
       doc.setFontSize(8)

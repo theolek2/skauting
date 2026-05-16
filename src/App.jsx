@@ -10,14 +10,14 @@ import OnboardingWizard from './components/OnboardingWizard'
 import DashboardTab from './components/DashboardTab'
 import DuringCampTab from './components/DuringCampTab'
 import DiaryTab from './components/DiaryTab'
-import { makeDay } from './utils/defaults'
+import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
 import { supabase, signOut, getProfile, upsertProfile, saveCampMeta, loadCampMeta } from './lib/supabase'
 
 const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '', date_start: '', date_end: '' },
-  activities: [],
+  activities: DEFAULT_CAMP_ACTIVITIES.map(a => ({ ...a })),
   days: [],
   template: [],
   activityLog: [],
