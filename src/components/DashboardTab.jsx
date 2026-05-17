@@ -22,11 +22,20 @@ const GROUPS = [
     requires: ['podstawowe'],
   },
   {
+    key: 'wyzywienie',
+    icon: '🍲',
+    label: 'Wyżywienie',
+    items: [
+      { key: 'jadlospis', label: 'Jadłospis', icon: '🍲' },
+    ],
+    requires: [],
+  },
+  {
     key: 'dokumenty',
     icon: '📄',
     label: 'Dokumenty',
     items: [
-      { key: 'docs',  label: 'Dokumenty',     icon: '📄' },
+      { key: 'docs',  label: 'Dokumenty', icon: '📄' },
     ],
     requires: ['podstawowe'],
   },
@@ -35,8 +44,8 @@ const GROUPS = [
     icon: '🗺️',
     label: 'Mapy',
     items: [
-      { key: 'map',      label: 'Mapa terenu',  icon: '🗺️' },
-      { key: 'campsmap', label: 'Mapa obozów',  icon: '🌍' },
+      { key: 'map',      label: 'Mapa terenu', icon: '🗺️' },
+      { key: 'campsmap', label: 'Mapa obozów', icon: '🌍' },
     ],
     requires: [],
   },
@@ -46,7 +55,6 @@ const QUICK_LINKS = [
   { icon: '🏕️', label: 'Dane obozu',  section: 'Dane obozu' },
   { icon: '📋', label: 'Plan zajęć',  section: 'Plan zajęć' },
   { icon: '🗺️', label: 'Mapa terenu', section: 'Mapa terenu' },
-  { icon: '🌍', label: 'Mapa obozów', section: 'Mapa obozów' },
   { icon: '📄', label: 'Dokumenty',   section: 'Dokumenty' },
 ]
 
@@ -181,7 +189,7 @@ export default function DashboardTab({ meta, days, user, onNavigate, activityLog
         {/* Szybki dostęp */}
         <div>
           <h3 className="font-bold text-gray-700 mb-3">Szybki dostęp</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {QUICK_LINKS.map(item => (
               <button key={item.section} onClick={() => onNavigate(item.section)}
                 className="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition">

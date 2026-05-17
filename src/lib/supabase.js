@@ -137,3 +137,30 @@ export async function loadCampMeta(userId) {
     .single()
   return data?.camp_meta || null
 }
+
+// ── Składniki ────────────────────────────────────────────────────────────────
+export async function getAllIngredients() {
+  const { data, error } = await supabase
+    .from('ingredients')
+    .select('*')
+    .order('name')
+  if (error) { console.warn('getAllIngredients:', error.message); return [] }
+  return (data || []).map(i => i.name)
+}
+
+export async function addIngredient(name) {
+  const clean = name.trim().toLowerCase()
+  if (!clean) return
+  const { error } = await supabase
+    .from('ingredients')
+    .upsert([{ name: clean }], { onConflict: 'name', ignoreDuplicates: true })
+  if (error) console.warn('addIngredient:', error.message)
+}
+
+export async function seedIngredients(names) {
+  const rows = names.map(name => ({ name: name.trim().toLowerCase() }))
+  const { error } = await supabase
+    .from('ingredients')
+    .upsert(rows, { onConflict: 'name', ignoreDuplicates: true })
+  if (error) console.warn('seedIngredients:', error.message)
+}

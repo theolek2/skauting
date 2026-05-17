@@ -2,12 +2,12 @@ import { useState } from 'react'
 import MealTemplatePanel, { makeMealSlot } from './MealTemplatePanel'
 import MealDayCard from './MealDayCard'
 
-export default function JadlospisTab({ meta, days, mealTemplate, mealActivities, onUpdate, onAddMealActivity, onEditMealActivity, onDeleteMealActivity }) {
+export default function JadlospisTab({ meta, days, mealTemplate, mealActivities, onUpdate, onAddMealActivity, onEditMealActivity, onDeleteMealActivity, progress, onToggleProgress }) {
   const [daysCount, setDaysCount] = useState('')
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
 
-  const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500'
+  const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500'
 
   const setMeanDays = (n) => {
     const count = Math.max(1, Math.min(30, parseInt(n) || 0))
@@ -43,6 +43,12 @@ export default function JadlospisTab({ meta, days, mealTemplate, mealActivities,
     <div className="flex flex-1 overflow-hidden">
       {/* Lewy panel — szablon + katalog */}
       <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+        {/* Daty obozu */}
+        {meta.date_start && meta.date_end && (
+          <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 font-medium">
+            Obóz: {meta.date_start} – {meta.date_end}
+          </div>
+        )}
         <div className="p-4 border-b border-gray-100">
           <MealTemplatePanel slots={mealTemplate}
             onChange={newSlots => {
@@ -68,7 +74,7 @@ export default function JadlospisTab({ meta, days, mealTemplate, mealActivities,
               value={newDesc} onChange={e => setNewDesc(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAddMeal()} />
             <button onClick={handleAddMeal}
-              className="w-full bg-orange-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-orange-700">
+              className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
               + Dodaj danie
             </button>
           </div>
@@ -90,20 +96,31 @@ export default function JadlospisTab({ meta, days, mealTemplate, mealActivities,
 
       {/* Prawy panel — dni */}
       <main className="flex-1 overflow-y-auto p-5">
+        {/* Header z checkboxem */}
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-bold text-gray-800">🍲 Jadłospis</h2>
+          <button onClick={(e) => onToggleProgress?.('jadlospis', e)}
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+              progress?.jadlospis ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
+            }`}>
+            {progress?.jadlospis ? '✅' : '⬜'} Zrobione
+          </button>
+        </div>
+
         <div className="flex items-center gap-3 mb-5 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <span className="text-sm font-semibold text-gray-700">Liczba dni obozu:</span>
           <input type="number" min={1} max={30}
-            className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+            className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
             placeholder="np. 10" value={daysCount}
             onChange={e => setDaysCount(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && setMeanDays(daysCount)} />
           <button onClick={() => setMeanDays(daysCount)}
-            className="bg-orange-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-orange-700">
+            className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700">
             Ustaw
           </button>
           {days.length > 0 && <span className="text-sm text-gray-500">Zaplanowane: <b>{days.length}</b> dni</span>}
           <button onClick={addDay}
-            className="ml-auto text-sm text-orange-700 border border-orange-400 px-3 py-1.5 rounded-lg hover:bg-orange-50">
+            className="ml-auto text-sm text-blue-700 border border-blue-400 px-3 py-1.5 rounded-lg hover:bg-blue-50">
             + Dodaj dzień
           </button>
         </div>

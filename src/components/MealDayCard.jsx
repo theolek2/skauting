@@ -26,7 +26,7 @@ export default function MealDayCard({ day, index, mealActivities, onChange, onDe
 
   return (
     <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden mb-4">
-      <div className="flex items-center gap-3 bg-orange-600 px-4 py-2.5">
+      <div className="flex items-center gap-3 bg-blue-600 px-4 py-2.5">
         <button onClick={() => setCollapsed(c => !c)}
           className="text-white/70 hover:text-white text-lg w-5 text-center">{collapsed ? '▶' : '▼'}</button>
         <span className="text-white font-bold text-sm whitespace-nowrap">Dzień {index + 1}</span>
@@ -53,9 +53,9 @@ export default function MealDayCard({ day, index, mealActivities, onChange, onDe
             <div key={slot.id} className="flex items-start gap-1 group">
               <div className="flex flex-col pt-1.5 shrink-0 w-7 opacity-0 group-hover:opacity-100 transition">
                 <button onClick={() => moveSlot(i, -1)} disabled={i === 0}
-                  className="text-gray-300 hover:text-orange-700 disabled:opacity-0 text-xs leading-none">▲</button>
+                  className="text-gray-300 hover:text-blue-700 disabled:opacity-0 text-xs leading-none">▲</button>
                 <button onClick={() => moveSlot(i, 1)} disabled={i === slots.length - 1}
-                  className="text-gray-300 hover:text-orange-700 disabled:opacity-0 text-xs leading-none">▼</button>
+                  className="text-gray-300 hover:text-blue-700 disabled:opacity-0 text-xs leading-none">▼</button>
               </div>
               <div className="flex-1">
                 <MealSlotRow slot={slot} mealActivities={mealActivities}
@@ -65,7 +65,7 @@ export default function MealDayCard({ day, index, mealActivities, onChange, onDe
             </div>
           ))}
           <button onClick={addSlot}
-            className="mt-2 w-full text-sm text-orange-700 border border-dashed border-orange-400 rounded-lg py-1.5 hover:bg-orange-50 transition">
+            className="mt-2 w-full text-sm text-blue-700 border border-dashed border-blue-400 rounded-lg py-1.5 hover:bg-blue-50 transition">
             + Dodaj posiłek
           </button>
         </div>

@@ -43,6 +43,7 @@ export default function App() {
   })
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiOrigin, setConfettiOrigin] = useState(null)
+  const [showMenu, setShowMenu] = useState(false)
 
   const toggleProgress = (key, e) => {
     if (e?.currentTarget) {
@@ -63,7 +64,6 @@ export default function App() {
       'Plan zajęć':  'plan',
       'Dokumenty':   'docs',
       'Mapa terenu': 'map',
-      'Mapa obozów': 'campsmap',
     }
     if (map[section]) { setActiveTabMain(map[section]); setMainSection('before') }
   }
@@ -236,7 +236,6 @@ export default function App() {
     { id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
     { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' },
     { id: 'tasks',    label: 'Zadania',           icon: '📌' },
-    { id: 'settings', label: 'Ustawienia',        icon: '⚙️' },
   ]
 
   const BEFORE_TABS = [
@@ -246,7 +245,6 @@ export default function App() {
     { id: 'diary',     label: 'Dziennik zajęć' },
     { id: 'docs',      label: 'Dokumenty' },
     { id: 'map',       label: 'Mapa terenu' },
-    { id: 'campsmap',  label: 'Mapa obozów' },
   ]
 
   return (
@@ -289,6 +287,10 @@ export default function App() {
               className="text-xs text-green-400 hover:text-white px-2 py-1 rounded border border-green-700 hover:border-green-400 transition">
               Wyloguj
             </button>
+            <button onClick={() => setShowMenu(o => !o)}
+              className={`text-xl px-1.5 py-0.5 rounded transition ${showMenu ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'}`}>
+              ☰
+            </button>
           </div>
         </div>
 
@@ -320,6 +322,35 @@ export default function App() {
         )}
       </header>
 
+      {/* Hamburger menu panel */}
+      {showMenu && (
+        <div className="fixed inset-0 z-[2500] flex" onClick={() => setShowMenu(false)}>
+          <div className="flex-1" onClick={() => setShowMenu(false)} />
+          <div className="w-64 bg-white shadow-2xl border-l border-gray-200 overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-4 space-y-3">
+              <button onClick={() => { setActiveTabMain('campsmap'); setMainSection('before'); setShowMenu(false) }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition text-left">
+                <span className="text-2xl">🌍</span>
+                <div>
+                  <div className="font-semibold text-sm text-gray-800">Mapa obozów</div>
+                  <div className="text-xs text-gray-400">Krajowa mapa Skautów Europy</div>
+                </div>
+              </button>
+              <hr />
+              <button onClick={() => { setMainSection('settings'); setShowMenu(false) }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition text-left">
+                <span className="text-2xl">⚙️</span>
+                <div>
+                  <div className="font-semibold text-sm text-gray-800">Ustawienia</div>
+                  <div className="text-xs text-gray-400">{user?.email}</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Treść sekcji ── */}
 
       {/* PULPIT */}
@@ -337,7 +368,8 @@ export default function App() {
             <div className="flex flex-1 overflow-hidden">
               <JadlospisTab meta={meta} days={days} mealTemplate={mealTemplate} mealActivities={mealActivities}
                 onUpdate={update}
-                onAddMealActivity={addMealActivity} onEditMealActivity={editMealActivity} onDeleteMealActivity={deleteMealActivity} />
+                onAddMealActivity={addMealActivity} onEditMealActivity={editMealActivity} onDeleteMealActivity={deleteMealActivity}
+                progress={progress} onToggleProgress={toggleProgress} />
             </div>
           )}
           {activeTab === 'diary' && (
@@ -386,6 +418,15 @@ export default function App() {
                 </div>
               </aside>
               <main className="flex-1 overflow-y-auto p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">📋 Plan zajęć</h2>
+                  <button onClick={(e) => toggleProgress('plan', e)}
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+                      progress?.plan ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
+                    }`}>
+                    {progress?.plan ? '✅' : '⬜'} Zrobione
+                  </button>
+                </div>
                 <div className="flex items-center gap-3 mb-5 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                   <span className="text-sm font-semibold text-gray-700">Liczba dni obozu:</span>
                   <input type="number" min={1} max={30}
