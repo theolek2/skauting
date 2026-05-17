@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { getShoppingList } from '../utils/generateJadlospis.js'
 
 // ── Pomocnicze ────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ function DayPlanView({ day, dayNumber, date }) {
 
 // ── Główny komponent ──────────────────────────────────────────────────────────
 export default function DuringCampTab({ meta, days }) {
-  const [view, setView] = useState('today')      // 'today' | 'calendar'
+  const [view, setView] = useState('today')      // 'today' | 'calendar' | 'shopping'
   const [selectedDay, setSelectedDay] = useState(null)
 
   const today = new Date().toISOString().split('T')[0]
@@ -110,7 +111,7 @@ export default function DuringCampTab({ meta, days }) {
 
       {/* Sub-nav */}
       <div className="bg-green-800 flex shrink-0">
-        {[['today','📅 Dziś'], ['calendar','📆 Kalendarz']].map(([v, l]) => (
+        {[['today','📅 Dziś'], ['calendar','📆 Kalendarz'], ['shopping','🛒 Zakupy']].map(([v, l]) => (
           <button key={v} onClick={() => { setView(v); if (v === 'today') setSelectedDay(null) }}
             className={`flex-1 py-2 text-sm font-semibold transition ${
               view === v ? 'bg-white text-green-800' : 'text-green-300 hover:text-white'
@@ -237,6 +238,47 @@ export default function DuringCampTab({ meta, days }) {
             })}
           </div>
         )}
+
+        {/* Lista zakupów (2-dniowe okna) */}
+        {view === 'shopping' && (() => {
+          const windows = campStart ? getShoppingList(days, campStart) : []
+          return (
+            <div className="flex-1 overflow-y-auto p-4">
+              <h3 className="font-bold text-gray-800 mb-1">🛒 Lista zakupów</h3>
+              <p className="text-xs text-gray-400 mb-4">Agregacja składników z jadłospisu, grupowana co 2 dni</p>
+              {windows.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-4xl mb-3">🛒</div>
+                  <p className="font-semibold">Brak składników w jadłospisie</p>
+                  <p className="text-xs mt-1">Dodaj posiłki ze składnikami w zakładce Jadłospis</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {windows.map((w, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <div className="bg-orange-500 text-white px-4 py-2 font-bold text-sm">{w.label}</div>
+                      <div className="p-3">
+                        {w.items.length === 0 ? (
+                          <p className="text-xs text-gray-400 py-2">Brak składników</p>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+                            {w.items.map((it, j) => (
+                              <div key={j} className="flex items-center gap-2 text-sm py-0.5">
+                                <input type="checkbox" className="accent-orange-500 w-4 h-4" />
+                                <span className="text-gray-700">{it.name}</span>
+                                <span className="text-gray-400 text-xs ml-auto">×{it.qty}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

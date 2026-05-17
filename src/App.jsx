@@ -11,6 +11,7 @@ import DashboardTab from './components/DashboardTab'
 import DuringCampTab from './components/DuringCampTab'
 import DiaryTab from './components/DiaryTab'
 import DocumentsTab from './components/DocumentsTab'
+import JadlospisTab from './components/JadlospisTab'
 import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
@@ -23,6 +24,8 @@ const DEFAULT_STATE = {
   days: [],
   template: [],
   activityLog: [],
+  mealTemplate: [],
+  mealActivities: [],
 }
 
 export default function App() {
@@ -39,8 +42,12 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('skauting_progress') || '{}') } catch { return {} }
   })
   const [showConfetti, setShowConfetti] = useState(false)
+  const [confettiOrigin, setConfettiOrigin] = useState(null)
 
-  const toggleProgress = (key) => {
+  const toggleProgress = (key, e) => {
+    if (e?.currentTarget) {
+      setConfettiOrigin(e.currentTarget.getBoundingClientRect())
+    }
     setProgress(prev => {
       const next = { ...prev, [key]: !prev[key] }
       localStorage.setItem('skauting_progress', JSON.stringify(next))
@@ -108,7 +115,7 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const { meta, activities, days, template, activityLog = [] } = state
+  const { meta, activities, days, template, activityLog = [], mealTemplate = [], mealActivities = [] } = state
 
   useEffect(() => { saveState(state) }, [state])
 
@@ -140,6 +147,14 @@ export default function App() {
     update({ activities: activities.map(a => a.id === id ? { ...a, name, description } : a) })
   const deleteActivity = (id) =>
     update({ activities: activities.filter(a => a.id !== id) })
+
+  // ── Posiłki (jadłospis) ──
+  const addMealActivity = (name, description) =>
+    update({ mealActivities: [...mealActivities, { id: `ma_${Date.now()}`, name, description }] })
+  const editMealActivity = (id, name, description) =>
+    update({ mealActivities: mealActivities.map(a => a.id === id ? { ...a, name, description } : a) })
+  const deleteMealActivity = (id) =>
+    update({ mealActivities: mealActivities.filter(a => a.id !== id) })
 
   // ── Dni ──
   const setDays = (n) => {
@@ -227,6 +242,7 @@ export default function App() {
   const BEFORE_TABS = [
     { id: 'camp',      label: 'Dane obozu' },
     { id: 'plan',      label: 'Plan zajęć' },
+    { id: 'jadlospis', label: 'Jadłospis' },
     { id: 'diary',     label: 'Dziennik zajęć' },
     { id: 'docs',      label: 'Dokumenty' },
     { id: 'map',       label: 'Mapa terenu' },
@@ -316,6 +332,13 @@ export default function App() {
         <>
           {activeTab === 'camp' && (
             <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} progress={progress} onToggleProgress={toggleProgress} />
+          )}
+          {activeTab === 'jadlospis' && (
+            <div className="flex flex-1 overflow-hidden">
+              <JadlospisTab meta={meta} days={days} mealTemplate={mealTemplate} mealActivities={mealActivities}
+                onUpdate={update}
+                onAddMealActivity={addMealActivity} onEditMealActivity={editMealActivity} onDeleteMealActivity={deleteMealActivity} />
+            </div>
           )}
           {activeTab === 'diary' && (
             <DiaryTab meta={meta} days={days} activities={activities} onNavigate={navigateToSection}
@@ -412,11 +435,24 @@ export default function App() {
 
       {/* ZADANIA */}
       {mainSection === 'tasks' && (
-        <div className="flex-1 flex items-center justify-center text-gray-400">
-          <div className="text-center">
-            <div className="text-5xl mb-3">📌</div>
-            <p className="font-semibold">Zadania</p>
-            <p className="text-sm mt-1">Tablica zadań dla kadry — wkrótce</p>
+        <div className="flex-1 overflow-y-auto p-6 max-w-lg mx-auto w-full">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">📌 Zrealizowane funkcje</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-2 text-sm">
+            {[
+              '✅ Pulpit z postępem i grupami',
+              '✅ Konfetti przy zaznaczaniu Zrobione',
+              '✅ Dziennik zajęć + spis + PDF',
+              '✅ Dokumenty + multi-odbiorca + import PDF',
+              '✅ Auto-pobieranie danych z GPS (współrzędne)',
+              '✅ Checkboxy Zrobione w zakładkach',
+              '✅ Kadra — kierownik + wychowawcy',
+              '✅ Jadłospis z kaflami i składnikami',
+              '✅ Lista zakupów (2-dniowe okna)',
+              '✅ Mapa terenu + piktogramy',
+              '✅ Mapa obozów (krajowa)',
+            ].map((t, i) => (
+              <div key={i} className="flex items-center gap-2 py-1">{t}</div>
+            ))}
           </div>
         </div>
       )}
@@ -438,7 +474,7 @@ export default function App() {
           </div>
         </div>
       )}
-      <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} />
+      <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} origin={confettiOrigin} />
     </div>
   )
 }

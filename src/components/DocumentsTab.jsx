@@ -18,7 +18,7 @@ export default function DocumentsTab({ meta, onNavigate, progress, onToggleProgr
         <div>
           <h2 className="text-2xl font-bold text-green-900">📄 Dokumenty</h2>
           <div className="flex items-center gap-2 mt-2">
-            <button onClick={() => onToggleProgress?.('docs')}
+            <button onClick={(e) => onToggleProgress?.('docs', e)}
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
                 progress?.docs ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
               }`}>

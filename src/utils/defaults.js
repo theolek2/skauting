@@ -15,6 +15,14 @@ export const FIXED_ACTIVITIES = [
   { id: 'f14', name: 'Cisza nocna',       description: '' },
 ]
 
+export const FIXED_MEALS = [
+  { id: 'm1', name: 'Śniadanie',        description: 'Chleb, wędlina, ser, pomidor, herbata' },
+  { id: 'm2', name: 'Drugie śniadanie', description: 'Kanapki, owoc, woda' },
+  { id: 'm3', name: 'Obiad',            description: 'Catering / zupa + drugie danie' },
+  { id: 'm4', name: 'Podwieczorek',     description: 'Ciasto, kompot, owoc' },
+  { id: 'm5', name: 'Kolacja',          description: 'Kiełbasa z ogniska, chleb, herbata' },
+]
+
 export const DEFAULT_CAMP_ACTIVITIES = [
   { id: 'dc1',  name: 'INO',                  description: 'Impreza na orientację' },
   { id: 'dc2',  name: 'Gra terenowa',         description: '' },
