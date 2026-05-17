@@ -37,35 +37,16 @@ const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm foc
 export default function CampDataTab({ meta, onUpdateMeta, userId }) {
   const [showCampModal, setShowCampModal] = useState(false)
   const [gpsLoading, setGpsLoading] = useState(false)
-  const [gpsCoords, setGpsCoords] = useState(null)
+  const [geoLat, setGeoLat] = useState(meta.coords?.lat?.toString() || '')
+  const [geoLng, setGeoLng] = useState(meta.coords?.lng?.toString() || '')
   const metaOk = meta.jednostka && meta.kierownik
 
   const handleGeoFetch = async () => {
-    if (!meta.date_start || !meta.date_end) {
-      alert('Najpierw uzupełnij daty obozu')
+    const lat = parseFloat(geoLat)
+    const lng = parseFloat(geoLng)
+    if (!lat || !lng) {
+      alert('Wpisz poprawne współrzędne (np. 50.7658, 22.5287). Skopiuj z Google Maps → prawy klik na mapie.')
       return
-    }
-    // Użyj koordynat z meta lub poproś użytkownika
-    let lat, lng
-    if (meta.coords) {
-      lat = meta.coords.lat
-      lng = meta.coords.lng
-    } else {
-      // Spróbuj wyciągnąć z reverse geocode miejscowości
-      try {
-        const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(meta.miejsce)}&limit=1&accept-language=pl`
-        const res = await fetch(searchUrl, { headers: { 'User-Agent': 'CampOS-Skauting/1.0' } })
-        const data = await res.json()
-        if (!data || data.length === 0) {
-          alert('Nie znaleziono współrzędnych dla podanego miejsca. Wpisz koordynaty GPS w mapie.')
-          return
-        }
-        lat = parseFloat(data[0].lat)
-        lng = parseFloat(data[0].lon)
-      } catch {
-        alert('Błąd geokodowania. Wpisz koordynaty GPS w mapie.')
-        return
-      }
     }
     setGpsLoading(true)
     try {
@@ -87,7 +68,6 @@ export default function CampDataTab({ meta, onUpdateMeta, userId }) {
       if (data.fire) patch.psp = data.fire.name
       if (data.parcel) patch.nr_dzialki = data.parcel.wkbHex?.substring(0, 20) || ''
       onUpdateMeta(patch)
-      setGpsCoords({ lat, lng })
     } catch {
       alert('Nie udało się pobrać wszystkich danych')
     } finally {
@@ -380,11 +360,25 @@ export default function CampDataTab({ meta, onUpdateMeta, userId }) {
 
         {/* Moduł 5: Dane uzupełniające */}
         <Module icon="📍" title="Dane uzupełniające" defaultOpen={false}>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs text-gray-400">Dane administracyjne, leśne i kontaktowe — można pobrać automatycznie z GPS</p>
+          <p className="text-xs text-gray-400 mb-3">
+            Wklej współrzędne z Google Maps (prawy klik → kopiuj) i pobierz dane administracyjne, leśne i kontaktowe.
+          </p>
+          <div className="flex items-end gap-2 mb-4">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Szerokość geogr. (lat)</label>
+              <input className={inputCls} placeholder="np. 50.7658"
+                value={geoLat}
+                onChange={e => setGeoLat(e.target.value)} />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Długość geogr. (lng)</label>
+              <input className={inputCls} placeholder="np. 22.5287"
+                value={geoLng}
+                onChange={e => setGeoLng(e.target.value)} />
+            </div>
             <button onClick={handleGeoFetch} disabled={gpsLoading}
-              className="shrink-0 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition ml-3">
-              {gpsLoading ? '⏳ Pobieram...' : '📍 Pobierz z GPS'}
+              className="shrink-0 bg-blue-600 text-white text-xs font-bold px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+              {gpsLoading ? '⏳' : '📍'} Pobierz
             </button>
           </div>
 
