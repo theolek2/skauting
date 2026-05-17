@@ -1,4 +1,4 @@
-export const DOC_TEMPLATES = {
+﻿export const DOC_TEMPLATES = {
   kontaktowa: {
     label: 'Lista kontaktowa',
     icon: '\uD83D\uDCDE',
@@ -204,7 +204,7 @@ export const DOC_TEMPLATES = {
 <p style="margin-top:16px;"><b>Hufiec:</b> {{hufiec}}</p>
 <p><b>Kierownik wypoczynku:</b></p>
 <p>Imi\u0119 i nazwisko: {{kierownik}}</p>
-<p>E-mail: .............................................</p>
+<p>E-mail: {{email}}</p>
 <p>Telefon: {{tel_kierownik}}</p>
 <p style="margin-top:16px;">............................................................</p>
 <p>(nazwa instytucji)</p>
@@ -212,7 +212,7 @@ export const DOC_TEMPLATES = {
 <p>(adres)</p>
 <p style="text-align:center;font-size:13pt;font-weight:bold;margin:20px 0;">Zawiadomienie o organizacji obozu harcerskiego</p>
 <p>Szanowni Pa\u0144stwo,</p>
-<p>zgodnie z &bdquo;Protoko\u0142em Uzgodnie\u0144 w zakresie bezpiecze\u0144stwa na obozach harcerskich pod namiotami&rdquo; z dnia 19 czerwca 2019 r. uprzejmie informuj\u0119, \u017ce w terminie od {{date_start}} do {{date_end}} na terenie Nadle\u015bnictwa ........................................., w obr\u0119bie le\u015bnictwa ......................................... (oddzia\u0142 le\u015bny nr ..................), odb\u0119dzie si\u0119 ob\u00f3z harcerski {{jednostka}}.</p>
+<p>zgodnie z &bdquo;Protoko\u0142em Uzgodnie\u0144 w zakresie bezpiecze\u0144stwa na obozach harcerskich pod namiotami&rdquo; z dnia 19 czerwca 2019 r. uprzejmie informuj\u0119, \u017ce w terminie od {{date_start}} do {{date_end}} na terenie Nadle\u015bnictwa {{nadlesnictwo}}, w obr\u0119bie le\u015bnictwa {{lesnictwo}} (oddzia\u0142 le\u015bny nr {{oddzial_lesny}}), odb\u0119dzie si\u0119 ob\u00f3z harcerski {{jednostka}}.</p>
 <p>Organizatorem obozu jest {{hufiec}} dzia\u0142aj\u0105cy w ramach Stowarzyszenia Harcerstwa Katolickiego &bdquo;Zawisza&rdquo; &ndash; Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku {{kierownik}}, tel. {{tel_kierownik}}. W obozie we\u017amie udzia\u0142 oko\u0142o {{uczestnicy}} uczestnik\u00f3w w wieku {{wiek}} lat oraz ...... os\u00f3b kadry wychowawczej.</p>
 <p>\u0141\u0105czno\u015b\u0107 z obozem odbywa\u0107 si\u0119 b\u0119dzie za po\u015brednictwem telefon\u00f3w kom\u00f3rkowych, \u0142adowanych poza obozem. Kadra obozu b\u0119dzie korzysta\u0142a z aplikacji RSO do pozyskiwania informacji o mo\u017cliwych zagro\u017ceniach oraz b\u0119dzie te\u017c monitorowa\u0107 na bie\u017c\u0105co prognozy pogody.</p>
 <p>Osobami wyznaczonymi do kontaktu ze s\u0142u\u017cbami s\u0105:</p>

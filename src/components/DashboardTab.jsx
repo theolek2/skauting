@@ -9,6 +9,7 @@ const CHECKLIST = [
   { key: 'date_start',   label: 'Data rozpoczęcia wybrana',  section: 'Dane obozu' },
   { key: 'date_end',     label: 'Data zakończenia wybrana',  section: 'Dane obozu' },
   { key: 'uczestnicy',   label: 'Liczba uczestników wpisana', section: 'Dane obozu' },
+  { key: 'bezp_miejscowosc', label: 'Miejsce bezpieczne wpisane', section: 'Dane obozu' },
   { key: '_days',        label: 'Plan zajęć uzupełniony',    section: 'Plan zajęć', special: true },
 ]
 

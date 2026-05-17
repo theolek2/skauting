@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CampRegistrationModal from './CampRegistrationModal'
+import { fetchAllGeoData } from '../utils/geoportal.js'
 
 // ── Moduł bazowy: karta z tytułem i możliwością zwijania ─────────────────────
 function Module({ icon, title, children, defaultOpen = true }) {
@@ -35,7 +36,64 @@ const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm foc
 // ── Główna zakładka ──────────────────────────────────────────────────────────
 export default function CampDataTab({ meta, onUpdateMeta, userId }) {
   const [showCampModal, setShowCampModal] = useState(false)
+  const [gpsLoading, setGpsLoading] = useState(false)
+  const [gpsCoords, setGpsCoords] = useState(null)
   const metaOk = meta.jednostka && meta.kierownik
+
+  const handleGeoFetch = async () => {
+    if (!meta.date_start || !meta.date_end) {
+      alert('Najpierw uzupełnij daty obozu')
+      return
+    }
+    // Użyj koordynat z meta lub poproś użytkownika
+    let lat, lng
+    if (meta.coords) {
+      lat = meta.coords.lat
+      lng = meta.coords.lng
+    } else {
+      // Spróbuj wyciągnąć z reverse geocode miejscowości
+      try {
+        const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(meta.miejsce)}&limit=1&accept-language=pl`
+        const res = await fetch(searchUrl, { headers: { 'User-Agent': 'CampOS-Skauting/1.0' } })
+        const data = await res.json()
+        if (!data || data.length === 0) {
+          alert('Nie znaleziono współrzędnych dla podanego miejsca. Wpisz koordynaty GPS w mapie.')
+          return
+        }
+        lat = parseFloat(data[0].lat)
+        lng = parseFloat(data[0].lon)
+      } catch {
+        alert('Błąd geokodowania. Wpisz koordynaty GPS w mapie.')
+        return
+      }
+    }
+    setGpsLoading(true)
+    try {
+      const data = await fetchAllGeoData(lat, lng)
+      const patch = {}
+      if (data.geocode) {
+        patch.gmina = data.geocode.gmina
+        patch.powiat = data.geocode.powiat
+        patch.wojewodztwo = data.geocode.wojewodztwo
+      }
+      if (data.forest) patch.nadlesnictwo = data.forest.name
+      if (data.hospital) patch.szpital = data.hospital.address?.split(',')[0]?.trim() || data.hospital.name
+      if (data.nfz) {
+        patch.przychodnia = data.nfz.name
+        patch.tel_przychodnia = data.nfz.phone
+      }
+      if (data.clinic && !patch.przychodnia) patch.przychodnia = data.clinic.name
+      if (data.police) patch.policja = data.police.name
+      if (data.fire) patch.psp = data.fire.name
+      if (data.parcel) patch.nr_dzialki = data.parcel.wkbHex?.substring(0, 20) || ''
+      onUpdateMeta(patch)
+      setGpsCoords({ lat, lng })
+    } catch {
+      alert('Nie udało się pobrać wszystkich danych')
+    } finally {
+      setGpsLoading(false)
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -320,12 +378,114 @@ export default function CampDataTab({ meta, onUpdateMeta, userId }) {
           </button>
         </div>
 
-        {/* Placeholder na przyszłe moduły */}
-        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center text-gray-400">
-          <div className="text-3xl mb-2">＋</div>
-          <p className="text-sm font-semibold">Kolejne moduły wkrótce</p>
-          <p className="text-xs mt-1">Lista uczestników · Harmonogram posiłków · Budżet · Apteczka</p>
-        </div>
+        {/* Moduł 5: Dane uzupełniające */}
+        <Module icon="📍" title="Dane uzupełniające" defaultOpen={false}>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs text-gray-400">Dane administracyjne, leśne i kontaktowe — można pobrać automatycznie z GPS</p>
+            <button onClick={handleGeoFetch} disabled={gpsLoading}
+              className="shrink-0 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition ml-3">
+              {gpsLoading ? '⏳ Pobieram...' : '📍 Pobierz z GPS'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <Field label="E-mail kierownika">
+              <input className={inputCls} placeholder="np. kierownik@druzyna.pl"
+                value={meta.email || ''}
+                onChange={e => onUpdateMeta({ email: e.target.value })} />
+            </Field>
+            <Field label="Liczba kadry">
+              <input className={inputCls} type="number" placeholder="np. 5"
+                value={meta.liczba_kadry || ''}
+                onChange={e => onUpdateMeta({ liczba_kadry: e.target.value })} />
+            </Field>
+            <Field label="Gmina">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.gmina || ''}
+                onChange={e => onUpdateMeta({ gmina: e.target.value })} />
+            </Field>
+            <Field label="Powiat">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.powiat || ''}
+                onChange={e => onUpdateMeta({ powiat: e.target.value })} />
+            </Field>
+          </div>
+
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">Dane leśne</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <Field label="Nadleśnictwo">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.nadlesnictwo || ''}
+                onChange={e => onUpdateMeta({ nadlesnictwo: e.target.value })} />
+            </Field>
+            <Field label="Leśnictwo">
+              <input className={inputCls}
+                value={meta.lesnictwo || ''}
+                onChange={e => onUpdateMeta({ lesnictwo: e.target.value })} />
+            </Field>
+            <Field label="Oddział leśny nr">
+              <input className={inputCls}
+                value={meta.oddzial_lesny || ''}
+                onChange={e => onUpdateMeta({ oddzial_lesny: e.target.value })} />
+            </Field>
+            <Field label="Nr działki">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.nr_dzialki || ''}
+                onChange={e => onUpdateMeta({ nr_dzialki: e.target.value })} />
+            </Field>
+          </div>
+
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">Służby lokalne</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Policja">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.policja || ''}
+                onChange={e => onUpdateMeta({ policja: e.target.value })} />
+            </Field>
+            <Field label="Straż Pożarna (PSP)">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.psp || ''}
+                onChange={e => onUpdateMeta({ psp: e.target.value })} />
+            </Field>
+            <Field label="Szpital">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.szpital || ''}
+                onChange={e => onUpdateMeta({ szpital: e.target.value })} />
+            </Field>
+            <Field label="Przychodnia NFZ">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.przychodnia || ''}
+                onChange={e => onUpdateMeta({ przychodnia: e.target.value })} />
+            </Field>
+            <Field label="Telefon przychodni">
+              <input className={inputCls} placeholder="Auto z GPS"
+                value={meta.tel_przychodnia || ''}
+                onChange={e => onUpdateMeta({ tel_przychodnia: e.target.value })} />
+            </Field>
+          </div>
+        </Module>
+
+        {/* Moduł 6: Miejsce bezpieczne (schronienie) */}
+        <Module icon="🏠" title="Miejsce bezpieczne (schronienie)">
+          <p className="text-xs text-gray-400 mb-4">Miejsce tymczasowego schronienia na wypadek ewakuacji — wymagane przed obozem.</p>
+          <div className="grid grid-cols-1 gap-3">
+            <Field label="Miejscowość" required>
+              <input className={inputCls}
+                value={meta.bezp_miejscowosc || ''}
+                onChange={e => onUpdateMeta({ bezp_miejscowosc: e.target.value })} />
+            </Field>
+            <Field label="Budynek / nazwa">
+              <input className={inputCls}
+                value={meta.bezp_budynek || ''}
+                onChange={e => onUpdateMeta({ bezp_budynek: e.target.value })} />
+            </Field>
+            <Field label="Dokładny adres">
+              <input className={inputCls}
+                value={meta.bezp_adres || ''}
+                onChange={e => onUpdateMeta({ bezp_adres: e.target.value })} />
+            </Field>
+          </div>
+        </Module>
 
       </div>
 
