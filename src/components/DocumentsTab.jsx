@@ -5,7 +5,7 @@ import ImportDocumentEditor from './ImportDocumentEditor.jsx'
 
 const BUILTIN_DOCS = Object.entries(DOC_TEMPLATES).map(([id, t]) => ({ id, ...t }))
 
-export default function DocumentsTab({ meta, onNavigate }) {
+export default function DocumentsTab({ meta, onNavigate, progress, onToggleProgress }) {
   const metaOk = meta.jednostka && meta.kierownik
 
   const [selectedDoc, setSelectedDoc] = useState(null)
@@ -17,6 +17,14 @@ export default function DocumentsTab({ meta, onNavigate }) {
 
         <div>
           <h2 className="text-2xl font-bold text-green-900">📄 Dokumenty</h2>
+          <div className="flex items-center gap-2 mt-2">
+            <button onClick={() => onToggleProgress?.('docs')}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+                progress?.docs ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
+              }`}>
+              {progress?.docs ? '✅' : '⬜'} Zrobione
+            </button>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             Generuj pisma i dokumenty wymagane do organizacji obozu — dane pobierane automatycznie
           </p>

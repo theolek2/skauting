@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { FIXED_ACTIVITIES } from '../utils/defaults'
 import { generateDiary } from '../utils/generateDiary'
 
-export default function DiaryTab({ meta, days, activities, onNavigate, onAddActivity, onEditActivity, onDeleteActivity }) {
+export default function DiaryTab({ meta, days, activities, onNavigate, onAddActivity, onEditActivity, onDeleteActivity, progress, onToggleProgress }) {
   const wychowawcyList = meta.wychowawcy?.filter(w => w.name) || []
   const [wybranyWychowawca, setWybranyWychowawca] = useState(wychowawcyList[0]?.name || '')
 
@@ -81,6 +81,14 @@ export default function DiaryTab({ meta, days, activities, onNavigate, onAddActi
 
         <div>
           <h2 className="text-2xl font-bold text-green-900">📓 Dziennik zajęć</h2>
+          <div className="flex items-center gap-2 mt-2">
+            <button onClick={() => onToggleProgress?.('diary')}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+                progress?.diary ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
+              }`}>
+              {progress?.diary ? '✅' : '⬜'} Zrobione
+            </button>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             Zarządzaj spisem zajęć i wygeneruj dziennik dla wychowawcy — gotowy do druku (A5)
           </p>

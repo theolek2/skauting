@@ -1,16 +1,53 @@
 import { useMemo } from 'react'
 
-const CHECKLIST = [
-  { key: 'typ_obozu',    label: 'Typ obozu wybrany',        section: 'Dane obozu' },
-  { key: 'jednostka',    label: 'Nazwa jednostki wpisana',   section: 'Dane obozu' },
-  { key: 'kierownik',    label: 'Kierownik wpisany',         section: 'Dane obozu' },
-  { key: 'tel_kierownik',label: 'Telefon kierownika',        section: 'Dane obozu' },
-  { key: 'miejsce',      label: 'Miejsce obozu wpisane',     section: 'Dane obozu' },
-  { key: 'date_start',   label: 'Data rozpoczęcia wybrana',  section: 'Dane obozu' },
-  { key: 'date_end',     label: 'Data zakończenia wybrana',  section: 'Dane obozu' },
-  { key: 'uczestnicy',   label: 'Liczba uczestników wpisana', section: 'Dane obozu' },
-  { key: 'bezp_miejscowosc', label: 'Miejsce bezpieczne wpisane', section: 'Dane obozu' },
-  { key: '_days',        label: 'Plan zajęć uzupełniony',    section: 'Plan zajęć', special: true },
+const GROUPS = [
+  {
+    key: 'podstawowe',
+    icon: '🏕️',
+    label: 'Podstawowe',
+    items: [
+      { key: 'camp',  label: 'Dane obozu',   icon: '🏕️' },
+      { key: 'kadra', label: 'Kadra',         icon: '👥' },
+    ],
+    requires: [],
+  },
+  {
+    key: 'planowanie',
+    icon: '📅',
+    label: 'Planowanie',
+    items: [
+      { key: 'plan',  label: 'Plan zajęć',    icon: '📋' },
+      { key: 'diary', label: 'Dziennik zajęć', icon: '📓' },
+    ],
+    requires: ['podstawowe'],
+  },
+  {
+    key: 'dokumenty',
+    icon: '📄',
+    label: 'Dokumenty',
+    items: [
+      { key: 'docs',  label: 'Dokumenty',     icon: '📄' },
+    ],
+    requires: ['podstawowe'],
+  },
+  {
+    key: 'mapy',
+    icon: '🗺️',
+    label: 'Mapy',
+    items: [
+      { key: 'map',      label: 'Mapa terenu',  icon: '🗺️' },
+      { key: 'campsmap', label: 'Mapa obozów',  icon: '🌍' },
+    ],
+    requires: [],
+  },
+]
+
+const QUICK_LINKS = [
+  { icon: '🏕️', label: 'Dane obozu',  section: 'Dane obozu' },
+  { icon: '📋', label: 'Plan zajęć',  section: 'Plan zajęć' },
+  { icon: '🗺️', label: 'Mapa terenu', section: 'Mapa terenu' },
+  { icon: '🌍', label: 'Mapa obozów', section: 'Mapa obozów' },
+  { icon: '📄', label: 'Dokumenty',   section: 'Dokumenty' },
 ]
 
 function relativeTime(iso) {
@@ -25,15 +62,16 @@ function relativeTime(iso) {
   return `${days} dni temu`
 }
 
-const QUICK_LINKS = [
-  { icon: '🏕️', label: 'Dane obozu',  section: 'Dane obozu' },
-  { icon: '📋', label: 'Plan zajęć',  section: 'Plan zajęć' },
-  { icon: '🗺️', label: 'Mapa terenu', section: 'Mapa terenu' },
-  { icon: '🌍', label: 'Mapa obozów', section: 'Mapa obozów' },
-  { icon: '📄', label: 'Dokumenty',   section: 'Dokumenty' },
-]
+function groupProgress(group, progress) {
+  const done = group.items.filter(i => progress[i.key]).length
+  return { done, total: group.items.length, pct: Math.round((done / group.items.length) * 100) }
+}
 
-export default function DashboardTab({ meta, days, user, onNavigate, activityLog }) {
+function isGroupLocked(group, groupStates) {
+  return group.requires.some(r => groupStates[r]?.pct < 100)
+}
+
+export default function DashboardTab({ meta, days, user, onNavigate, activityLog, progress = {} }) {
   const today = new Date()
 
   const daysToStart = meta.date_start
@@ -44,17 +82,6 @@ export default function DashboardTab({ meta, days, user, onNavigate, activityLog
     ? Math.ceil((new Date(meta.date_start) - today) / 86400000) - 21
     : null
 
-  const checklist = CHECKLIST.map(item => ({
-    ...item,
-    done: item.special
-      ? (item.key === '_days' ? days.length > 0 : false)
-      : Boolean(meta[item.key]),
-  }))
-
-  const progress = Math.round((checklist.filter(c => c.done).length / checklist.length) * 100)
-
-  const firstMissing = checklist.find(c => !c.done)
-
   const greeting = useMemo(() => {
     const h = today.getHours()
     if (h < 12) return 'Dzień dobry'
@@ -63,6 +90,13 @@ export default function DashboardTab({ meta, days, user, onNavigate, activityLog
   }, [])
 
   const name = meta.kierownik?.split(' ')[0] || user?.email?.split('@')[0] || 'Drużynowy'
+
+  const groupStates = {}
+  GROUPS.forEach(g => { groupStates[g.key] = groupProgress(g, progress) })
+
+  const totalDone = GROUPS.reduce((s, g) => s + groupStates[g.key].done, 0)
+  const totalItems = GROUPS.reduce((s, g) => s + groupStates[g.key].total, 0)
+  const totalPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -74,73 +108,75 @@ export default function DashboardTab({ meta, days, user, onNavigate, activityLog
           <p className="text-green-200 text-sm">
             {meta.jednostka ? meta.jednostka : 'Uzupełnij dane obozu aby zobaczyć szczegóły'}
           </p>
-
-          {/* Countdown */}
           {daysToStart !== null && (
             <div className="flex gap-4 mt-4 flex-wrap">
               <div className={`bg-white/20 rounded-xl px-4 py-3 text-center min-w-[100px] ${daysToStart < 0 ? 'bg-green-500/30' : ''}`}>
-                <div className="text-2xl font-bold">
-                  {daysToStart < 0 ? '🏕️' : daysToStart}
-                </div>
+                <div className="text-2xl font-bold">{daysToStart < 0 ? '🏕️' : daysToStart}</div>
                 <div className="text-xs text-green-200 mt-0.5">
                   {daysToStart < 0 ? 'Obóz trwa!' : daysToStart === 0 ? 'Dziś start!' : 'dni do obozu'}
                 </div>
               </div>
               {daysToKuratorium !== null && daysToKuratorium > 0 && (
-                <div className={`rounded-xl px-4 py-3 text-center min-w-[120px] ${
-                  daysToKuratorium <= 7 ? 'bg-red-500/40' : 'bg-white/20'
-                }`}>
+                <div className={`rounded-xl px-4 py-3 text-center min-w-[120px] ${daysToKuratorium <= 7 ? 'bg-red-500/40' : 'bg-white/20'}`}>
                   <div className="text-2xl font-bold">{daysToKuratorium}</div>
-                  <div className="text-xs text-green-200 mt-0.5">
-                    {daysToKuratorium <= 0 ? '⚠️ Kuratorium!' : 'dni do wysyłki kuratorium'}
-                  </div>
+                  <div className="text-xs text-green-200 mt-0.5">dni do wysyłki kuratorium</div>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Następny krok — prowadzenie za rękę */}
-        {firstMissing && progress < 100 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-            <span className="text-2xl shrink-0">👉</span>
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-amber-800">Następny krok</div>
-              <div className="text-sm text-amber-700">{firstMissing.label}</div>
-            </div>
-            <button onClick={() => onNavigate(firstMissing.section)}
-              className="shrink-0 bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-amber-700 transition">
-              Przejdź →
-            </button>
-          </div>
-        )}
-
-        {/* Postęp */}
+        {/* Ogólny postęp */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-800">Postęp przygotowań</h3>
-            <span className="text-2xl font-bold text-green-700">{progress}%</span>
+            <span className="text-2xl font-bold text-green-700">{totalPct}%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-3 mb-4">
-            <div className="bg-green-600 h-3 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            <div className="bg-green-600 h-3 rounded-full transition-all" style={{ width: `${totalPct}%` }} />
           </div>
-          <div className="space-y-2">
-            {checklist.map(item => (
-              <div key={item.key} className="flex items-center gap-3 text-sm">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs ${
-                  item.done ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
-                }`}>{item.done ? '✓' : '○'}</span>
-                <span className={item.done ? 'text-gray-700' : 'text-gray-400'}>{item.label}</span>
-                {!item.done && (
-                  <button onClick={() => onNavigate(item.section)}
-                    className="ml-auto text-xs text-green-600 hover:underline shrink-0">
-                    Uzupełnij →
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-gray-400">{totalDone} z {totalItems} punktów zaliczonych</p>
         </div>
+
+        {/* Grupy */}
+        {GROUPS.map(g => {
+          const gs = groupStates[g.key]
+          const locked = isGroupLocked(g, groupStates)
+          return (
+            <div key={g.key} className={`bg-white rounded-2xl border-2 p-5 ${locked ? 'border-gray-100 opacity-50' : 'border-gray-200'}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">{g.icon}</span>
+                <h3 className="font-bold text-gray-800">{g.label}</h3>
+                <span className={`text-xs font-bold ml-auto px-2 py-0.5 rounded-full ${
+                  gs.pct === 100 ? 'bg-green-100 text-green-700' : gs.pct > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'
+                }`}>{gs.done}/{gs.total}</span>
+                {locked && <span className="text-xs text-gray-400 ml-1">🔒</span>}
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+                <div className={`h-2 rounded-full transition-all ${gs.pct === 100 ? 'bg-green-500' : 'bg-amber-400'}`} style={{ width: `${gs.pct}%` }} />
+              </div>
+              <div className="space-y-1.5">
+                {g.items.map(item => {
+                  const done = progress[item.key]
+                  return (
+                    <button key={item.key}
+                      onClick={() => onNavigate(g.key === 'podstawowe' && item.key === 'kadra' ? 'Dane obozu' : item.label)}
+                      className={`w-full flex items-center gap-2 text-left text-sm px-3 py-1.5 rounded-lg transition ${
+                        done ? 'bg-green-50 text-green-800' : locked ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50 text-gray-600'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs ${
+                        done ? 'bg-green-500 text-white' : locked ? 'bg-gray-100 text-gray-300' : 'bg-gray-200 text-gray-400'
+                      }`}>{done ? '✓' : '○'}</span>
+                      <span className="text-base">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
 
         {/* Szybki dostęp */}
         <div>
@@ -177,7 +213,7 @@ export default function DashboardTab({ meta, days, user, onNavigate, activityLog
           </div>
         )}
 
-        {/* Ostatnio robiłeś — historia aktywności */}
+        {/* Ostatnio robiłeś */}
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <h3 className="font-bold text-gray-800 mb-3">Ostatnio robiłeś…</h3>
           {(activityLog && activityLog.length > 0) ? (

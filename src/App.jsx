@@ -11,6 +11,7 @@ import DashboardTab from './components/DashboardTab'
 import DuringCampTab from './components/DuringCampTab'
 import DiaryTab from './components/DiaryTab'
 import DocumentsTab from './components/DocumentsTab'
+import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
@@ -34,6 +35,19 @@ export default function App() {
   const [user, setUser]               = useState(null)
   const [showAuth, setShowAuth]       = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [progress, setProgress] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skauting_progress') || '{}') } catch { return {} }
+  })
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  const toggleProgress = (key) => {
+    setProgress(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      localStorage.setItem('skauting_progress', JSON.stringify(next))
+      if (!prev[key]) setShowConfetti(true)
+      return next
+    })
+  }
 
   // Nawigacja z DashboardTab
   const navigateToSection = (section) => {
@@ -294,21 +308,22 @@ export default function App() {
 
       {/* PULPIT */}
       {mainSection === 'dashboard' && (
-        <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} />
+        <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} progress={progress} />
       )}
 
       {/* PRZED OBOZEM */}
       {mainSection === 'before' && (
         <>
           {activeTab === 'camp' && (
-            <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} />
+            <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} progress={progress} onToggleProgress={toggleProgress} />
           )}
           {activeTab === 'diary' && (
             <DiaryTab meta={meta} days={days} activities={activities} onNavigate={navigateToSection}
-              onAddActivity={addActivity} onEditActivity={editActivity} onDeleteActivity={deleteActivity} />
+              onAddActivity={addActivity} onEditActivity={editActivity} onDeleteActivity={deleteActivity}
+              progress={progress} onToggleProgress={toggleProgress} />
           )}
           {activeTab === 'docs' && (
-            <DocumentsTab meta={meta} onNavigate={navigateToSection} />
+            <DocumentsTab meta={meta} onNavigate={navigateToSection} progress={progress} onToggleProgress={toggleProgress} />
           )}
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab /></div>
@@ -423,6 +438,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} />
     </div>
   )
 }

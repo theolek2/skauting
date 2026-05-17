@@ -34,7 +34,7 @@ function Field({ label, required, children }) {
 const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
 
 // ── Główna zakładka ──────────────────────────────────────────────────────────
-export default function CampDataTab({ meta, onUpdateMeta, userId }) {
+export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onToggleProgress }) {
   const [showCampModal, setShowCampModal] = useState(false)
   const [gpsLoading, setGpsLoading] = useState(false)
   const [geoLat, setGeoLat] = useState(meta.coords?.lat?.toString() || '')
@@ -82,6 +82,14 @@ export default function CampDataTab({ meta, onUpdateMeta, userId }) {
         {/* Nagłówek */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-green-900">🏕️ Dane obozu</h2>
+          <div className="flex items-center gap-2 mt-2">
+            <button onClick={() => { onToggleProgress?.('camp'); if (meta.jednostka && meta.kierownik) onToggleProgress?.('kadra') }}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+                progress?.camp ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
+              }`}>
+              {progress?.camp ? '✅' : '⬜'} Zrobione
+            </button>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             Wypełnij dane obozu — pojawią się na stronie tytułowej eksportowanego PDF
           </p>
