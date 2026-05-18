@@ -200,29 +200,25 @@
 <p style="text-align:center;font-weight:bold;">Skauci Europy</p>
 <p style="text-align:center;">Stowarzyszenie Harcerstwa Katolickiego &bdquo;Zawisza&rdquo;</p>
 <p style="text-align:center;">Federacja Skautingu Europejskiego</p>
-<p style="margin-top:12px;">{{recipient_header}}</p>
+<p style="margin-top:12px;">{{recipient_name}}</p><p style="margin-top:4px;">{{recipient_addr}}</p>
 <p style="margin-top:16px;"><b>Hufiec:</b> {{hufiec}}</p>
 <p><b>Kierownik wypoczynku:</b></p>
 <p>Imi\u0119 i nazwisko: {{kierownik}}</p>
 <p>E-mail: {{email}}</p>
 <p>Telefon: {{tel_kierownik}}</p>
-<p style="margin-top:16px;">............................................................</p>
-<p>(nazwa instytucji)</p>
-<p>............................................................</p>
-<p>(adres)</p>
 <p style="text-align:center;font-size:13pt;font-weight:bold;margin:20px 0;">Zawiadomienie o organizacji obozu harcerskiego</p>
 <p>Szanowni Pa\u0144stwo,</p>
 <p>zgodnie z &bdquo;Protoko\u0142em Uzgodnie\u0144 w zakresie bezpiecze\u0144stwa na obozach harcerskich pod namiotami&rdquo; z dnia 19 czerwca 2019 r. uprzejmie informuj\u0119, \u017ce w terminie od {{date_start}} do {{date_end}} na terenie Nadle\u015bnictwa {{nadlesnictwo}}, w obr\u0119bie le\u015bnictwa {{lesnictwo}} (oddzia\u0142 le\u015bny nr {{oddzial_lesny}}), odb\u0119dzie si\u0119 ob\u00f3z harcerski {{jednostka}}.</p>
-<p>Organizatorem obozu jest {{hufiec}} dzia\u0142aj\u0105cy w ramach Stowarzyszenia Harcerstwa Katolickiego &bdquo;Zawisza&rdquo; &ndash; Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku {{kierownik}}, tel. {{tel_kierownik}}. W obozie we\u017amie udzia\u0142 oko\u0142o {{uczestnicy}} uczestnik\u00f3w w wieku {{wiek}} lat oraz ...... os\u00f3b kadry wychowawczej.</p>
+<p>Organizatorem obozu jest {{hufiec}} dzia\u0142aj\u0105cy w ramach Stowarzyszenia Harcerstwa Katolickiego &bdquo;Zawisza&rdquo; &ndash; Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku {{kierownik}}, tel. {{tel_kierownik}}. W obozie we\u017amie udzia\u0142 oko\u0142o {{uczestnicy}} uczestnik\u00f3w w wieku {{wiek}} lat oraz {{liczba_kadry}} os\u00f3b kadry wychowawczej.</p>
 <p>\u0141\u0105czno\u015b\u0107 z obozem odbywa\u0107 si\u0119 b\u0119dzie za po\u015brednictwem telefon\u00f3w kom\u00f3rkowych, \u0142adowanych poza obozem. Kadra obozu b\u0119dzie korzysta\u0142a z aplikacji RSO do pozyskiwania informacji o mo\u017cliwych zagro\u017ceniach oraz b\u0119dzie te\u017c monitorowa\u0107 na bie\u017c\u0105co prognozy pogody.</p>
 <p>Osobami wyznaczonymi do kontaktu ze s\u0142u\u017cbami s\u0105:</p>
-<p>......................................... (imi\u0119 i nazwisko) ......................... (tel.) ......................... (sie\u0107)</p>
-<p>......................................... (imi\u0119 i nazwisko) ......................... (tel.) ......................... (sie\u0107)</p>
+<p>{{kontakt1}} (imi\u0119 i nazwisko) {{tel_kontakt1}} (tel.)</p>
+<p>{{kontakt2}} (imi\u0119 i nazwisko) {{tel_kontakt2}} (tel.)</p>
 <p>Ob\u00f3z prowadzony b\u0119dzie w oparciu o klasyczny system zast\u0119powy (odmienny od modelu funkcjonuj\u0105cego w innych organizacjach harcerskich). Podstawow\u0105 jednostk\u0105 wychowawcz\u0105 jest kilkuosobowy zast\u0119p stanowi\u0105cy sta\u0142\u0105, autonomiczn\u0105 wsp\u00f3lnot\u0119. Ka\u017cdy zast\u0119p samodzielnie przygotowuje posi\u0142ki, odpowiada za porz\u0105dek oraz buduje w\u0142asn\u0105 infrastruktur\u0119 obozow\u0105.</p>
 <p>W pierwszych 3-5 dniach obozu uczestnicy wznosz\u0105 w ramach pionierki swoje tzw. &bdquo;gniazda&rdquo; &ndash; obejmuj\u0105ce platformy namiotowe z wyplatanymi pryczami, sto\u0142y (jadalny i kuchenny), punkt do mycia r\u0105k, zmywalni\u0119, p\u00f3\u0142ki na sprz\u0119t oraz bram\u0119 wej\u015bciow\u0105. Konstrukcje wykonywane s\u0105 wy\u0142\u0105cznie z \u017cerdzi i sznurka, bez u\u017cycia gwo\u017adzi, z zastosowaniem tradycyjnych wi\u0105za\u0144 oraz po\u0142\u0105cze\u0144 ko\u0142kowych wykonywanych r\u0119cznym \u015bwidrem; platformy s\u0105 zabezpieczane plandekami lub tropikami. Ka\u017cdy zast\u0119p posiada w\u0142asne palenisko oraz wydzielone i odpowiednio zabezpieczone zaplecze sanitarne (latryny i prysznice).</p>
 <p>Program obozu obejmuje zar\u00f3wno codzienn\u0105 prac\u0119 w zast\u0119pach, jak i wsp\u00f3lne przedsi\u0119wzi\u0119cia ca\u0142ej dru\u017cyny, takie jak kilkudniowa gra terenowa (Wielka Gra), konkurs kulinarny oraz 2-3-dniowa wyprawa poza teren obozu (Explo). Regularnie organizowane s\u0105 tak\u017ce wieczorne ogniska programowe. Istotnym elementem obozu jest \u017cycie religijne &ndash; Msze \u015awi\u0119te sprawowane s\u0105 w kaplicy polowej, a w wyje\u017adzie uczestniczy towarzysz\u0105cy nam duszpasterz.</p>
 <p>Kadra obozu buduje odr\u0119bne gniazdo (tzw. Kraal). W naszej strukturze nie wyst\u0119puje odr\u0119bna funkcja komendanta czy obo\u017anego - t\u0119 rol\u0119 pe\u0142ni kierownik wypoczynku, najcz\u0119\u015bciej szef jednostki lub przyboczny.</p>
-<p>Wyznaczone miejsce tymczasowego schronienia znajduje si\u0119 w ................................. (miejscowo\u015b\u0107), w budynku ................................. przy ul. ................................. (dok\u0142adny adres).</p>
+<p>Wyznaczone miejsce tymczasowego schronienia znajduje si\u0119 w {{bezp_miejscowosc}} (miejscowo\u015b\u0107), w budynku {{bezp_budynek}} przy ul. {{bezp_adres}} (dok\u0142adny adres).</p>
 <p>W zwi\u0105zku z organizacj\u0105 obozu zawiadamiam Pa\u0144stwa o naszym pobycie na wskazanym terenie. W razie wyst\u0105pienia sytuacji nadzwyczajnej zwr\u00f3cimy si\u0119 do Pa\u0144stwa o wsparcie zgodnie z w\u0142a\u015bciwo\u015bci\u0105 s\u0142u\u017cb.</p>
 <p>Uprzejmie prosz\u0119 o pisemne potwierdzenie otrzymania niniejszego zawiadomienia.</p>
 <p style="margin-top:14px;"><b>Za\u0142\u0105czniki:</b></p>
