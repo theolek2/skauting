@@ -172,15 +172,19 @@ export default function MapTab({ user, meta }) {
 
   const handleGenerateMap = async () => {
     if (!mapRef) return
-    setStep('edit')
-    // Screenshot mapy z aktualnie wybraną warstwą
+    // Screenshot mapy z aktualnie wybraną warstwą — zrób ZANIM zmienisz step
     try {
       await new Promise(r => setTimeout(r, 800))
-      const canvas = await html2canvas(mapRef.getContainer(), { useCORS: true })
+      const canvas = await html2canvas(mapRef.getContainer(), {
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+      })
       setMapImageUrl(canvas.toDataURL())
-    } catch {
-      // fallback — jeśli html2canvas nie zadziała, użytkownik i tak może eksportować
+    } catch (e) {
+      console.warn('html2canvas failed, using fallback', e)
     }
+    setStep('edit')
     // Zapytaj o dodanie na mapę kraju tylko jeśli obóz nie jest jeszcze zaplanowany
     if (!meta?.date_start) {
       setTimeout(() => setShowCampPrompt(true), 300)
