@@ -5,38 +5,37 @@ import PictogramPanel from './map/PictogramPanel'
 import MapEditor from './map/MapEditor'
 import { makePlacedItem, DEFAULT_ARROW_COLORS } from '../utils/mapPictograms'
 
-// Dostawcy map satelitarnych
+// Dostawcy map — wszyscy darmowi, legalni, bez klucza API
 const MAP_PROVIDERS = [
   {
-    id: 'google',
-    name: 'Google Satellite',
-    url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    subdomains: '0123',
-    attribution: '© Google',
-    maxZoom: 21,
-  },
-  {
-    id: 'google_hybrid',
-    name: 'Google Hybrid (sat + drogi)',
-    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    subdomains: '0123',
-    attribution: '© Google',
-    maxZoom: 21,
-  },
-  {
     id: 'esri',
-    name: 'ESRI World Imagery',
+    name: '🛰️ Satelita (Esri)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: '© Esri',
     maxZoom: 19,
   },
   {
-    id: 'esri_labels',
-    name: 'ESRI + opisy',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '© Esri',
+    id: 'topo',
+    name: '🏔️ Topograficzna',
+    url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenTopoMap, © OSM',
+    maxZoom: 17,
+  },
+  {
+    id: 'osm',
+    name: '🗺️ Ulice (OSM)',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    subdomains: 'abc',
+    attribution: '© OpenStreetMap',
     maxZoom: 19,
-    labels: true,
+  },
+  {
+    id: 'carto',
+    name: '🎨 Jasna (CartoDB)',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    subdomains: 'abcd',
+    attribution: '© CartoDB, © OSM',
+    maxZoom: 19,
   },
 ]
 
@@ -150,7 +149,7 @@ export default function MapTab() {
   const [locationName, setLocationName] = useState('')
   const [mapRef, setMapRef] = useState(null)
   const [mapImageUrl, setMapImageUrl] = useState(null)
-  const [providerId, setProviderId] = useState('google')
+  const [providerId, setProviderId] = useState('esri')
   const [items, setItems] = useState([])
   const [selected, setSelected] = useState(null)
   const [arrowColors, setArrowColors] = useState(DEFAULT_ARROW_COLORS)
@@ -367,7 +366,7 @@ export default function MapTab() {
           >
             {(() => {
               const p = MAP_PROVIDERS.find(x => x.id === providerId) || MAP_PROVIDERS[0]
-              return <>
+              return (
                 <TileLayer
                   key={p.id}
                   url={p.url}
@@ -375,14 +374,7 @@ export default function MapTab() {
                   maxZoom={p.maxZoom || 19}
                   subdomains={p.subdomains || 'abc'}
                 />
-                {p.labels && (
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution="© OpenStreetMap"
-                    opacity={0.4}
-                  />
-                )}
-              </>
+              )
             })()}
             <MapEventsCapture onReady={setMapRef} />
           </MapContainer>

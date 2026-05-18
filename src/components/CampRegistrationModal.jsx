@@ -194,7 +194,7 @@ export default function CampRegistrationModal({ onClose, onSaved, userId, prefil
                   zoom={pickedPos ? 13 : 6}
                   style={{width:'100%',height:'100%'}}
                 >
-                  <TileLayer url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" subdomains="0123" />
+                  <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" attribution="© Esri" />
                   <LocationPicker onPick={(pos) => {
                     setPickedPos(pos)
                     setCoordInput(`${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`)

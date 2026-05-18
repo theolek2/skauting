@@ -13,6 +13,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
+const MAP_PROVIDERS = {
+  esri:  { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '© Esri', maxZoom: 19, sub: 'abc' },
+  topo:  { url: 'https://tile.opentopomap.org/{z}/{x}/{y}.png', attr: '© OpenTopoMap', maxZoom: 17, sub: 'abc' },
+  osm:   { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '© OSM', maxZoom: 19, sub: 'abc' },
+  carto: { url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attr: '© CartoDB', maxZoom: 19, sub: 'abcd' },
+}
+
 // Kolorowe ikony markerów
 const makeIcon = (color) => L.divIcon({
   className: '',
@@ -56,6 +63,7 @@ export default function CampsMapTab({ user, meta }) {
   const [addToTerrain, setAddToTerrain]   = useState(null)  // terrain do dodania kolejnego obozu
   const [filter, setFilter]               = useState('all')
   const [search, setSearch]               = useState('')
+  const [providerId, setProviderId]       = useState('esri')
 
   const load = () => {
     setLoading(true)
@@ -124,6 +132,13 @@ export default function CampsMapTab({ user, meta }) {
           className="bg-green-700 text-white font-bold px-4 py-1.5 rounded-lg hover:bg-green-800 text-sm">
           + Dodaj obóz
         </button>
+        <select value={providerId} onChange={e => setProviderId(e.target.value)}
+          className="bg-green-700 text-white text-xs border border-green-500 rounded px-2 py-1 focus:outline-none">
+          <option value="esri">🛰️ Satelita</option>
+          <option value="topo">🏔️ Topo</option>
+          <option value="osm">🗺️ Ulice</option>
+          <option value="carto">🎨 Jasna</option>
+        </select>
       </div>
 
       {/* Mapa */}
@@ -135,10 +150,11 @@ export default function CampsMapTab({ user, meta }) {
         )}
         <MapContainer center={[52.0, 19.5]} zoom={6} style={{width:'100%',height:'100%'}}>
           <TileLayer
-            url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-            subdomains="0123"
-            attribution="© Google"
-            maxZoom={20}
+            key={providerId}
+            url={MAP_PROVIDERS[providerId]?.url || MAP_PROVIDERS.esri.url}
+            attribution={MAP_PROVIDERS[providerId]?.attr || MAP_PROVIDERS.esri.attr}
+            maxZoom={MAP_PROVIDERS[providerId]?.maxZoom || 19}
+            subdomains={MAP_PROVIDERS[providerId]?.sub || 'abc'}
           />
 
           {terrainGroups.map(({ terrain, camps: tc }) => {

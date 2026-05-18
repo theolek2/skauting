@@ -215,7 +215,7 @@ export default function OnboardingWizard({ onDone, updateMeta, meta, userId }) {
                 value={coordInput} onChange={e => handleCoordInput(e.target.value)} />
               <div className="h-48 rounded-xl overflow-hidden border border-gray-200 mt-2">
                 <MapContainer center={coords ? [coords.lat, coords.lng] : [52, 20]} zoom={coords ? 13 : 6} style={{width:'100%',height:'100%'}}>
-                  <TileLayer url="https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" subdomains="0123" />
+                  <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" attribution="© Esri" />
                   <LocationPicker onPick={pos => { setCoords(pos); setCoordInput(`${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`) }} />
                   {coords && <><Marker position={coords} /><MapFlyTo pos={coords} /></>}
                 </MapContainer>
