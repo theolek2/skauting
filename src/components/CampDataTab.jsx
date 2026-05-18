@@ -52,6 +52,7 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
       const patch = {}
       if (data.geocode) { patch.gmina = data.geocode.gmina; patch.powiat = data.geocode.powiat; patch.wojewodztwo = data.geocode.wojewodztwo }
       if (data.forest) patch.nadlesnictwo = data.forest.name
+      if (data.forestRange) patch.lesnictwo = data.forestRange.name
       if (data.parcel) patch.nr_dzialki = 'Pobrano'
       if (data.nfz) { patch.przychodnia = data.nfz.name; patch.tel_przychodnia = data.nfz.phone }
       if (data.hospitals?.[0]) patch.szpital = data.hospitals[0].name

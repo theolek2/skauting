@@ -136,23 +136,45 @@ async function addOsrmRoutes(points, originLat, originLng) {
   return results
 }
 
-// ── Nadleśnictwo — Nominatim first, WFS fallback ───────────────────────────
+// ── BDL OGC API — Nadleśnictwo ──────────────────────────────────────────────
 async function getForestDistrict(lat, lng) {
-  // 1. Nominatim — działa szybko, CORS OK, prosty JSON
-  const nominatim = await searchNominatim(lat, lng, 'nadleśnictwo')
-  if (nominatim.length > 0) return { name: nominatim[0].name }
-
-  // 2. WFS PRG — poprawna warstwa: ms:U06_Nadlesnictwo (GML tylko)
   try {
-    const epsg = toEpsg2180(lat, lng)
-    const bbox = `${epsg.x - 500},${epsg.y - 500},${epsg.x + 500},${epsg.y + 500},urn:ogc:def:crs:EPSG::2180`
-    const url = `https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&TYPENAMES=ms:U06_Nadlesnictwo&SRSNAME=urn:ogc:def:crs:EPSG::2180&BBOX=${bbox}&outputFormat=text/xml;%20subtype=gml/3.2.1`
+    const bbox = `${lng - 0.02},${lat - 0.02},${lng + 0.02},${lat + 0.02}`
+    const url = `https://ogcapi.bdl.lasy.gov.pl/collections/nadlesnictwa/items?bbox=${bbox}&limit=1`
     const res = await fetch(url)
     if (!res.ok) return null
-    const text = await res.text()
-    const nameMatch = text.match(/<ms:nazwa>([^<]+)<\/ms:nazwa>/)
-    if (nameMatch) return { name: nameMatch[1] }
-  } catch { /* WFS failed — ok */ }
+    const json = await res.json()
+    const feature = json?.features?.[0]
+    if (feature) return { name: feature.properties?.nazwa || '' }
+  } catch {}
+  return null
+}
+
+// ── BDL OGC API — Leśnictwo ─────────────────────────────────────────────────
+async function getForestRange(lat, lng) {
+  try {
+    const bbox = `${lng - 0.02},${lat - 0.02},${lng + 0.02},${lat + 0.02}`
+    const url = `https://ogcapi.bdl.lasy.gov.pl/collections/lesnictwa/items?bbox=${bbox}&limit=1`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const json = await res.json()
+    const feature = json?.features?.[0]
+    if (feature) return { name: feature.properties?.nazwa || '' }
+  } catch {}
+  return null
+}
+
+// ── ULDK — numer działki przez Vercel proxy ─────────────────────────────────
+export async function getParcelNumber(lat, lng) {
+  try {
+    const res = await fetch(`/api/uldk?lat=${lat}&lng=${lng}`)
+    if (!res.ok) return null
+    const json = await res.json()
+    if (json?.raw) {
+      const lines = json.raw.trim().split('\n')
+      if (lines[0] === '0') return { wkbHex: lines[1] }
+    }
+  } catch {}
   return null
 }
 
@@ -209,24 +231,9 @@ export async function findNfzClinic(lat, lng) {
   } catch { return null }
 }
 
-// ── ULDK — numer działki z GPS ──────────────────────────────────────────────
-export async function getParcelNumber(lat, lng) {
-  const { x, y } = toEpsg2180(lat, lng)
-  try {
-    const url = `https://uldk.gugik.gov.pl/?request=GetParcelByXY&xy=${x},${y}&srs=EPSG:2180`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const text = await res.text()
-    if (!text || text.startsWith('-1')) return null
-    const lines = text.trim().split('\n')
-    if (lines[0] !== '0') return null
-    return { wkbHex: lines[1] }
-  } catch { return null }
-}
-
 // ── Główna funkcja — pobierz wszystko z filtrami jurysdykcyjnymi ────────────
 export async function fetchAllGeoData(lat, lng) {
-  const [geo, hospitalList, policeList, fireList, clinicList, nfz, forest, parcel] = await Promise.allSettled([
+  const [geo, hospitalList, policeList, fireList, clinicList, nfz, forest, forestRange, parcel] = await Promise.allSettled([
     reverseGeocode(lat, lng),
     findWithRoute(lat, lng, 'hospital'),
     findWithRoute(lat, lng, 'police'),
@@ -234,6 +241,7 @@ export async function fetchAllGeoData(lat, lng) {
     findWithRoute(lat, lng, 'clinic'),
     findNfzClinic(lat, lng),
     getForestDistrict(lat, lng),
+    getForestRange(lat, lng),
     getParcelNumber(lat, lng),
   ])
 
@@ -275,6 +283,7 @@ export async function fetchAllGeoData(lat, lng) {
     clinics: clinicList.value || [],
     nfz: nfz.value,
     forest: forest.value,
+    forestRange: forestRange.value,
     parcel: parcel.value,
   }
 }
