@@ -39,7 +39,16 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
   const [geoLat, setGeoLat] = useState(meta.coords?.lat?.toString() || '')
   const [geoLng, setGeoLng] = useState(meta.coords?.lng?.toString() || '')
   const [gpsLoading, setGpsLoading] = useState(false)
-  const [geoResults, setGeoResults] = useState(null)
+  const [geoResults, setGeoResults] = useState(() => {
+    try {
+      const raw = localStorage.getItem('skauting_geo_results')
+      if (raw) {
+        const cached = JSON.parse(raw)
+        if (cached.lat === geoLat && cached.lng === geoLng) return cached.data
+      }
+    } catch {}
+    return null
+  })
   const metaOk = meta.jednostka && meta.kierownik
 
   const handleGeoFetch = async () => {
@@ -49,10 +58,9 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
     try {
       const data = await fetchAllGeoData(lat, lng)
       setGeoResults(data)
+      try { localStorage.setItem('skauting_geo_results', JSON.stringify({ lat: geoLat, lng: geoLng, data })) } catch {}
       const patch = {}
       if (data.geocode) { patch.gmina = data.geocode.gmina; patch.powiat = data.geocode.powiat; patch.wojewodztwo = data.geocode.wojewodztwo }
-      if (data.forest) patch.nadlesnictwo = data.forest.name
-      if (data.forestRange) patch.lesnictwo = data.forestRange.name
       if (data.parcel) patch.nr_dzialki = 'Pobrano'
       if (data.nfz) { patch.przychodnia = data.nfz.name; patch.tel_przychodnia = data.nfz.phone }
       if (data.hospitals?.[0]) patch.szpital = data.hospitals[0].name
