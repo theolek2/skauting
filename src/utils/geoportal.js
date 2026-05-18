@@ -83,16 +83,57 @@ async function queryOverpass(amenity, lat, lng, radius = 40000) {
   } catch { return [] }
 }
 
+// ── Nominatim search (fallback gdy Overpass nie ma danych) ──────────────────
+async function searchNominatim(lat, lng, query) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=pl&bounded=1&viewbox=${lng - 0.3},${lat - 0.2},${lng + 0.3},${lat + 0.2}`
+    const res = await fetch(url, { headers: { 'User-Agent': 'CampOS-Skauting/1.0' } })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data || []).map(item => ({
+      name: item.display_name?.split(',')[0]?.trim() || '',
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      city: item.address?.city || item.address?.town || '',
+      state: item.address?.state || '',
+      phone: '',
+      address: item.display_name || '',
+    }))
+  } catch { return [] }
+}
+
+// ── Odległość w linii prostej (Haversine, fallback dla OSRM) ────────────────
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return +(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1)
+}
+
+// ── Mapowanie amenity → nazwa dla Nominatim ─────────────────────────────────
+function amenityLabel(amenity) {
+  const map = {
+    hospital: 'szpital',
+    fire_station: 'straż pożarna PSP',
+    police: 'komenda policji',
+    clinic: 'przychodnia POZ',
+  }
+  return map[amenity] || amenity
+}
+
 // ── Dodaj czasy OSRM do listy punktów ───────────────────────────────────────
 async function addOsrmRoutes(points, originLat, originLng) {
   if (points.length === 0) return points
   const results = await Promise.all(
     points.slice(0, 10).map(async p => {
       const route = await osrmRoute(originLng, originLat, p.lng, p.lat)
-      return { ...p, ...route }
+      // Fallback na odległość w linii prostej jeśli OSRM nie odpowiada
+      if (route) return { ...p, ...route }
+      return { ...p, duration_min: '-', distance_km: haversineKm(originLat, originLng, p.lat, p.lng) }
     })
   )
-  return results.filter(p => p.duration_min != null)
+  return results
 }
 
 // ── WFS PRG — znajdź nadleśnictwo zawierające punkt ─────────────────────────
@@ -114,7 +155,15 @@ async function getForestDistrict(lat, lng) {
 
 // ── Pobierz TOP 3 z filtrami jurysdykcyjnymi ────────────────────────────────
 async function findWithRoute(lat, lng, amenity, adminFilter, adminValue) {
-  const points = await queryOverpass(amenity, lat, lng)
+  // 1. Overpass
+  let points = await queryOverpass(amenity, lat, lng)
+
+  // 2. Jeśli Overpass pusto → Nominatim fallback
+  if (points.length === 0) {
+    points = await searchNominatim(lat, lng, amenityLabel(amenity))
+  }
+
+  // 3. Dodaj czasy OSRM (z fallbackiem na haversine)
   const withRoute = await addOsrmRoutes(points, lat, lng)
 
   let filtered = withRoute
@@ -124,16 +173,19 @@ async function findWithRoute(lat, lng, amenity, adminFilter, adminValue) {
       const val = (p[field] || '').toLowerCase()
       return val.includes(adminValue.toLowerCase())
     })
-    // Jeśli po filtrze pusto — zwróć bez filtra (fallback)
     if (filtered.length === 0) filtered = withRoute
   }
 
   return filtered
-    .sort((a, b) => a.duration_min - b.duration_min)
+    .sort((a, b) => {
+      const aVal = typeof a.duration_min === 'number' ? a.duration_min : 999
+      const bVal = typeof b.duration_min === 'number' ? b.duration_min : 999
+      return aVal - bVal
+    })
     .slice(0, 3)
     .map(p => ({
       name: p.name,
-      duration_min: p.duration_min,
+      duration_min: typeof p.duration_min === 'number' ? p.duration_min : '-',
       distance_km: p.distance_km,
       phone: p.phone,
       address: p.address,
