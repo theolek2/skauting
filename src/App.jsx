@@ -85,12 +85,13 @@ export default function App() {
 
       if (savedMeta && Object.keys(savedMeta).length > 0) {
         // Przywróć pełne zapisane dane obozu
-        update({ meta: savedMeta })
+        update({ meta: { ...savedMeta, email: savedMeta.email || u.email || '' } })
       } else if (profile) {
         // Pierwsze logowanie — uzupełnij z profilu rejestracji
         update({
           meta: {
             ...state.meta,
+            email:         state.meta.email         || u.email || '',
             kierownik:     state.meta.kierownik     || profile.display_name || '',
             jednostka:     state.meta.jednostka     || profile.organization || '',
             tel_kierownik: state.meta.tel_kierownik || profile.phone        || '',

@@ -59,7 +59,7 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
       const data = await fetchAllGeoData(lat, lng)
       setGeoResults(data)
       try { localStorage.setItem('skauting_geo_results', JSON.stringify({ lat: geoLat, lng: geoLng, data })) } catch {}
-      const patch = {}
+      const patch = { coords: { lat, lng } }
       if (data.geocode) { patch.gmina = data.geocode.gmina; patch.powiat = data.geocode.powiat; patch.wojewodztwo = data.geocode.wojewodztwo }
       if (data.parcel) patch.nr_dzialki = 'Pobrano'
       if (data.nfz) { patch.przychodnia = data.nfz.name; patch.tel_przychodnia = data.nfz.phone }

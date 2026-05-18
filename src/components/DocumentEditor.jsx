@@ -11,9 +11,13 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
 
   const currentRecipient = recipients?.find(r => r.id === selectedRecipient)
 
-  const recipientName = currentRecipient
-    ? `<p style="font-weight:bold;margin-bottom:2px;">Do: ${currentRecipient.label}</p><p style="margin-bottom:8px;">${currentRecipient.addr}</p>`
-    : '<p style="color:#999;">Wybierz odbiorcę powyżej</p>'
+  const recipientName = (() => {
+    if (!currentRecipient) return '<p style="color:#999;">Wybierz odbiorcę powyżej</p>'
+    // Auto-fill adresu z danych GPS jeśli dostępne
+    const gpsMap = { psp: meta.psp, policja: meta.policja, szpital: meta.szpital, wojt: meta.gmina, nadlesnictwo: meta.nadlesnictwo }
+    const addr = gpsMap[currentRecipient.id] || currentRecipient.addr
+    return `<p style="font-weight:bold;margin-bottom:2px;">Do: ${currentRecipient.label}</p><p style="margin-bottom:8px;">${addr}</p>`
+  })()
 
   const processedHtml = useMemo(() => {
     if (!templateHtml) return ''
