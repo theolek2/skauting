@@ -39,6 +39,7 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
   const [gpsLoading, setGpsLoading] = useState(false)
   const [geoLat, setGeoLat] = useState(meta.coords?.lat?.toString() || '')
   const [geoLng, setGeoLng] = useState(meta.coords?.lng?.toString() || '')
+  const [geoResults, setGeoResults] = useState(null) // wyniki z API
   const metaOk = meta.jednostka && meta.kierownik
 
   const handleGeoFetch = async () => {
@@ -51,6 +52,9 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
     setGpsLoading(true)
     try {
       const data = await fetchAllGeoData(lat, lng)
+      setGeoResults(data)
+
+      // Auto-wypełnij pierwsze wyniki
       const patch = {}
       if (data.geocode) {
         patch.gmina = data.geocode.gmina
@@ -58,15 +62,15 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
         patch.wojewodztwo = data.geocode.wojewodztwo
       }
       if (data.forest) patch.nadlesnictwo = data.forest.name
-      if (data.hospital) patch.szpital = data.hospital.address?.split(',')[0]?.trim() || data.hospital.name
+      if (data.parcel) patch.nr_dzialki = data.parcel.wkbHex?.substring(0, 20) || ''
       if (data.nfz) {
         patch.przychodnia = data.nfz.name
         patch.tel_przychodnia = data.nfz.phone
       }
-      if (data.clinic && !patch.przychodnia) patch.przychodnia = data.clinic.name
-      if (data.police) patch.policja = data.police.name
-      if (data.fire) patch.psp = data.fire.name
-      if (data.parcel) patch.nr_dzialki = data.parcel.wkbHex?.substring(0, 20) || ''
+      if (data.hospitals?.[0]) patch.szpital = data.hospitals[0].name
+      if (data.police?.[0]) patch.policja = data.police[0].name
+      if (data.fire?.[0]) patch.psp = data.fire[0].name
+      if (data.clinics?.[0] && !patch.przychodnia) patch.przychodnia = data.clinics[0].name
       onUpdateMeta(patch)
     } catch {
       alert('Nie udało się pobrać wszystkich danych')
@@ -438,33 +442,115 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
           </div>
 
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">Służby lokalne</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Policja">
-              <input className={inputCls} placeholder="Auto z GPS"
-                value={meta.policja || ''}
-                onChange={e => onUpdateMeta({ policja: e.target.value })} />
-            </Field>
-            <Field label="Straż Pożarna (PSP)">
-              <input className={inputCls} placeholder="Auto z GPS"
-                value={meta.psp || ''}
-                onChange={e => onUpdateMeta({ psp: e.target.value })} />
-            </Field>
-            <Field label="Szpital">
-              <input className={inputCls} placeholder="Auto z GPS"
-                value={meta.szpital || ''}
-                onChange={e => onUpdateMeta({ szpital: e.target.value })} />
-            </Field>
-            <Field label="Przychodnia NFZ">
-              <input className={inputCls} placeholder="Auto z GPS"
-                value={meta.przychodnia || ''}
-                onChange={e => onUpdateMeta({ przychodnia: e.target.value })} />
-            </Field>
-            <Field label="Telefon przychodni">
-              <input className={inputCls} placeholder="Auto z GPS"
-                value={meta.tel_przychodnia || ''}
-                onChange={e => onUpdateMeta({ tel_przychodnia: e.target.value })} />
-            </Field>
-          </div>
+          {geoResults ? (
+            <div className="space-y-4">
+              {/* Szpital */}
+              {geoResults.hospitals?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">🏥 Szpital (najbliższy):</p>
+                  <div className="space-y-1 ml-1">
+                    {geoResults.hospitals.map((h, i) => (
+                      <label key={i} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-blue-50 px-2 py-1 rounded">
+                        <input type="radio" name="szpital" checked={meta.szpital === h.name || (i === 0 && !meta.szpital)}
+                          onChange={() => onUpdateMeta({ szpital: h.name, szpital_tel: h.phone })}
+                          className="accent-blue-600" />
+                        <span className="font-medium text-gray-700">{h.name}</span>
+                        <span className="text-gray-400 ml-auto">{h.duration_min} min · {h.distance_km} km</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* PSP */}
+              {geoResults.fire?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">🚒 PSP ({meta.wojewodztwo || 'województwo'}):</p>
+                  <div className="space-y-1 ml-1">
+                    {geoResults.fire.map((f, i) => (
+                      <label key={i} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-blue-50 px-2 py-1 rounded">
+                        <input type="radio" name="psp" checked={meta.psp === f.name || (i === 0 && !meta.psp)}
+                          onChange={() => onUpdateMeta({ psp: f.name, psp_tel: f.phone })}
+                          className="accent-blue-600" />
+                        <span className="font-medium text-gray-700">{f.name}</span>
+                        <span className="text-gray-400 ml-auto">{f.duration_min} min · {f.distance_km} km</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Policja */}
+              {geoResults.police?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">🚔 Policja ({meta.gmina || meta.powiat || 'najbliższa'}):</p>
+                  <div className="space-y-1 ml-1">
+                    {geoResults.police.map((p, i) => (
+                      <label key={i} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-blue-50 px-2 py-1 rounded">
+                        <input type="radio" name="policja" checked={meta.policja === p.name || (i === 0 && !meta.policja)}
+                          onChange={() => onUpdateMeta({ policja: p.name, policja_tel: p.phone })}
+                          className="accent-blue-600" />
+                        <span className="font-medium text-gray-700">{p.name}</span>
+                        <span className="text-gray-400 ml-auto">{p.duration_min} min · {p.distance_km} km</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Przychodnia */}
+              {(geoResults.clinics?.length > 0 || geoResults.nfz) && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">🩺 Przychodnia:</p>
+                  <div className="space-y-1 ml-1">
+                    {geoResults.nfz && (
+                      <label className="flex items-center gap-2 text-xs cursor-pointer hover:bg-blue-50 px-2 py-1 rounded">
+                        <input type="radio" name="przychodnia" checked={meta.przychodnia === geoResults.nfz.name || (!meta.przychodnia)}
+                          onChange={() => onUpdateMeta({ przychodnia: geoResults.nfz.name, tel_przychodnia: geoResults.nfz.phone })}
+                          className="accent-blue-600" />
+                        <span className="font-medium text-gray-700">{geoResults.nfz.name}</span>
+                        {geoResults.nfz.phone && <span className="text-gray-400 ml-auto">📞 {geoResults.nfz.phone}</span>}
+                      </label>
+                    )}
+                    {(geoResults.clinics || []).slice(0, 3).map((c, i) => (
+                      <label key={i} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-blue-50 px-2 py-1 rounded">
+                        <input type="radio" name="przychodnia" checked={meta.przychodnia === c.name}
+                          onChange={() => onUpdateMeta({ przychodnia: c.name })}
+                          className="accent-blue-600" />
+                        <span className="font-medium text-gray-700">{c.name}</span>
+                        <span className="text-gray-400 ml-auto">{c.duration_min} min · {c.distance_km} km</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Policja">
+                <input className={inputCls} placeholder="📍 Pobierz dane"
+                  value={meta.policja || ''}
+                  onChange={e => onUpdateMeta({ policja: e.target.value })} />
+              </Field>
+              <Field label="Straż Pożarna (PSP)">
+                <input className={inputCls} placeholder="📍 Pobierz dane"
+                  value={meta.psp || ''}
+                  onChange={e => onUpdateMeta({ psp: e.target.value })} />
+              </Field>
+              <Field label="Szpital">
+                <input className={inputCls} placeholder="📍 Pobierz dane"
+                  value={meta.szpital || ''}
+                  onChange={e => onUpdateMeta({ szpital: e.target.value })} />
+              </Field>
+              <Field label="Przychodnia">
+                <input className={inputCls} placeholder="📍 Pobierz dane"
+                  value={meta.przychodnia || ''}
+                  onChange={e => onUpdateMeta({ przychodnia: e.target.value })} />
+              </Field>
+              <Field label="Telefon przychodni">
+                <input className={inputCls} placeholder="📍 Pobierz dane"
+                  value={meta.tel_przychodnia || ''}
+                  onChange={e => onUpdateMeta({ tel_przychodnia: e.target.value })} />
+              </Field>
+            </div>
+          )}
         </Module>
 
         {/* Moduł 6: Miejsce bezpieczne (schronienie) */}
