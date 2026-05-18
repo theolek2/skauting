@@ -12,7 +12,6 @@ import DuringCampTab from './components/DuringCampTab'
 import DiaryTab from './components/DiaryTab'
 import DocumentsTab from './components/DocumentsTab'
 import JadlospisTab from './components/JadlospisTab'
-import LocalDataTab from './components/LocalDataTab'
 import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
@@ -245,7 +244,6 @@ export default function App() {
     { id: 'jadlospis', label: 'Jadłospis' },
     { id: 'diary',     label: 'Dziennik zajęć' },
     { id: 'docs',      label: 'Dokumenty' },
-    { id: 'local',     label: 'Dane lokalne' },
     { id: 'map',       label: 'Mapa terenu' },
   ]
 
@@ -381,9 +379,6 @@ export default function App() {
           )}
           {activeTab === 'docs' && (
             <DocumentsTab meta={meta} onNavigate={navigateToSection} progress={progress} onToggleProgress={toggleProgress} />
-          )}
-          {activeTab === 'local' && (
-            <LocalDataTab meta={meta} onUpdateMeta={updateMeta} progress={progress} onToggleProgress={toggleProgress} />
           )}
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab user={user} meta={meta} /></div>

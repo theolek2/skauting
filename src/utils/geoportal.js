@@ -136,21 +136,24 @@ async function addOsrmRoutes(points, originLat, originLng) {
   return results
 }
 
-// ── WFS PRG — znajdź nadleśnictwo zawierające punkt ─────────────────────────
+// ── Nadleśnictwo — Nominatim first, WFS fallback ───────────────────────────
 async function getForestDistrict(lat, lng) {
+  // 1. Nominatim — działa szybko, CORS OK, prosty JSON
+  const nominatim = await searchNominatim(lat, lng, 'nadleśnictwo')
+  if (nominatim.length > 0) return { name: nominatim[0].name }
+
+  // 2. WFS PRG — poprawna warstwa: ms:U06_Nadlesnictwo (GML tylko)
   try {
     const epsg = toEpsg2180(lat, lng)
     const bbox = `${epsg.x - 500},${epsg.y - 500},${epsg.x + 500},${epsg.y + 500},urn:ogc:def:crs:EPSG::2180`
-    const url = `https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&TYPENAMES=A16_Nadlesnictwa&SRSNAME=urn:ogc:def:crs:EPSG::2180&BBOX=${bbox}&outputFormat=application/json`
+    const url = `https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries?SERVICE=WFS&REQUEST=GetFeature&VERSION=2.0.0&TYPENAMES=ms:U06_Nadlesnictwo&SRSNAME=urn:ogc:def:crs:EPSG::2180&BBOX=${bbox}&outputFormat=text/xml;%20subtype=gml/3.2.1`
     const res = await fetch(url)
     if (!res.ok) return null
-    const json = await res.json()
-    const features = json?.features || []
-    if (features.length === 0) return null
-    const f = features[0]
-    const props = f.properties || {}
-    return { name: props.nazwa || props.jpt_nazwa_ || '', code: props.kod || '' }
-  } catch { return null }
+    const text = await res.text()
+    const nameMatch = text.match(/<ms:nazwa>([^<]+)<\/ms:nazwa>/)
+    if (nameMatch) return { name: nameMatch[1] }
+  } catch { /* WFS failed — ok */ }
+  return null
 }
 
 // ── Pobierz TOP 3 z filtrami jurysdykcyjnymi ────────────────────────────────
