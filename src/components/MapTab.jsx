@@ -155,6 +155,7 @@ export default function MapTab({ user, meta }) {
   const [paths, setPaths]           = useState([])
   const [paintMode, setPaintMode]   = useState(false)
   const [paintColor, setPaintColor] = useState('#ef4444')
+  const [mapRotation, setMapRotation] = useState(0)
   const [showCampModal, setShowCampModal] = useState(false)
   const [showCampPrompt, setShowCampPrompt] = useState(false)
   const editorRef = useRef(null)
@@ -453,6 +454,7 @@ export default function MapTab({ user, meta }) {
         onAddPath={p => setPaths(prev => [...prev, p])}
         paintMode={paintMode}
         paintColor={paintColor}
+        mapRotation={mapRotation}
       />
 
       {/* LEWY PANEL — floating */}
@@ -507,6 +509,17 @@ export default function MapTab({ user, meta }) {
           className="w-10 h-8 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 flex items-center justify-center">↩</button>
         <button onClick={() => setPaths([])} title="Wyczyść rysunki"
           className="w-10 h-8 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 text-xs flex items-center justify-center">🗑</button>
+
+        {/* Obrót mapy */}
+        <div className="w-8 border-t border-gray-200 my-1" />
+        <p style={{fontSize:8,fontWeight:700,textTransform:'uppercase',letterSpacing:1,color:'#9ca3af'}}>Obróć</p>
+        <button onClick={() => setMapRotation(r => (r - 15 + 360) % 360)} title="Obróć w lewo o 15°"
+          className="w-10 h-10 rounded-lg border border-gray-300 text-lg hover:bg-gray-100 flex items-center justify-center">↺</button>
+        <span className="text-xs font-mono text-gray-500">{mapRotation}°</span>
+        <button onClick={() => setMapRotation(r => (r + 15) % 360)} title="Obróć w prawo o 15°"
+          className="w-10 h-10 rounded-lg border border-gray-300 text-lg hover:bg-gray-100 flex items-center justify-center">↻</button>
+        <button onClick={() => setMapRotation(0)} title="Resetuj obrót"
+          className="w-10 h-7 rounded-lg border border-gray-200 text-xs text-gray-400 hover:bg-gray-100 flex items-center justify-center">0°</button>
       </div>
 
       {/* DOLNY PASEK — floating */}

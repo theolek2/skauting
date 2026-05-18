@@ -8,6 +8,7 @@ export default function MapEditor({
   coords, locationName,
   paths, onAddPath,
   paintMode, paintColor,
+  mapRotation = 0,
 }) {
   const containerRef  = useRef(null)
   const [activeId, setActiveId] = useState(null)
@@ -140,14 +141,20 @@ export default function MapEditor({
         onClick={handleMapClick}
         onMouseDown={handleMapMouseDown}
       >
-        {mapImageUrl
-          ? <img src={mapImageUrl} alt="mapa" className="absolute inset-0 w-full h-full object-fill" crossOrigin="anonymous" draggable={false}/>
-          : <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500">Ładowanie mapy...</div>}
+        {/* Obracalna zawartość mapy */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          transform: `rotate(${mapRotation}deg)`,
+          transformOrigin: 'center center',
+          transition: 'transform 0.3s ease',
+        }}>
+          {mapImageUrl
+            ? <img src={mapImageUrl} alt="mapa" style={{width:'100%',height:'100%',objectFit:'fill'}} crossOrigin="anonymous" draggable={false}/>
+            : <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500">Ładowanie mapy...</div>}
+          {renderPaths(paths||[], currentPts, paintColor)}
+        </div>
 
-        {/* Narysowane ścieżki */}
-        {renderPaths(paths||[], currentPts, paintColor)}
-
-        {/* Piktogramy */}
+        {/* Piktogramy (nie obracają się z mapą — zostają na stałych pozycjach) */}
         {!paintMode && items.map(item => {
           const isActive = activeId === item.id
           const sz = (item.size||1) * BASE_PX
