@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import html2canvas from 'html2canvas'
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import PictogramPanel from './map/PictogramPanel'
@@ -56,12 +57,6 @@ function MapEventsCapture({ onReady }) {
   })
   useEffect(() => { onReady(map) }, [])
   return null
-}
-
-function esriUrl(bounds, w = 1200, h = 800) {
-  const { _southWest: sw, _northEast: ne } = bounds
-  const bbox = `${sw.lng},${sw.lat},${ne.lng},${ne.lat}`
-  return `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=${bbox}&bboxSR=4326&size=${w},${h}&imageSR=4326&format=png32&f=image`
 }
 
 // Nakładka pokazująca kadr PDF — czerwone tło poza obszarem wydruku
@@ -161,6 +156,7 @@ export default function MapTab({ user, meta }) {
   const [paintMode, setPaintMode]   = useState(false)
   const [paintColor, setPaintColor] = useState('#ef4444')
   const [showCampModal, setShowCampModal] = useState(false)
+  const [showCampPrompt, setShowCampPrompt] = useState(false)
   const editorRef = useRef(null)
 
   const updateArrowColor = (id, label) =>
@@ -174,17 +170,21 @@ export default function MapTab({ user, meta }) {
     setStep('navigate')
   }
 
-  const handleGenerateMap = () => {
+  const handleGenerateMap = async () => {
     if (!mapRef) return
-    const bounds = mapRef.getBounds()
-    const url = esriUrl(bounds)
-    setMapImageUrl(url)
     setStep('edit')
-    // Po wygenerowaniu — zapytaj czy dodać na mapę kraju
-    setTimeout(() => {
-      const add = confirm('Czy chcesz dodać to miejsce na ogólnopolską mapę obozów Skautów Europy?')
-      if (add) setShowCampModal(true)
-    }, 500)
+    // Screenshot mapy z aktualnie wybraną warstwą
+    try {
+      await new Promise(r => setTimeout(r, 800))
+      const canvas = await html2canvas(mapRef.getContainer(), { useCORS: true })
+      setMapImageUrl(canvas.toDataURL())
+    } catch {
+      // fallback — jeśli html2canvas nie zadziała, użytkownik i tak może eksportować
+    }
+    // Zapytaj o dodanie na mapę kraju tylko jeśli obóz nie jest jeszcze zaplanowany
+    if (!meta?.date_start) {
+      setTimeout(() => setShowCampPrompt(true), 300)
+    }
   }
 
   const handlePlace = (x, y) => {
@@ -314,6 +314,28 @@ export default function MapTab({ user, meta }) {
                   onChange={e => setCoords(c => ({ ...c, lng: e.target.value }))}
                 />
       </div>
+      {/* Zielone okienko — zapytanie o dodanie obozu na mapę */}
+      {showCampPrompt && (
+        <div className="fixed inset-0 z-[2800] flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border-2 border-green-400 relative">
+            <div className="text-5xl mb-4">🏕️</div>
+            <h2 className="text-lg font-bold text-green-800 mb-2">Mapa wygenerowana!</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Czy chcesz dodać to miejsce na ogólnopolską mapę obozów Skautów Europy?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowCampPrompt(false)}
+                className="flex-1 border-2 border-gray-300 text-gray-600 font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-50 transition text-sm">
+                Nie, edytuję mapę
+              </button>
+              <button onClick={() => { setShowCampPrompt(false); setShowCampModal(true) }}
+                className="flex-1 bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-green-800 transition text-sm">
+                Tak, dodaj →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showCampModal && user && (
         <CampRegistrationModal
           onClose={() => setShowCampModal(false)}
