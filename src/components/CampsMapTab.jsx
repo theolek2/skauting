@@ -63,7 +63,9 @@ export default function CampsMapTab({ user, meta }) {
   const [addToTerrain, setAddToTerrain]   = useState(null)  // terrain do dodania kolejnego obozu
   const [filter, setFilter]               = useState('all')
   const [search, setSearch]               = useState('')
-  const [providerId, setProviderId]       = useState('esri')
+  const [providerId, setProviderId]       = useState(() => {
+    try { return localStorage.getItem('skauting_map_provider') || 'esri' } catch { return 'esri' }
+  })
 
   const load = () => {
     setLoading(true)
@@ -132,7 +134,7 @@ export default function CampsMapTab({ user, meta }) {
           className="bg-green-700 text-white font-bold px-4 py-1.5 rounded-lg hover:bg-green-800 text-sm">
           + Dodaj obóz
         </button>
-        <select value={providerId} onChange={e => setProviderId(e.target.value)}
+        <select value={providerId} onChange={e => { setProviderId(e.target.value); try { localStorage.setItem('skauting_map_provider', e.target.value) } catch {} }}
           className="bg-green-700 text-white text-xs border border-green-500 rounded px-2 py-1 focus:outline-none">
           <option value="esri">🛰️ Satelita</option>
           <option value="topo">🏔️ Topo</option>

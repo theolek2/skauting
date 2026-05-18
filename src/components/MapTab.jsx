@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import PictogramPanel from './map/PictogramPanel'
 import MapEditor from './map/MapEditor'
+import CampRegistrationModal from './CampRegistrationModal'
 import { makePlacedItem, DEFAULT_ARROW_COLORS } from '../utils/mapPictograms'
 
 // Dostawcy map — wszyscy darmowi, legalni, bez klucza API
@@ -143,13 +144,15 @@ function CropBorder({ ratio }) {
   )
 }
 
-export default function MapTab() {
+export default function MapTab({ user, meta }) {
   const [step, setStep] = useState('coords')   // 'coords' | 'navigate' | 'edit'
   const [coords, setCoords] = useState({ lat: '', lng: '' })
   const [locationName, setLocationName] = useState('')
   const [mapRef, setMapRef] = useState(null)
   const [mapImageUrl, setMapImageUrl] = useState(null)
-  const [providerId, setProviderId] = useState('esri')
+  const [providerId, setProviderId] = useState(() => {
+    try { return localStorage.getItem('skauting_map_provider') || 'esri' } catch { return 'esri' }
+  })
   const [items, setItems] = useState([])
   const [selected, setSelected] = useState(null)
   const [arrowColors, setArrowColors] = useState(DEFAULT_ARROW_COLORS)
@@ -157,6 +160,7 @@ export default function MapTab() {
   const [paths, setPaths]           = useState([])
   const [paintMode, setPaintMode]   = useState(false)
   const [paintColor, setPaintColor] = useState('#ef4444')
+  const [showCampModal, setShowCampModal] = useState(false)
   const editorRef = useRef(null)
 
   const updateArrowColor = (id, label) =>
@@ -176,6 +180,11 @@ export default function MapTab() {
     const url = esriUrl(bounds)
     setMapImageUrl(url)
     setStep('edit')
+    // Po wygenerowaniu — zapytaj czy dodać na mapę kraju
+    setTimeout(() => {
+      const add = confirm('Czy chcesz dodać to miejsce na ogólnopolską mapę obozów Skautów Europy?')
+      if (add) setShowCampModal(true)
+    }, 500)
   }
 
   const handlePlace = (x, y) => {
@@ -304,8 +313,22 @@ export default function MapTab() {
                   value={coords.lng}
                   onChange={e => setCoords(c => ({ ...c, lng: e.target.value }))}
                 />
-              </div>
-            </div>
+      </div>
+      {showCampModal && user && (
+        <CampRegistrationModal
+          onClose={() => setShowCampModal(false)}
+          onSaved={() => setShowCampModal(false)}
+          userId={user.id}
+          prefill={{
+            jednostka:    meta?.jednostka || '',
+            kierownik:    meta?.kierownik || '',
+            tel_kierownik: meta?.tel_kierownik || '',
+            date_start:   meta?.date_start || '',
+            date_end:     meta?.date_end || '',
+          }}
+        />
+      )}
+    </div>
             <p className="text-xs text-gray-400">
               💡 Współrzędne znajdziesz w Google Maps — kliknij prawym na wybranym miejscu → skopiuj
             </p>
@@ -338,7 +361,7 @@ export default function MapTab() {
           {/* Wybór dostawcy mapy */}
           <select
             value={providerId}
-            onChange={e => setProviderId(e.target.value)}
+            onChange={e => { setProviderId(e.target.value); try { localStorage.setItem('skauting_map_provider', e.target.value) } catch {} }}
             className="ml-2 bg-green-700 text-white text-xs border border-green-500 rounded px-2 py-1 focus:outline-none"
           >
             {MAP_PROVIDERS.map(p => (

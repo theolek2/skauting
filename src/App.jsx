@@ -381,7 +381,7 @@ export default function App() {
             <DocumentsTab meta={meta} onNavigate={navigateToSection} progress={progress} onToggleProgress={toggleProgress} />
           )}
           {activeTab === 'map' && (
-            <div className="flex flex-1 overflow-hidden"><MapTab /></div>
+            <div className="flex flex-1 overflow-hidden"><MapTab user={user} meta={meta} /></div>
           )}
           {activeTab === 'campsmap' && (
             <CampsMapTab user={user} meta={meta} />
