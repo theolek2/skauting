@@ -497,28 +497,15 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
     table { border-collapse: collapse; width: 100%; }
     select { appearance: none; -webkit-appearance: none; border: none; background: transparent; font: inherit; }
     @media print {
-      span[data-var], span[style*="background:#e0f2fe"], span[style*="background:#fef3c7"] {
+      * {
         background: transparent !important;
         color: #000 !important;
+        box-shadow: none !important;
+      }
+      span, select {
         padding: 0 !important;
-        border-radius: 0 !important;
-      }
-      select {
-        background: transparent !important;
-        color: #000 !important;
         border: none !important;
-        font-weight: normal !important;
-      }
-      div[style*="background:#2d6a2d"], th[style*="background:#2d6a2d"] {
-        background: #000 !important;
-        color: #fff !important;
-      }
-      div[style*="background:#fee2e2"], p[style*="background:#fee2e2"] {
-        background: transparent !important;
-        border-bottom: 1px solid #000;
-      }
-      tr[style*="background:#f0fdf4"] {
-        background: transparent !important;
+        border-radius: 0 !important;
       }
     }
   </style>
