@@ -113,9 +113,12 @@ async function extractText(filePath) {
   if (ext === '.pdf') {
     const { default: PDFParser } = await import('pdf2json')
     return new Promise((resolve, reject) => {
+      // Wycisz ostrzeżenia SMask (nieobsługiwane efekty przezroczystości — nieszkodliwe)
+      const origWarn = console.warn
+      console.warn = () => {}
       const parser = new PDFParser(null, true)
       parser.on('pdfParser_dataReady', data => {
-        // Wyciągnij tekst ze wszystkich stron
+        console.warn = origWarn
         const text = (data.Pages || []).flatMap(page =>
           (page.Texts || []).map(t =>
             decodeURIComponent(t.R?.map(r => r.T).join('') || '')
@@ -123,7 +126,10 @@ async function extractText(filePath) {
         ).join(' ')
         resolve(text)
       })
-      parser.on('pdfParser_dataError', err => reject(new Error(err.parserError || 'PDF parse error')))
+      parser.on('pdfParser_dataError', err => {
+        console.warn = origWarn
+        reject(new Error(err.parserError || 'PDF parse error'))
+      })
       parser.loadPDF(filePath)
     })
   }
