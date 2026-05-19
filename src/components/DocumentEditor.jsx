@@ -105,6 +105,99 @@ function generateParticipantsHtml(_meta) {
 ` + DOC_FOOTER
 }
 
+function generateRegulaminHtml(meta) {
+  const w1 = meta.wychowawcy?.[0]?.name || meta.kontakt1 || '...'
+  const w2 = meta.wychowawcy?.[1]?.name || meta.kontakt2 || '...'
+  return DOC_HEADER + `
+<p style="font-weight:bold;text-align:center;font-size:14pt;margin:0 0 20px;">REGULAMIN OBOZU HARCERSKIEGO W ${meta.miejsce || '.....................'}</p>
+
+<p style="font-weight:bold;margin-top:16px;font-size:11pt;">I. ORGANIZATOR</p>
+<ol style="margin:6px 0 12px 22px;">
+  <li style="margin-bottom:5px;">Organizatorem jest: Stowarzyszenie Harcerstwa Katolickiego „Zawisza" Federacja Skautingu Europejskiego — <b>${meta.hufiec || '...'}</b></li>
+  <li style="margin-bottom:5px;">Przedstawicielem organizatora i kierownikiem wypoczynku (obóz harcerski <b>${meta.jednostka || '...'}</b> — sprawuje bezpośredni nadzór nad stanem ochrony przeciwpożarowej): <b>${meta.kierownik || '...'}</b></li>
+  <li style="margin-bottom:5px;">Funkcję wychowawców sprawują: <b>${w1}</b>, <b>${w2}</b></li>
+</ol>
+
+<p style="font-weight:bold;margin-top:16px;font-size:11pt;">II. PROGRAM I ORGANIZACJA OBOZU</p>
+<ol style="margin:6px 0 12px 22px;">
+  <li style="margin-bottom:5px;">Ze względu na specyfikę obozu FSE podczas zajęć opiekę nad uczestnikami obozu sprawuje wychowawca.</li>
+  <li style="margin-bottom:5px;">Od strony higieniczno-sanitarnej obóz spełnia wymogi określone w Instrukcji Głównego Inspektora Sanitarnego.</li>
+  <li style="margin-bottom:5px;">Uczestnicy sami budują obozowiska zastępów. Podczas budowy obozu posługują się narzędziami, takimi jak piła, siekiera, dłuto, nóż, młotek itp.</li>
+  <li style="margin-bottom:5px;">Posiłki przygotowywane są w zastępach przez samych uczestników na paleniskach przez nich zbudowanych. Komendant obozu wyznacza zdrową osobę do nadzoru nad żywieniem.</li>
+  <li style="margin-bottom:5px;">W celu zapewnienia bezpieczeństwa komendant obozu może wyznaczyć zastęp, który będzie pełnił nocną wartę.</li>
+</ol>
+
+<p style="font-weight:bold;margin-top:16px;font-size:11pt;">III. PRAWA I OBOWIĄZKI UCZESTNIKÓW</p>
+<ol style="margin:6px 0 12px 22px;">
+  <li style="margin-bottom:5px;">Uczestnicy mogą korzystać ze sprzętu turystycznego, jakim dysponuje obóz.</li>
+  <li style="margin-bottom:5px;">Uczestnicy są zobowiązani uczestniczyć w pełnym programie realizacji obozu.</li>
+  <li style="margin-bottom:5px;">Uczestnicy wyznaczeni do pełnienia określonych funkcji są odpowiedzialni za wywiązanie się z nich przed zastępowym i komendantem obozu.</li>
+  <li style="margin-bottom:5px;">Każdy uczestnik zobowiązany jest do zachowania postawy godnej harcerza oraz przestrzegania zasad harcerskiego współdziałania w grupie, a w szczególności do przestrzegania Prawa Harcerskiego.</li>
+  <li style="margin-bottom:5px;">Uczestnicy zobowiązani są do bezwzględnego przestrzegania wszelkich zarządzeń komendanta obozu, a także do: zabrania wyposażenia osobistego zgodnie z wykazem podanym przez drużynowego oraz opieki nad powierzonym sprzętem.</li>
+  <li style="margin-bottom:5px;">W razie złego samopoczucia lub wypadku uczestnicy są zobowiązani natychmiast poinformować wychowawcę lub komendanta obozu.</li>
+  <li style="margin-bottom:5px;">Uczestnicy dbają o bezpieczeństwo swoje i innych — wszystkie zagrożenia należy zgłaszać kierownikowi lub wychowawcom.</li>
+  <li style="margin-bottom:5px;">Uczestnicy są posłuszni poleceniom w czasie ewakuacji i nie oddalają się od grupy.</li>
+</ol>
+
+<p style="font-weight:bold;margin-top:16px;font-size:11pt;">IV. ZAKAZY I NAKAZY</p>
+<ol style="margin:6px 0 12px 22px;">
+  <li style="margin-bottom:5px;">Uczestnikom zabrania się: oddalania się od grupy bez zgody instruktora; picia alkoholu, palenia tytoniu i zażywania środków odurzających; zabierania na obóz sprzętów elektronicznych (zakres używania telefonów określa komendant); krzyków, niszczenia przyrody, rozpalania ognisk w miejscach niedozwolonych; przyjmowania leków bez wiedzy wychowawcy.</li>
+  <li style="margin-bottom:5px;">Uczestnicy zobowiązani są do przestrzegania wszelkich zarządzeń i przepisów odpowiednich instytucji terenowych.</li>
+</ol>
+
+<p style="font-weight:bold;margin-top:16px;font-size:11pt;">V. SANKCJE</p>
+<ol style="margin:6px 0 12px 22px;">
+  <li style="margin-bottom:5px;">Ze względu na specyfikę formy zajęć wobec wszelkiego przekroczenia regulaminu będą wyciągnięte konsekwencje przez komendanta obozu.</li>
+  <li style="margin-bottom:5px;">Skala sankcji zależy od stopnia wykroczenia: od upomnienia do wydalenia z obozu.</li>
+  <li style="margin-bottom:5px;">Komendant obozu może zadecydować o dyscyplinarnym usunięciu z obozu całego zastępu.</li>
+  <li style="margin-bottom:5px;">W wypadku wydalenia z obozu za odebranie uczestnika odpowiadają rodzice. Opłat za uczestnictwo nie zwraca się.</li>
+</ol>
+
+<p style="margin-top:28px;text-align:center;font-style:italic;">Oświadczam, że zapoznałem/am się z regulaminem i zgadzam się na udział syna/córki<br/>w obozie <b>${meta.jednostka || '...'}</b> na określonych wyżej warunkach.</p>
+<div style="margin-top:40px;display:flex;justify-content:space-between;">
+  <div><div style="border-top:1px solid #333;width:190px;padding-top:4px;text-align:center;">Podpis uczestnika / rodzica</div></div>
+  <div><div style="border-top:1px solid #333;width:190px;padding-top:4px;text-align:center;">Podpis komendanta obozu</div></div>
+</div>
+` + DOC_FOOTER
+}
+
+function generatePpozHtml(meta) {
+  const w1 = meta.wychowawcy?.[0]?.name || meta.kontakt1 || '...'
+  const t1 = meta.wychowawcy?.[0]?.phone || meta.tel_kontakt1 || '...'
+  return DOC_HEADER + `
+<p style="font-weight:bold;text-align:center;font-size:13pt;margin:0 0 4px;">REGULAMIN ZASAD PROWADZENIA ZAJĘĆ HARCERSKICH</p>
+<p style="text-align:center;margin-bottom:2px;font-size:10pt;">Stowarzyszenie Harcerstwa Katolickiego „Zawisza" · Federacja Skautingu Europejskiego</p>
+<p style="text-align:center;margin-bottom:18px;font-size:9pt;color:#888;">załącznik 4</p>
+
+<p style="font-weight:bold;text-align:center;font-size:11pt;margin:14px 0 10px;background:#fee2e2;padding:6px;border-radius:4px;">CZĘŚĆ 1 – OGÓLNA INSTRUKCJA PRZECIWPOŻAROWA</p>
+<p><b>§ 1.</b> Instrukcja określa zasady ochrony przeciwpożarowej obowiązujące podczas wszelkich zajęć organizowanych przez jednostki organizacyjne Stowarzyszenia.</p>
+<p style="margin-top:10px;"><b>§ 2. Zabrania się:</b> rozpalania ognisk w odległości mniejszej niż 100 m od ściany lasu (z wyjątkiem miejsc wyznaczonych przez leśniczego); chodzenia po lesie z otwartym ogniem; posługiwania się ogniem w namiotach i w promieniu 5 m od nich; instalowania urządzeń elektrycznych przez osoby nieuprawnione.</p>
+<p style="margin-top:8px;"><b>Należy:</b> zachować szczególną ostrożność przy używaniu ognia; zapoznać uczestników z zasadami ochrony ppoż. przed zajęciami z użyciem ognia.</p>
+<p style="margin-top:8px;"><b>Podczas obozów wielodniowych należy ponadto:</b> ustalić sygnały alarmowe i sposób ewakuacji; zorganizować punkty ppoż. ze sprzętem (gaśnice, hydronetki, wiadra, łopaty, beczki z wodą, skrzynie z piaskiem, tłumice, koce gaśnicze) uzgodnionym ze strażą pożarną; zminimalizować źródła zagrożenia pożarowego.</p>
+<p style="margin-top:8px;"><b>§ 3.</b> Miejsce na ognisko oczyścić z chrustu i ściółki, rozpalać na piasku. Wyznaczyć osobę czuwającą nad ogniskiem. Po zakończeniu: ogień zgasić wodą, popiół przysypać ziemią, przywrócić teren do stanu pierwotnego.</p>
+<p style="margin-top:8px;"><b>§ 4.</b> Każdy uczestnik ma obowiązek natychmiastowego zawiadomienia OOB o zauważonym pożarze lub jego potencjalnym źródle.</p>
+<p style="margin-top:8px;"><b>§ 5.</b> W przypadku pożaru: zachować spokój, przystąpić do gaszenia i zawiadomić straż pożarną, zapewnić bezpieczną ewakuację. Po przybyciu straży — podporządkować się dowódcy akcji.</p>
+<p style="margin-top:8px;"><b>§ 6–8.</b> Zasady ppoż. uzgodnić ze strażą pożarną i władzami leśnymi. Przy zajęciach dłuższych niż 14 dni — przeprowadzić próbny alarm ppoż. Z zasadami instrukcji zapoznać uczestników przed zajęciami.</p>
+
+<p style="font-weight:bold;text-align:center;font-size:11pt;margin:18px 0 10px;background:#fee2e2;padding:6px;border-radius:4px;">CZĘŚĆ 2 – INSTRUKCJA POSTĘPOWANIA W RAZIE POŻARU</p>
+<p><b>I. ALARMOWANIE.</b> Kto zauważy pożar, niezwłocznie zawiadamia: osoby w strefie zagrożenia; <b>STRAŻ POŻARNĄ — 998</b> (lokalną: .........................); komendanta: <b>${meta.kierownik || '...'}</b>, tel. <b>${meta.tel_kierownik || '...'}</b>; wychowawcę: <b>${w1}</b>, tel. <b>${t1}</b>.</p>
+<p style="margin-top:8px;">Podać wyraźnie: <b>gdzie się pali</b> (dokładny adres i położenie obozu), <b>co się pali</b>, czy są zagrożeni ludzie. Odłożyć słuchawkę dopiero po potwierdzeniu przyjęcia zgłoszenia.</p>
+<p style="margin-top:8px;">W razie potrzeby: POGOTOWIE — <b>999</b>, POLICJA — <b>997</b>, Zarządca leśnictwa: .........................</p>
+<p style="margin-top:10px;"><b>II. AKCJA RATOWNICZO-GAŚNICZA.</b> Równocześnie z alarmowaniem przystąpić do gaszenia podręcznym sprzętem gaśniczym. Kierownictwo: komendant obozu. Stosować gaśnice śniegowe, proszkowe lub halonowe. Usunąć z zasięgu ognia materiały palne i ważne dokumenty.</p>
+<p style="margin-top:10px;"><b>III. EWAKUACJA.</b> Komendant ogłasza ewakuację → uczestnicy zbierają się na placu apelowym → wychowawca sprawdza stan → wszyscy udają się wyznaczoną drogą do bezpiecznego miejsca. <b>Pod żadnym pozorem uczestnicy nie mogą oddalać się od grupy.</b></p>
+
+<p style="font-weight:bold;text-align:center;font-size:11pt;margin:18px 0 10px;background:#fee2e2;padding:6px;border-radius:4px;">CZĘŚĆ 3 – INSTRUKCJA BEZPIECZEŃSTWA POŻAROWEGO NA OBOZIE</p>
+<p><b>Przepisy porządkowe:</b> Zakaz używania otwartego ognia poza wyznaczonymi miejscami; zakaz przechowywania materiałów palnych bliżej niż 0,5 m od miejsc ogniskowych; zakaz palenia tytoniu (całkowity); ciecze palne (benzyna, nafta, spirytus) przechowywać w szczelnie zamkniętych pojemnikach z materiałów trudnozapalnych. Wartownicy nocni używają wyłącznie latarek. Po zakończeniu dnia sprawdzić, czy wszystkie ogniska i lampy są zgaszone. Wszelkie nieprawidłowości zgłaszać natychmiast komendantowi.</p>
+<p style="margin-top:8px;"><b>Sprzęt gaśniczy:</b> Każdy obozowicz zna rodzaje i sposób użycia podręcznego sprzętu gaśniczego oraz miejsca jego rozmieszczenia na terenie obozu.</p>
+<p style="margin-top:8px;"><b>Postępowanie przy pożarze:</b> Zaalarmować harcerzy i komendanta; powiadomić <b>STRAŻ POŻARNĄ — 998</b>; przystąpić do gaszenia z zachowaniem własnego bezpieczeństwa. Bezwzględnie podporządkować się komendantowi obozu, a po przybyciu straży — jej dowódcy.</p>
+
+<div style="margin-top:36px;display:flex;justify-content:space-between;align-items:flex-end;">
+  <div style="text-align:center;font-size:9pt;color:#666;">miejscowość, data<div style="border-top:1px solid #333;width:160px;padding-top:4px;margin-top:28px;">.................................</div></div>
+  <div><div style="border-top:1px solid #333;width:190px;padding-top:4px;text-align:center;">Podpis kierownika obozu</div></div>
+</div>
+` + DOC_FOOTER
+}
+
 function generatePlaceholderHtml(icon, label) {
   return DOC_HEADER + `
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:480px;text-align:center;color:#9ca3af;">
@@ -230,6 +323,8 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
       switch (att.type) {
         case 'contacts':     content = generateContactsHtml(meta); break
         case 'participants': content = generateParticipantsHtml(meta); break
+        case 'regulamin':    content = generateRegulaminHtml(meta); break
+        case 'ppoz':         content = generatePpozHtml(meta); break
         default:            content = generatePlaceholderHtml(att.icon || '📄', att.label); break
       }
       editorRef.current.innerHTML = content

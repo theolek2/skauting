@@ -57,8 +57,8 @@ export const DOC_TEMPLATES = {
     attachments: [
       { id: 'kontakty',   label: 'Środki łączności',   icon: '📞', type: 'contacts' },
       { id: 'uczestnicy', label: 'Lista uczestników',   icon: '👥', type: 'participants' },
-      { id: 'regulamin',  label: 'Regulamin obozu',     icon: '📋', type: 'placeholder' },
-      { id: 'ppoz',       label: 'Instrukcja ppoż.',    icon: '🔥', type: 'placeholder' },
+      { id: 'regulamin',  label: 'Regulamin obozu',     icon: '📋', type: 'regulamin' },
+      { id: 'ppoz',       label: 'Instrukcja ppoż.',    icon: '🔥', type: 'ppoz' },
     ],
     html: `${SENDER}
 <div style="margin-bottom:18px;">
