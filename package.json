@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "extract": "node scripts/extract-docs.mjs",
     "build:docs": "node scripts/build-robert-docs.mjs"
   },
   "dependencies": {

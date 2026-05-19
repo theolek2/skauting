@@ -167,28 +167,37 @@ function collectFiles(dir) {
   return results
 }
 
-// 1. Pliki z folderu docs/ (i podfolderów)
-const docsDir = join(ROOT, 'docs')
-try {
-  const files = collectFiles(docsDir)
-  for (const filePath of files) {
-    const file = filePath.replace(docsDir + '\\', '').replace(docsDir + '/', '')
-    try {
-      const text = await extractText(filePath)
-      if (!text) continue
-      const chunks = splitIntoChunks(text)
-      chunks.forEach((chunk, i) => allChunks.push({
-        pageContent: chunk,
-        metadata: { source: file, title: file.replace(/\.[^.]+$/, ''), chunk: i }
-      }))
-      console.log(`✅ ${file}: ${chunks.length} chunków`)
-    } catch (e) {
-      console.warn(`⚠️  Błąd ${file}:`, e.message)
+// Pomocnik: załaduj TXT z folderu
+async function loadTxtFolder(dir, label) {
+  try {
+    const files = collectFiles(dir).filter(f =>
+      ['.txt', '.md'].includes(extname(f).toLowerCase())
+    )
+    for (const filePath of files) {
+      const file = filePath.replace(dir + '\\', '').replace(dir + '/', '')
+      try {
+        const text = readFileSync(filePath, 'utf-8')
+        if (!text.trim()) continue
+        const chunks = splitIntoChunks(text)
+        chunks.forEach((chunk, i) => allChunks.push({
+          pageContent: chunk,
+          metadata: { source: file, title: file.replace(/\.[^.]+$/, ''), chunk: i }
+        }))
+        console.log(`✅ [${label}] ${file}: ${chunks.length} chunków`)
+      } catch (e) {
+        console.warn(`⚠️  Błąd ${file}:`, e.message)
+      }
     }
-  }
-} catch (e) {
-  console.warn('Brak folderu docs/ lub błąd:', e.message)
+  } catch {}
 }
+
+// 1a. docs_txt/ — skonwertowane pliki (z npm run extract)
+const docsTxtDir = join(ROOT, 'docs_txt')
+await loadTxtFolder(docsTxtDir, 'docs_txt')
+
+// 1b. docs/ — oryginalne pliki .txt i .md (bez PDF/DOCX — już skonwertowane)
+const docsDir = join(ROOT, 'docs')
+await loadTxtFolder(docsDir, 'docs')
 
 // 2. Szablony z dokumenty-szablony.js
 try {
