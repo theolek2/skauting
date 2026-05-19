@@ -59,8 +59,9 @@ function TerrainHistory({ terrainId, allCamps }) {
 export default function CampsMapTab({ user, meta }) {
   const [camps, setCamps]                 = useState([])
   const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState('')
   const [showModal, setShowModal]         = useState(false)
-  const [addToTerrain, setAddToTerrain]   = useState(null)  // terrain do dodania kolejnego obozu
+  const [addToTerrain, setAddToTerrain]   = useState(null)
   const [filter, setFilter]               = useState('all')
   const [search, setSearch]               = useState('')
   const [providerId, setProviderId]       = useState(() => {
@@ -69,9 +70,15 @@ export default function CampsMapTab({ user, meta }) {
 
   const load = () => {
     setLoading(true)
+    setError('')
     getCamps()
-      .then(setCamps)
-      .catch(() => {})
+      .then(result => {
+        // getCamps zwraca teraz { error, camps }
+        const campsArray = Array.isArray(result) ? result : (result.camps || [])
+        setCamps(campsArray)
+        if (result.error) setError(result.error)
+      })
+      .catch(err => { setError(err.message || 'Błąd łączenia z bazą') })
       .finally(() => setLoading(false))
   }
 
@@ -111,6 +118,11 @@ export default function CampsMapTab({ user, meta }) {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Pasek narzędzi */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap shrink-0">
+        {error && (
+          <div className="w-full bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
+            ⚠️ Błąd bazy danych: {error}. <button onClick={load} className="underline font-semibold hover:text-red-900">Spróbuj ponownie</button>
+          </div>
+        )}
         <div className="flex gap-2">
           {[['all','Wszystkie'],['active','Aktywne'],['planned','Planowane'],['ended','Zakończone']].map(([v,l]) => (
             <button key={v} onClick={() => setFilter(v)}

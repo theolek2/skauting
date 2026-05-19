@@ -24,12 +24,19 @@ export const getSession = () => supabase.auth.getSession()
 
 // ── Tereny ───────────────────────────────────────────────────────────────────
 export async function getTerrains() {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('terrains')
-    .select('*, camps(count)')
+    .select('id,name,lat,lng,address,owner_name,owner_contact,owner_notes,created_by,is_public,created_at')
     .eq('is_public', true)
     .order('name')
-  if (error) throw error
+  if (error) {
+    const { data: data2, error: error2 } = await supabase
+      .from('terrains')
+      .select('id,name,lat,lng,address,owner_name,owner_contact,owner_notes,created_by,is_public,created_at')
+      .order('name')
+    if (error2) throw error2
+    return data2 || []
+  }
   return data || []
 }
 
@@ -49,40 +56,72 @@ export async function addTerrain(terrain) {
 }
 
 // ── Obozy ─────────────────────────────────────────────────────────────────────
+
+// Pobiera profile organizatorów przez camp_access (bez organizer_id w camps)
+async function _fetchOrganizers(campIds) {
+  if (!campIds.length) return {}
+  const { data } = await supabase
+    .from('camp_access')
+    .select('camp_id, user_id')
+    .in('camp_id', campIds)
+  if (!data?.length) return {}
+  const userIds = [...new Set(data.map(r => r.user_id))]
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name, organization, phone')
+    .in('id', userIds)
+  const profileMap = {}
+  ;(profiles || []).forEach(p => { profileMap[p.id] = p })
+  const organizerMap = {}
+  data.forEach(r => {
+    if (!organizerMap[r.camp_id] && profileMap[r.user_id])
+      organizerMap[r.camp_id] = profileMap[r.user_id]
+  })
+  return organizerMap
+}
+
 export async function getCamps() {
   const today = new Date().toISOString().split('T')[0]
   const { data, error } = await supabase
     .from('camps')
-    .select(`
-      *,
-      terrain:terrains(id, name, lat, lng, address, owner_name, owner_contact),
-      organizer:profiles(display_name, organization, phone)
-    `)
+    .select('id,terrain_id,unit_name,num_teams,contact_person,contact_phone,date_start,date_end,notes,created_at, terrain:terrains(id, name, lat, lng, address, owner_name, owner_contact)')
     .order('date_start', { ascending: false })
+
   if (error) {
     console.warn('getCamps error:', error.message)
-    return []
+    return { error: error.message, camps: [] }
   }
 
-  // Wylicz status na podstawie dat
-  return (data || []).map(camp => ({
-    ...camp,
-    status: camp.date_end < today ? 'ended'
-          : camp.date_start <= today ? 'active'
-          : 'planned',
-  }))
+  const campsData = data || []
+  const organizerMap = await _fetchOrganizers(campsData.map(c => c.id)).catch(() => ({}))
+
+  return {
+    error: null,
+    camps: campsData.map(camp => ({
+      ...camp,
+      organizer: organizerMap[camp.id] || null,
+      status: camp.date_end < today ? 'ended'
+            : camp.date_start <= today ? 'active'
+            : 'planned',
+    })),
+  }
 }
 
 export async function getCampsForTerrain(terrainId) {
   const today = new Date().toISOString().split('T')[0]
   const { data, error } = await supabase
     .from('camps')
-    .select('*, organizer:profiles(display_name, organization, phone)')
+    .select('id,terrain_id,unit_name,num_teams,contact_person,contact_phone,date_start,date_end,notes,created_at')
     .eq('terrain_id', terrainId)
     .order('date_start', { ascending: false })
   if (error) throw error
-  return (data || []).map(camp => ({
+
+  const campsData = data || []
+  const organizerMap = await _fetchOrganizers(campsData.map(c => c.id)).catch(() => ({}))
+
+  return campsData.map(camp => ({
     ...camp,
+    organizer: organizerMap[camp.id] || null,
     status: camp.date_end < today ? 'ended'
           : camp.date_start <= today ? 'active'
           : 'planned',
@@ -90,17 +129,31 @@ export async function getCampsForTerrain(terrainId) {
 }
 
 export async function addCamp(camp) {
+  // Wyciągnij organizer_id (idzie do camp_access, nie do camps)
+  const organizerId = camp.organizer_id
+  const { organizer_id: _, ...campData } = camp
+
   // Upewnij się że profil organizatora istnieje
-  if (camp.organizer_id) {
+  if (organizerId) {
     await supabase.from('profiles')
-      .upsert([{ id: camp.organizer_id }], { onConflict: 'id', ignoreDuplicates: true })
+      .upsert([{ id: organizerId }], { onConflict: 'id', ignoreDuplicates: true })
   }
+
   const { data, error } = await supabase
     .from('camps')
-    .insert([camp])
+    .insert([campData])
     .select()
     .single()
   if (error) throw error
+
+  // Powiąż organizatora z obozem przez camp_access
+  if (organizerId && data) {
+    await supabase.from('camp_access').upsert(
+      [{ user_id: organizerId, camp_id: data.id }],
+      { onConflict: 'user_id,camp_id', ignoreDuplicates: true }
+    ).catch(e => console.warn('camp_access upsert:', e.message))
+  }
+
   return data
 }
 
