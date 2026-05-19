@@ -113,12 +113,15 @@ async function extractText(filePath) {
   if (ext === '.pdf') {
     const { default: PDFParser } = await import('pdf2json')
     return new Promise((resolve, reject) => {
-      // Wycisz ostrzeżenia SMask (nieobsługiwane efekty przezroczystości — nieszkodliwe)
+      // Wycisz ostrzeżenia SMask/TilingType (nieszkodliwe — brak obsługi grafik w pdf2json)
+      const origStderr = process.stderr.write.bind(process.stderr)
+      process.stderr.write = () => true
       const origWarn = console.warn
       console.warn = () => {}
       const parser = new PDFParser(null, true)
+      const restore = () => { process.stderr.write = origStderr; console.warn = origWarn }
       parser.on('pdfParser_dataReady', data => {
-        console.warn = origWarn
+        restore()
         const text = (data.Pages || []).flatMap(page =>
           (page.Texts || []).map(t =>
             decodeURIComponent(t.R?.map(r => r.T).join('') || '')
@@ -127,7 +130,7 @@ async function extractText(filePath) {
         resolve(text)
       })
       parser.on('pdfParser_dataError', err => {
-        console.warn = origWarn
+        restore()
         reject(new Error(err.parserError || 'PDF parse error'))
       })
       parser.loadPDF(filePath)
