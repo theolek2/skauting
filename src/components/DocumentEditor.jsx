@@ -475,50 +475,61 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
   const handleExport = async () => {
     if (!editorRef.current) return
     setSaving(true)
+
+    // Klon poza viewport — html2canvas nie może renderować z fixed/overflow kontenerów
+    const clone = editorRef.current.cloneNode(true)
+    clone.style.cssText = [
+      'position:fixed', 'top:-99999px', 'left:0',
+      'width:210mm', 'height:auto', 'overflow:visible',
+      'background:#fff', 'font-family:Segoe UI,Arial,sans-serif',
+      'font-size:10.5pt', 'line-height:1.55', 'color:#111',
+      'padding:18mm 20mm', 'box-sizing:border-box',
+    ].join(';')
+    document.body.appendChild(clone)
+
     try {
-      // Renderuj każdą stronę osobno — unikamy cięcia tekstu w połowie
-      const el = editorRef.current
-      const canvas = await html2canvas(el, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
         allowTaint: false,
         scrollX: 0,
         scrollY: 0,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
+        width: clone.offsetWidth,
+        height: clone.scrollHeight,
+        windowWidth: clone.offsetWidth,
+        windowHeight: clone.scrollHeight,
       })
 
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' })
-      const pdfW = pdf.internal.pageSize.getWidth()
-      const pdfH = pdf.internal.pageSize.getHeight()
+      document.body.removeChild(clone)
 
-      // Skaluj canvas do szerokości strony PDF
-      const ratio = pdfW / canvas.width
-      const fullH = canvas.height * ratio
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pdfW = 210
+      const pdfH = 297
+      const mmPerPx = pdfW / canvas.width
+      const pageHeightPx = Math.floor(pdfH / mmPerPx)
 
-      // Rysuj strony — każda strona wycina odpowiedni fragment canvasu
       let srcY = 0
-      const srcPageH = pdfH / ratio  // wysokość w pikselach canvasu na 1 stronę
-
       while (srcY < canvas.height) {
-        const srcSliceH = Math.min(srcPageH, canvas.height - srcY)
-        const destH = srcSliceH * ratio
+        const sliceH = Math.min(pageHeightPx, canvas.height - srcY)
 
-        // Utwórz tymczasowy canvas tylko dla tej strony
         const pageCanvas = document.createElement('canvas')
         pageCanvas.width = canvas.width
-        pageCanvas.height = srcSliceH
+        pageCanvas.height = sliceH
         const ctx = pageCanvas.getContext('2d')
-        ctx.drawImage(canvas, 0, srcY, canvas.width, srcSliceH, 0, 0, canvas.width, srcSliceH)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, sliceH)
+        ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH)
 
         if (srcY > 0) pdf.addPage()
-        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, destH)
-        srcY += srcSliceH
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceH * mmPerPx)
+
+        srcY += pageHeightPx
       }
 
       pdf.save(`${(activeLabel || 'dokument').replace(/\s+/g, '_')}.pdf`)
     } catch (e) {
+      if (document.body.contains(clone)) document.body.removeChild(clone)
       alert('Błąd eksportu PDF: ' + e.message)
     } finally {
       setSaving(false)
