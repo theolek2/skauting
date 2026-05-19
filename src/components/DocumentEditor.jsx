@@ -340,22 +340,47 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
     if (!editorRef.current) return
     setSaving(true)
     try {
-      const canvas = await html2canvas(editorRef.current, {
+      // Renderuj każdą stronę osobno — unikamy cięcia tekstu w połowie
+      const el = editorRef.current
+      const canvas = await html2canvas(el, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
         allowTaint: false,
+        scrollX: 0,
+        scrollY: 0,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
       })
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const imgW = 210
-      const imgH = (canvas.height * imgW) / canvas.width
-      let y = 0
-      const pageH = 297
-      while (y < imgH) {
-        if (y > 0) pdf.addPage()
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -y, imgW, imgH)
-        y += pageH
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' })
+      const pdfW = pdf.internal.pageSize.getWidth()
+      const pdfH = pdf.internal.pageSize.getHeight()
+
+      // Skaluj canvas do szerokości strony PDF
+      const ratio = pdfW / canvas.width
+      const fullH = canvas.height * ratio
+
+      // Rysuj strony — każda strona wycina odpowiedni fragment canvasu
+      let srcY = 0
+      const srcPageH = pdfH / ratio  // wysokość w pikselach canvasu na 1 stronę
+
+      while (srcY < canvas.height) {
+        const srcSliceH = Math.min(srcPageH, canvas.height - srcY)
+        const destH = srcSliceH * ratio
+
+        // Utwórz tymczasowy canvas tylko dla tej strony
+        const pageCanvas = document.createElement('canvas')
+        pageCanvas.width = canvas.width
+        pageCanvas.height = srcSliceH
+        const ctx = pageCanvas.getContext('2d')
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcSliceH, 0, 0, canvas.width, srcSliceH)
+
+        if (srcY > 0) pdf.addPage()
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, destH)
+        srcY += srcSliceH
       }
+
       pdf.save(`${(activeLabel || 'dokument').replace(/\s+/g, '_')}.pdf`)
     } catch (e) {
       alert('Błąd eksportu PDF: ' + e.message)
