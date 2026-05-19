@@ -1,8 +1,8 @@
-import { ChatGroq } from '@langchain/groq'
-import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts'
-import { HumanMessage, AIMessage } from '@langchain/core/messages'
-import { StringOutputParser } from '@langchain/core/output_parsers'
-import docs from '../src/data/robert-docs.json' assert { type: 'json' }
+// Robert — asystent skautowy
+// Bez langchain, bez statycznego importu JSON (Vercel-friendly)
+
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 const HF_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
 
@@ -18,7 +18,21 @@ Kontekst z dokumentów skautowych:
 
 Jeśli kontekst nie zawiera odpowiedzi, odpowiedz na podstawie ogólnej wiedzy o harcerstwie.`
 
-// Cosine similarity między dwoma wektorami
+// ── Lazy load bazy wiedzy (unikamy 274 KB importu w bundlerze Vercela) ─────────
+let _docsCache = null
+
+function loadDocs() {
+  if (_docsCache) return _docsCache
+  try {
+    const path = join(process.cwd(), 'src', 'data', 'robert-docs.json')
+    _docsCache = JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    _docsCache = []
+  }
+  return _docsCache
+}
+
+// ── Cosine similarity ─────────────────────────────────────────────────────────
 function cosineSim(a, b) {
   if (!a || !b || a.length !== b.length) return 0
   let dot = 0, normA = 0, normB = 0
@@ -30,7 +44,7 @@ function cosineSim(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10)
 }
 
-// Pobierz embedding z HuggingFace
+// ── HuggingFace embedding ─────────────────────────────────────────────────────
 async function getEmbedding(text, hfToken) {
   const res = await fetch(
     `https://api-inference.huggingface.co/pipeline/feature-extraction/${HF_MODEL}`,
@@ -45,12 +59,12 @@ async function getEmbedding(text, hfToken) {
   return Array.isArray(data[0]) ? data[0] : data
 }
 
-// BM25-style keyword fallback gdy brak embeddingów
-function keywordRetrieve(query, k = 4) {
+// ── BM25 keyword fallback ─────────────────────────────────────────────────────
+function keywordRetrieve(docs, query, k = 4) {
   const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2)
   return docs
     .map(d => {
-      const content = d.pageContent.toLowerCase()
+      const content = d.pageContent?.toLowerCase() || ''
       const score = words.reduce((s, w) => s + (content.includes(w) ? 1 : 0), 0)
       return { ...d, score }
     })
@@ -59,8 +73,8 @@ function keywordRetrieve(query, k = 4) {
     .slice(0, k)
 }
 
-// Wybierz top-k chunków
-async function retrieve(question, hfToken, k = 4) {
+// ── Retrieval (cosine + BM25 fallback) ────────────────────────────────────────
+async function retrieve(docs, question, hfToken, k = 4) {
   const hasEmbeddings = docs.some(d => d.embedding)
 
   if (hasEmbeddings && hfToken) {
@@ -71,18 +85,51 @@ async function retrieve(question, hfToken, k = 4) {
         .map(d => ({ ...d, score: cosineSim(qEmb, d.embedding) }))
         .sort((a, b) => b.score - a.score)
         .slice(0, k)
-    } catch (e) {
-      console.warn('Embedding fallback do BM25:', e.message)
-    }
+    } catch {}
   }
 
-  return keywordRetrieve(question, k)
+  return keywordRetrieve(docs, question, k)
 }
 
+// ── Groq API (OpenAI-compatible) ──────────────────────────────────────────────
+async function groqChat(groqKey, systemPrompt, userPrompt, history) {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...history.slice(-6).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content,
+    })),
+    { role: 'user', content: userPrompt },
+  ]
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${groqKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama3-8b-8192',
+      messages,
+      temperature: 0.3,
+      max_tokens: 1024,
+    }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Groq API ${res.status}: ${text.slice(0, 200)}`)
+  }
+
+  const data = await res.json()
+  return data.choices?.[0]?.message?.content || ''
+}
+
+// ── Handler ───────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { question, history = [] } = req.body
+  const { question, history = [] } = req.body || {}
   if (!question?.trim()) return res.status(400).json({ error: 'Brak pytania' })
 
   const groqKey = process.env.GROQ_API_KEY
@@ -91,32 +138,27 @@ export default async function handler(req, res) {
   if (!groqKey) return res.status(500).json({ error: 'Brak GROQ_API_KEY' })
 
   try {
-    // 1. Retrieving
-    const chunks = await retrieve(question, hfToken)
+    // 1. Wczytaj bazę wiedzy (dynamicznie, nie jako import)
+    const docs = loadDocs()
+
+    // 2. Retrieval
+    const chunks = await retrieve(docs, question, hfToken)
     const context = chunks.length > 0
       ? chunks.map((c, i) => `[${i + 1}] (${c.metadata?.title || c.metadata?.source})\n${c.pageContent}`).join('\n\n')
       : 'Brak pasujących dokumentów w bazie wiedzy.'
 
-    // 2. LLM
-    const llm = new ChatGroq({ model: 'llama3-8b-8192', apiKey: groqKey, temperature: 0.3, maxTokens: 1024 })
+    // 3. System prompt z kontekstem
+    const systemPrompt = SYSTEM_PROMPT.replace('{context}', context)
 
-    const prompt = ChatPromptTemplate.fromMessages([
-      ['system', SYSTEM_PROMPT],
-      new MessagesPlaceholder('chat_history'),
-      ['human', '{input}'],
-    ])
+    // 4. Groq LLM
+    const answer = await groqChat(groqKey, systemPrompt, question, history)
 
-    const chain = prompt.pipe(llm).pipe(new StringOutputParser())
-
-    const chatHistory = history.slice(-6).map(m =>
-      m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
-    )
-
-    const answer = await chain.invoke({ context, input: question, chat_history: chatHistory })
-
-    res.status(200).json({ answer, sources: chunks.map(c => c.metadata?.title || c.metadata?.source) })
+    res.status(200).json({
+      answer,
+      sources: chunks.map(c => c.metadata?.title || c.metadata?.source),
+    })
   } catch (err) {
-    console.error('Robert error:', err)
+    console.error('Robert error:', err.message)
     res.status(500).json({ error: err.message || 'Błąd serwera' })
   }
 }
