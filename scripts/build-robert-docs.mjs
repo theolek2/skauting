@@ -23,7 +23,7 @@ if (typeof globalThis.Path2D === 'undefined') {
   globalThis.Path2D = class Path2D {}
 }
 
-import { readFileSync, writeFileSync, readdirSync } from 'fs'
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs'
 import { join, dirname, extname } from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
@@ -151,15 +151,30 @@ async function extractText(filePath) {
 
 const allChunks = []
 
-// 1. Pliki z folderu docs/
+// Rekurencyjne zbieranie plików z folderu i podfolderów
+function collectFiles(dir) {
+  const results = []
+  try {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry)
+      if (statSync(full).isDirectory()) {
+        results.push(...collectFiles(full))
+      } else if (['.txt', '.md', '.pdf', '.docx', '.doc'].includes(extname(entry).toLowerCase())) {
+        results.push(full)
+      }
+    }
+  } catch {}
+  return results
+}
+
+// 1. Pliki z folderu docs/ (i podfolderów)
 const docsDir = join(ROOT, 'docs')
 try {
-  const files = readdirSync(docsDir).filter(f =>
-    ['.txt', '.md', '.pdf', '.docx', '.doc'].includes(extname(f).toLowerCase())
-  )
-  for (const file of files) {
+  const files = collectFiles(docsDir)
+  for (const filePath of files) {
+    const file = filePath.replace(docsDir + '\\', '').replace(docsDir + '/', '')
     try {
-      const text = await extractText(join(docsDir, file))
+      const text = await extractText(filePath)
       if (!text) continue
       const chunks = splitIntoChunks(text)
       chunks.forEach((chunk, i) => allChunks.push({
