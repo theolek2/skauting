@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
 
 const DOC_HEADER = `
 <div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #2d6a2d;padding-bottom:10px;margin-bottom:18px;">
@@ -472,68 +470,47 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
     ? docLabel
     : ((attachments || []).find(a => a.id === activeTab)?.label || docLabel)
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (!editorRef.current) return
-    setSaving(true)
+    const content = editorRef.current.innerHTML
+    const filename = (activeLabel || 'dokument').replace(/\s+/g, '_')
 
-    // Klon poza viewport — html2canvas nie może renderować z fixed/overflow kontenerów
-    const clone = editorRef.current.cloneNode(true)
-    clone.style.cssText = [
-      'position:fixed', 'top:-99999px', 'left:0',
-      'width:210mm', 'height:auto', 'overflow:visible',
-      'background:#fff', 'font-family:Segoe UI,Arial,sans-serif',
-      'font-size:10.5pt', 'line-height:1.55', 'color:#111',
-      'padding:18mm 20mm', 'box-sizing:border-box',
-    ].join(';')
-    document.body.appendChild(clone)
-
-    try {
-      const canvas = await html2canvas(clone, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: false,
-        scrollX: 0,
-        scrollY: 0,
-        width: clone.offsetWidth,
-        height: clone.scrollHeight,
-        windowWidth: clone.offsetWidth,
-        windowHeight: clone.scrollHeight,
-      })
-
-      document.body.removeChild(clone)
-
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const pdfW = 210
-      const pdfH = 297
-      const mmPerPx = pdfW / canvas.width
-      const pageHeightPx = Math.floor(pdfH / mmPerPx)
-
-      let srcY = 0
-      while (srcY < canvas.height) {
-        const sliceH = Math.min(pageHeightPx, canvas.height - srcY)
-
-        const pageCanvas = document.createElement('canvas')
-        pageCanvas.width = canvas.width
-        pageCanvas.height = sliceH
-        const ctx = pageCanvas.getContext('2d')
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, canvas.width, sliceH)
-        ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH)
-
-        if (srcY > 0) pdf.addPage()
-        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceH * mmPerPx)
-
-        srcY += pageHeightPx
-      }
-
-      pdf.save(`${(activeLabel || 'dokument').replace(/\s+/g, '_')}.pdf`)
-    } catch (e) {
-      if (document.body.contains(clone)) document.body.removeChild(clone)
-      alert('Błąd eksportu PDF: ' + e.message)
-    } finally {
-      setSaving(false)
+    const win = window.open('', '_blank')
+    win.document.write(`<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${filename}</title>
+  <style>
+    @page { size: A4; margin: 18mm 20mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #111;
+      margin: 0;
+      padding: 0;
+      background: #fff;
     }
+    img { max-width: 100%; }
+    table { border-collapse: collapse; width: 100%; }
+    select { appearance: none; -webkit-appearance: none; border: none; background: transparent; font: inherit; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+${content}
+<script>
+  window.onload = function() {
+    setTimeout(function() { window.print(); window.close(); }, 400);
+  };
+</script>
+</body>
+</html>`)
+    win.document.close()
   }
 
   const tabItems = [
@@ -594,8 +571,8 @@ export default function DocumentEditor({ templateHtml, meta, docLabel, onClose, 
             </div>
             <div className="flex items-center gap-2">
               <button onClick={handleExport} disabled={saving}
-                className="text-xs bg-green-700 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-green-800 transition disabled:opacity-50">
-                {saving ? '⏳ Eksport...' : '📥 Eksportuj PDF'}
+                className="text-xs bg-green-700 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-green-800 transition">
+                🖨️ Drukuj / Zapisz PDF
               </button>
             </div>
           </div>
