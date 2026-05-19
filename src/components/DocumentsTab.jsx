@@ -81,6 +81,7 @@ export default function DocumentsTab({ meta, onNavigate, progress, onToggleProgr
           onSave={() => {}}
           recipients={selectedDoc.recipients || null}
           multiRecipient={selectedDoc.multiRecipient || false}
+          attachments={selectedDoc.attachments || null}
         />
       )}
 

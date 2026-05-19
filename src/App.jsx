@@ -11,6 +11,7 @@ import DashboardTab from './components/DashboardTab'
 import DuringCampTab from './components/DuringCampTab'
 import DiaryTab from './components/DiaryTab'
 import DocumentsTab from './components/DocumentsTab'
+import InstructionsTab from './components/InstructionsTab'
 import JadlospisTab from './components/JadlospisTab'
 import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
@@ -240,12 +241,13 @@ export default function App() {
   ]
 
   const BEFORE_TABS = [
-    { id: 'camp',      label: 'Dane obozu' },
-    { id: 'plan',      label: 'Plan zajęć' },
-    { id: 'jadlospis', label: 'Jadłospis' },
-    { id: 'diary',     label: 'Dziennik zajęć' },
-    { id: 'docs',      label: 'Dokumenty' },
-    { id: 'map',       label: 'Mapa terenu' },
+    { id: 'camp',        label: 'Dane obozu' },
+    { id: 'instructions', label: 'Instrukcje' },
+    { id: 'plan',        label: 'Plan zajęć' },
+    { id: 'jadlospis',   label: 'Jadłospis' },
+    { id: 'diary',       label: 'Dziennik zajęć' },
+    { id: 'docs',        label: 'Dokumenty' },
+    { id: 'map',         label: 'Mapa terenu' },
   ]
 
   return (
@@ -364,6 +366,9 @@ export default function App() {
         <>
           {activeTab === 'camp' && (
             <CampDataTab meta={meta} onUpdateMeta={updateMeta} userId={user?.id} progress={progress} onToggleProgress={toggleProgress} />
+          )}
+          {activeTab === 'instructions' && (
+            <InstructionsTab />
           )}
           {activeTab === 'jadlospis' && (
             <div className="flex flex-1 overflow-hidden">

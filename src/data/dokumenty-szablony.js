@@ -54,6 +54,12 @@ export const DOC_TEMPLATES = {
   przewodnie: {
     label: 'Pismo przewodnie (PSP)',
     icon: '🔥',
+    attachments: [
+      { id: 'kontakty',   label: 'Środki łączności',   icon: '📞', type: 'contacts' },
+      { id: 'uczestnicy', label: 'Lista uczestników',   icon: '👥', type: 'participants' },
+      { id: 'regulamin',  label: 'Regulamin obozu',     icon: '📋', type: 'placeholder' },
+      { id: 'ppoz',       label: 'Instrukcja ppoż.',    icon: '🔥', type: 'placeholder' },
+    ],
     html: `${SENDER}
 <div style="margin-bottom:18px;">
   <p>Komenda {{CHOICE:psp_typ:Powiatowej|Miejskiej}} Straży Pożarnej</p>
@@ -69,7 +75,15 @@ export const DOC_TEMPLATES = {
   <li><b>{{kontakt1}}</b>, tel. <b>{{tel_kontakt1}}</b></li>
   <li><b>{{kontakt2}}</b>, tel. <b>{{tel_kontakt2}}</b></li>
 </ul>
-<p>W załączeniu przesyłam mapę terenu obozu.</p>
+<p>W załączeniu przesyłam:</p>
+<ul style="margin:6px 0 6px 22px;">
+  <li>Środki łączności (📑OK.3.3)</li>
+  <li>Lista uczestników (📑UC.3)</li>
+  <li>Szkic zagospodarowania terenu (📑TR.4)</li>
+  <li>Mapki ewakuacyjne (📑EW.2)</li>
+  <li>Regulamin obozu (📑RG.1.1)</li>
+  <li>Instrukcja ppoż. i ewakuacji (📑RG.2.1)</li>
+</ul>
 <div style="margin-top:40px;display:flex;justify-content:space-between;">
   <div><div style="border-top:1px solid #333;width:190px;padding-top:4px;text-align:center;">Podpis kierownika</div></div>
   <div><div style="border-top:1px solid #333;width:190px;padding-top:4px;text-align:center;">Pieczęć i podpis hufcowego</div></div>
