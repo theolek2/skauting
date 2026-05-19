@@ -1,0 +1,130 @@
+[
+  {
+    "pageContent": "ORGANIZACJA OBOZU HARCERSKIEGO — SKAUCI EUROPY WYMAGANIA FORMALNE: Obóz harcerski wymaga zgłoszenia do kuratorium oświaty (co najmniej 21 dni przed rozpoczęciem). Kierownik wypoczynku musi posiadać uprawnienia — ukończony kurs kierowników wypoczynku. Wychowawcy muszą posiadać uprawnienia wychowawcy kolonijnego lub być instruktorami harcerskimi. DOKUMENTY WYMAGANE: 1. Zgłoszenie do kuratorium oświaty 2. Pismo przewodnie do Komendy PSP (Straży Pożarnej) — opinia ppoż. 3. Wniosek do Nadleśnictwa — zgoda na użytkowanie terenu leśnego 4. Pismo do Wójta/Burmistrza — zgoda na latryny i doły chłonne 5. Pismo do Policji — zawiadomienie o obozie 6. Oświadczenie właściciela terenu — zgoda właściciela działki 7. Umowa na tymczasowe schronienie — na wypadek złej pogody 8. Lista uczestników z danymi (imię, nazwisko, rok urodzenia, PESEL) 9. Karty kwalifikacyjne uczestników 10. Regulamin obozu — podpisany przez uczestników/rodziców TERMINY SKŁADANIA: - Kuratorium: minimum 21 dni przed startem obozu - PSP, Policja, Wójt, Nadleśnictwo: minimum 14 dni przed startem MINIMALNA KADRA: - 1 kierownik (komendant) na cały obóz - 1 wychowawca na każde 20 uczestników (minimum 2 wychowawców) - Osoba odpowiedzialna za żywienie (orzeczenie lekarskie) WYPOSAŻENIE OBOZU: - Apteczka pierwszej pomocy - Gaśnice (uzgodnione z PSP) - Sprzęt do gaszenia ognisk (wiadra z wodą, łopaty) - Latarki dla wartowników - Plan ewakuacji i mapa terenu - Lista kontaktów alarmowych widoczna w obozie BEZPIECZEŃSTWO: - Nocna warta — wyznaczony zastęp - Punkty zbiórek alarmowych - Sygnały alarmowe znane wszystkim uczestnikom - Ogniska min. 100m od ściany lasu - Zakaz alkoholu, tytoniu, narkotyków ŻYWIENIE: - Posiłki przygotowywane przez zastępy na kuchniach polowych - Minimum 3 posiłki dziennie - Dostęp do czystej wody pitnej przez całą dobę ŁĄCZNOŚĆ: - Numery alarmowe: Pogotowie 999/112, Straż Pożarna 998, Policja 997 - Kontakty do kierownika i wychowawców dostępne dla wszystkich - Plan działania w przypadku wypadku lub pożaru",
+    "metadata": {
+      "source": "organizacja-obozu.txt",
+      "title": "organizacja-obozu",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "PRAWO HARCERSKIE — SKAUCI EUROPY Harcerz służy Bogu i Polsce i sumiennie spełnia swoje obowiązki. Harcerz jest dzielny. Harcerz jest pożyteczny i niesie pomoc bliźnim. Harcerz jest przyjacielem wszystkich i bratem każdego harcerza. Harcerz jest uprzejmy. Harcerz miłuje przyrodę i stara się ją poznać. Harcerz jest karny i posłuszny rodzicom i wszystkim swoim przełożonym. Harcerz jest pogodny. Harcerz jest oszczędny i ofiarny. Harcerz jest czysty w myśli, w mowie i uczynkach. PRZYRZECZENIE HARCERSKIE: Mam szczerą wolę całym życiem pełnić służbę Bogu i Polsce, nieść chętną pomoc bliźnim i być posłusznym Prawu Harcerskiemu. MOTTO SKAUTÓW EUROPY: Czuwaj! ORGANIZACJA: Skauci Europy to Stowarzyszenie Harcerstwa Katolickiego „Zawisza\" — Federacja Skautingu Europejskiego (FSE). Struktura: Gromady (wilczki, 8-11 lat), Drużyny harcerskie (12-16 lat), Drużyny starszoharcerskie (17-19 lat), Krąg wędrowniczy (19+). Zastęp to podstawowa jednostka — 6-8 osób pod kierownictwem zastępowego. Hufiec skupia kilka drużyn z danego terenu, na czele stoi hufcowy/hufcowa.",
+    "metadata": {
+      "source": "prawo-harcerskie.txt",
+      "title": "prawo-harcerskie",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "${SENDER} Zawiadomienie o organizacji obozu harcerskiego Szanowni Państwo, zgodnie z „Protokołem Uzgodnień w zakresie bezpieczeństwa na obozach harcerskich pod namiotami\" z dnia 19 czerwca 2019 r. uprzejmie informuję, że w terminie od do na terenie Nadleśnictwa , w obrębie leśnictwa (oddział leśny nr ), odbędzie się obóz harcerski . Organizatorem obozu jest działający w ramach Stowarzyszenia Harcerstwa Katolickiego „Zawisza\" – Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku ( ). W obozie weźmie udział około uczestników w wieku lat oraz osób kadry wychowawczej. Uczestnikami będą należący do Skautów Europy wraz z pełnoletnimi opiekunami. Osoby wyznaczone do kontaktu ze służbami: Kierownik: , tel. Wychowawca: , tel. Wychowawca: , tel. Uczestnicy oraz kadra zostaną zapoznani z zasadami bezpieczeństwa. Mapa terenu obozu w załączeniu. Podpis kierownika Pieczęć i podpis hufcowego",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Zawiadomienie o obozie",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "${SENDER} Komenda Straży Pożarnej w Wniosek o wydanie opinii w zakresie bezpieczeństwa przeciwpożarowego Szanowni Państwo, zwracam się z uprzejmą prośbą o wydanie opinii w zakresie bezpieczeństwa przeciwpożarowego dotyczącej organizacji obozu harcerskiego , planowanego w terminie od do na terenie Nadleśnictwa , w obrębie leśnictwa (oddział leśny nr ). Organizatorem obozu jest , działający w ramach Stowarzyszenia Harcerstwa Katolickiego „Zawisza\" – Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku ( ). W obozie weźmie udział około uczestników w wieku lat oraz osób kadry wychowawczej. Uczestnikami będą należący do Skautów Europy wraz z pełnoletnimi opiekunami. Uczestnicy i kadra zostaną zapoznani z zasadami bezpieczeństwa p.poż. Osoby do kontaktu ze służbami: , tel. , tel. W załączeniu przesyłam: Środki łączności (📑OK.3.3) Lista uczestników (📑UC.3) Szkic zagospodarowania terenu (📑TR.4) Mapki ewakuacyjne (📑EW.2) Regulamin obozu (📑RG.1.1) Instrukcja ppoż. i ewakuacji (📑RG.2.1) Podpis kierownika Pieczęć i podpis hufcowego",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Policja",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "${SENDER} Sz. P. Wójt / Burmistrz Gminy Wniosek o wyrażenie zgody na użytkowanie latryn oraz dołów chłonnych Szanowny Panie Wójcie, w związku z planowaną organizacją obozu harcerskiego na terenie Gminy , w obrębie Nadleśnictwa (oddział leśny nr ), zwracam się z uprzejmą prośbą o wyrażenie pisemnej zgody na wykopanie i użytkowanie latryn naturalnych oraz dołów chłonnych na czas trwania wypoczynku, tj. od do . Organizatorem obozu jest , działający w ramach Stowarzyszenia Harcerstwa Katolickiego „Zawisza\" – Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku ( ). W obozie weźmie udział około uczestników w wieku lat oraz osób kadry wychowawczej. Uczestnikami będą należący do Skautów Europy. Obóz organizowany jest za zgodą Nadleśnictwa . Latryny i doły chłonne zostaną wykonane zgodnie z normami i zasypane po zakończeniu obozu. Podpis kierownika Pieczęć i podpis hufcowego",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Straż Pożarna (PSP)",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "${SENDER} Nadleśnictwo Wniosek o udostępnienie terenu leśnego w celu organizacji obozu harcerskiego Szanowni Państwo, zwracam się z uprzejmą prośbą o udostępnienie terenu leśnego w obrębie Nadleśnictwa , leśnictwa (oddział leśny nr ), w celu organizacji obozu harcerskiego w terminie od do . Organizatorem obozu jest , działający w ramach Stowarzyszenia Harcerstwa Katolickiego „Zawisza\" – Federacji Skautingu Europejskiego (Skauci Europy), reprezentowany przez kierownika wypoczynku ( ). W obozie weźmie udział około uczestników w wieku lat oraz osób kadry wychowawczej. Uczestnikami będą należący do Skautów Europy. Zobowiązujemy się do przestrzegania przepisów o ochronie lasu, utrzymania czystości oraz przywrócenia terenu do stanu pierwotnego po zakończeniu obozu. Podpis kierownika Pieczęć i podpis hufcowego",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Szpital/Przychodnia",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": ", dnia OŚWIADCZENIE WŁAŚCICIELA TERENU o wyrażeniu zgody na organizację obozu harcerskiego Ja, niżej ................................................................., w ................................................................., legitymujący się dowodem osobistym nr ................................................................., oświadczam, że wyrażam zgodę na: Rozbicie obozu harcerskiego na terenie działki nr w miejscowości , Korzystanie z terenu przez jednostkę w terminie od do , Użytkowanie istniejącej infrastruktury (..................). W obozie weźmie udział ok. osób, w tym kierownik oraz wychowawców. Uczestnicy są w wieku lat. Zgoda obejmuje w szczególności kopanie dołów chłonnych i latryn, rozpalanie ognisk w wyznaczonych miejscach, postawienie beczkowozu z wodą oraz składowanie odpadów w wydzielonym miejscu. Organizator zobowiązuje się do przywrócenia terenu do stanu pierwotnego po zakończeniu obozu. Dane kontaktowe kierownika obozu: Imię i nazwisko: Nr telefonu: E-mail: Podpis właściciela Podpis kierownika",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Wójt/Sołtys",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "Umowa na korzystanie z budynku jako miejsca tymczasowego schronienia w czasie niesprzyjających warunków pogodowych dla uczestników obozu harcerskiego Zawarta w dniu pomiędzy: reprezentowaną przez ............................................., zwanego dalej „Użyczający\", a Stowarzyszeniem Harcerstwa Katolickiego „Zawisza\" Federacja Skautingu Europejskiego, reprezentowanym przez , zwanym dalej „Korzystającym\". §1. Użyczający oświadcza, że zarządza budynkiem w (adres: ) i deklaruje, że udostępni Korzystającemu Budynek (dla około osób) w dniach od do w razie niesprzyjających warunków pogodowych. §2. Użyczający oddaje Korzystającemu do korzystania Budynek, a w szczególności: sale, zaplecze sanitarne oraz pomieszczenia umożliwiające przygotowanie posiłków. §3. Korzystający zobowiązuje się do przestrzegania regulaminów, utrzymania porządku oraz pokrycia ewentualnych kosztów wynikłych z użytkowania obiektu. §4. Umowa obowiązuje w czasie trwania obozu harcerskiego organizowanego przez . Użyczający Korzystający (Kierownik)",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Nadleśnictwo",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "UMOWA BEZPŁATNEGO UŻYCZENIA SAMOCHODU Zawarta dnia: w pomiędzy: ......................................................, zwanym dalej Użyczającym oraz: , Stowarzyszenie Harcerstwa Katolickiego „Zawisza\", zwanym dalej Biorącym. §1 1. Użyczający użycza Biorącemu samochód marki: ..............., koloru ..............., nr rejestracyjny: ..............., rok produkcji: ..............., którego jest właścicielem. 2. Użyczający oświadcza, że samochód jest sprawny, posiada ubezpieczenie OC oraz ważny przegląd techniczny. §2 Wszelkie zmiany umowy mogą nastąpić tylko w formie pisemnej pod rygorem nieważności. §3 Użyczający wyraża zgodę na używanie samochodu w ramach działalności statutowej — organizacji obozu harcerskiego w terminie od do . §4 Biorący zobowiązuje się nie oddawać pojazdu osobom trzecim oraz pokrywać koszty eksploatacji. §5 Umowa obowiązuje od do . Użyczający Biorący (Kierownik)",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Pismo przewodnie (PSP)",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "${SENDER} Sz. P. ....................................... Dyrektor ....................................................................................................... Wniosek o udostępnienie pomieszczeń szkolnych Szanowny Panie Dyrektorze, zwracam się z uprzejmą prośbą o wyrażenie zgody na udostępnienie pomieszczeń szkoły w celu organizacji harcerskiego. Wyjazd planowany jest w terminie od do . Organizatorem jest działająca w ramach Stowarzyszenia Harcerstwa Katolickiego „Zawisza\" – Federacji Skautingu Europejskiego (Skauci Europy). W wydarzeniu weźmie udział około uczestników w wieku lat oraz pełnoletnich opiekunów. Zwracamy się o możliwość korzystania z: sal lekcyjnych (nocleg), sali gimnastycznej, zaplecza sanitarnego oraz kuchni/stołówki. Zobowiązujemy się do przestrzegania regulaminów szkoły, zapewnienia całodobowej opieki, pokrycia ewentualnych kosztów oraz przywrócenia pomieszczeń do stanu pierwotnego. Podpis kierownika Pieczęć i podpis hufcowego",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Środki łączności",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "REGULAMIN OBOZU HARCERSKIEGO W I. ORGANIZATOR Organizatorem jest: Stowarzyszenie Harcerstwa Katolickiego „Zawisza\" Federacja Skautingu Europejskiego — Przedstawicielem organizatora i kierownikiem wypoczynku (obóz harcerski — sprawuje bezpośredni nadzór nad stanem ochrony przeciwpożarowej): Funkcję wychowawców sprawują: , II. PROGRAM I ORGANIZACJA OBOZU Ze względu na specyfikę obozu FSE podczas zajęć opiekę nad uczestnikami obozu sprawuje wychowawca. Od strony higieniczno-sanitarnej obóz spełnia wymogi określone w Instrukcji Głównego Inspektora Sanitarnego. Uczestnicy sami budują obozowiska zastępów. Podczas budowy obozu posługują się narzędziami, takimi jak piła, siekiera, dłuto, nóż, młotek itp. Posiłki przygotowywane są w zastępach (szóstkach), przez samych uczestników na paleniskach przez nich zbudowanych. Komendant obozu wyznacza zdrową osobę do nadzoru nad żywieniem, której stan zdrowia potwierdza aktualne orzeczenie lekarskie. W celu zapewnienia bezpieczeństwa komendant obozu może wyznaczyć zastęp, który będzie pełnił nocną wartę. III. PRAWA I OBOWIĄZKI UCZESTNIKÓW Uczestnicy mogą korzystać ze sprzętu turystycznego, jakim dysponuje obóz. Uczestnicy są zobowiązani uczestniczyć w pełnym programie realizacji obozu. Uczestnicy wyznaczeni do pełnienia określonych funkcji są odpowiedzialni za wywiązanie się z nich przed zastępowym i komendantem obozu. Każdy uczestnik zobowiązany jest do zachowania postawy godnej harcerza oraz przestrzegania zasad harcerskiego współdziałania w grupie, a w szczególności do przestrzegania Prawa Harcerskiego. Uczestnicy zobowiązani są również do bezwzględnego przestrzegania wszelkich zarządzeń komendanta obozu, a także do: zabrania ze sobą wyposażenia osobistego i zespołowego zgodnie z wykazem podanym przez drużynowego (latarkę, ubranie przeciwdeszczowe itp.), opieki nad powierzonym sprzętem i ekwipunkiem. W razie złego samopoczucia lub wypadku uczestnicy są zobowiązani natychmiast poinformować wychowawcę lub komendanta obozu. Uczestnicy dbają o bezpieczeństwo swoje i innych — wszystkie zagrożenia mające wpływ na bezpieczeństwo uczestników należy zgłaszać kierownikowi lub wychowawcom. Uczestnicy są posłuszni poleceniom w czasie ewakuacji, po przeliczeniu w miejscu zbiórki do ewakuacji nie oddalają się od grupy i sprawnie przemieszczają się w bezpieczne miejsce. IV. ZAKAZY I NAKAZY Uczestnikom zabrania się: oddalania się od grupy w czasie trwania obozu bez zgody instruktora, picia alkoholu, palenia tytoniu oraz zażywania innych środków odurzających, zabierania ze sobą na obóz sprzętów elektronicznych; zakres używania telefonów komórkowych określa komendant obozu, krzyków, niszczenia przyrody, rozpalania ognisk w miejscach niedozwolonych, przyjmowania leków bez wiedzy wychowawcy, kierownika. Uczestnicy zobowiązani są do przestrzegania wszelkich zarządzeń i przepisów odpowiednich instytucji terenowych. V. SANKCJE Ze względu na specyfikę formy zajęć wobec wszelkiego przekroczenia regulaminu będą wyciągnięte konsekwencje przez komendanta obozu. Skala sankcji zależy od stopnia wykroczenia: od upomnienia do wydalenia z obozu. Komendant obozu może zadecydować o dyscyplinarnym usunięciu z obozu całego zastępu. W",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Lista uczestników",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "przestrzegania wszelkich zarządzeń i przepisów odpowiednich instytucji terenowych. V. SANKCJE Ze względu na specyfikę formy zajęć wobec wszelkiego przekroczenia regulaminu będą wyciągnięte konsekwencje przez komendanta obozu. Skala sankcji zależy od stopnia wykroczenia: od upomnienia do wydalenia z obozu. Komendant obozu może zadecydować o dyscyplinarnym usunięciu z obozu całego zastępu. W wypadku wydalenia z obozu za odebranie uczestnika odpowiadają rodzice. Opłaty za uczestnictwo w obozie nie zwraca się. Oświadczam, że zapoznałem/am się z regulaminem i zgadzam się na udział syna/córki w obozie na określonych wyżej warunkach. Podpis uczestnika / rodzica Podpis komendanta obozu",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Lista uczestników",
+      "chunk": 1
+    }
+  },
+  {
+    "pageContent": "REGULAMIN ZASAD PROWADZENIA ZAJĘĆ HARCERSKICH Stowarzyszenie Harcerstwa Katolickiego „Zawisza\" · Federacja Skautingu Europejskiego załącznik 4 CZĘŚĆ 1 – OGÓLNA INSTRUKCJA PRZECIWPOŻAROWA § 1 Instrukcja określa zasady ochrony przeciwpożarowej obowiązujące podczas wszelkich zajęć organizowanych przez jednostki organizacyjne Stowarzyszenia. § 2 Podczas zajęć w szczególności zabrania się : rozpalania ognisk w odległości mniejszej niż 100 metrów od ściany lasu, stogów siana itp., z wyjątkiem miejsc wyznaczonych lub wskazanych przez leśniczego/właściciela lasu, chodzenia po lesie z otwartym ogniem, poza sytuacjami, gdy uzyskano pozwolenie, posługiwania się ogniem (ognisko, kuchnia polowa, świeczki, pochodnie itp.) w namiotach oraz w ich najbliższym otoczeniu, to jest w promieniu 5m od nich, instalowania urządzeń elektrycznych oraz dokonywania napraw sieci elektrycznej lub gazowej przez osoby nieuprawnione. Podczas zajęć w szczególności należy : zachować szczególną ostrożność i rozwagę przy używaniu ognia, stosując ogólne normy przeciwpożarowe, zapoznać z zasadami ochrony przeciwpożarowej uczestników zajęć, w trakcie których używany jest ogień albo przedmioty łatwopalne. Podczas stacjonarnych zajęć wielodniowych (biwaków, obozów letnich i zimowych itp.) należy ponadto: ustalić i podać do wiadomości uczestników sygnały i sieć alarmową, sposób zawiadamiania straży pożarnej oraz drogę i sposób ewakuacji na wypadek pożaru, zorganizować wystarczającą liczbę punktów przeciwpożarowych zawierających oznakowany sprzęt (gaśnice, hydronetki, wiadra, łopaty, beczki z wodą, skrzynie z piaskiem, tłumice, koce gaśnicze itp.), zminimalizować zagrożenie pożarowe poprzez wyeliminowanie potencjalnych jego źródeł. § 3 Przy wyborze miejsca na ognisko należy brać pod uwagę kierunek wiejącego wiatru oraz inne warunki atmosferyczne. Miejsce na ognisko należy oczyścić z chrustu, ściółki, trawy itp. Przed rozpoczęciem ogniska należy wyznaczyć osobę, która będzie stale nad nim czuwała i zabezpieczy teren po zakończeniu (ogień zgasi wodą, popiół przysypie ziemią, przywróci terenowi wygląd pierwotny). § 4 Każdy uczestnik zajęć ma obowiązek natychmiastowego zawiadomienia OOB o zauważonym pożarze lub jego potencjalnym źródle. § 5 W przypadku powstania pożaru należy: zachować spokój, natychmiast przystąpić do gaszenia i zawiadomić straż pożarną, zapewnić bezpieczną ewakuację uczestników. Po przybyciu straży pożarnej podporządkować się poleceniom kierującego akcją. § 6–8 Zasady ochrony ppoż. komendant zajęć powinien uzgodnić ze strażą pożarną i władzami leśnymi. Jeżeli czas trwania zajęć przekracza 14 dni — przeprowadzić jeden próbny alarm ppoż. na początku zajęć. Z zasadami instrukcji należy zapoznać uczestników przed rozpoczęciem zajęć. CZĘŚĆ 2 – INSTRUKCJA POSTĘPOWANIA W RAZIE POŻARU NA BIWAKU/OBOZIE I. ALARMOWANIE Kto zauważy pożar, zobowiązany jest niezwłocznie zawiadomić: osoby znajdujące się w strefie zagrożenia, STRAŻ POŻARNĄ — tel. 998 (lub lokalną jednostkę: ................................), komendanta obozu: , tel. wychowawcę: , tel. Po uzyskaniu połączenia",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Regulamin obozu",
+      "chunk": 0
+    }
+  },
+  {
+    "pageContent": "należy zapoznać uczestników przed rozpoczęciem zajęć. CZĘŚĆ 2 – INSTRUKCJA POSTĘPOWANIA W RAZIE POŻARU NA BIWAKU/OBOZIE I. ALARMOWANIE Kto zauważy pożar, zobowiązany jest niezwłocznie zawiadomić: osoby znajdujące się w strefie zagrożenia, STRAŻ POŻARNĄ — tel. 998 (lub lokalną jednostkę: ................................), komendanta obozu: , tel. wychowawcę: , tel. Po uzyskaniu połączenia ze strażą pożarną należy wyraźnie podać: gdzie się pali (dokładny adres i położenie obozu), co się pali , czy są zagrożeni ludzie, numer telefonu i swoje nazwisko. Odłożyć słuchawkę dopiero po otrzymaniu potwierdzenia przyjęcia zgłoszenia. Zachować spokój i nie dopuścić do powstania paniki. W razie potrzeby alarmować: POGOTOWIE — 999, POLICJA — 997, Zarządca obiektu (leśnictwo: ................................). II. AKCJA RATOWNICZO-GAŚNICZA Równocześnie z alarmowaniem należy przystąpić do akcji ratowniczo-gaśniczej przy użyciu podręcznego sprzętu gaśniczego. Do czasu przybycia straży pożarnej kierownictwo nad akcją obejmuje komendant obozu. Każdy przystępujący do akcji pamiętaj: w pierwszej kolejności zadbaj o bezpieczeństwo ludzi; stosuj gaśnice śniegowe, proszkowe lub halonowe; usuń z zasięgu ognia materiały palne, butle z gazem, cenne dokumenty. III. ZASADY EWAKUACJI Komendant ogłasza ewakuację obozu. Uczestnicy niezwłocznie zbierają się na placu apelowym. Wychowawca sprawdza stan uczestników. Wszyscy pod kierownictwem komendanta udają się wyznaczoną drogą do ustalonego bezpiecznego miejsca. Pod żadnym pozorem uczestnicy nie mogą oddalać się od grupy. CZĘŚĆ 3 – INSTRUKCJA BEZPIECZEŃSTWA POŻAROWEGO NA BIWAKU/OBOZIE I. PRZEPISY WSTĘPNE Postanowienia niniejszej Instrukcji obowiązują wszystkich obozowiczów bez wyjątku w czasie przebywania na terenie obozu. Osoby winne nieprzestrzegania przepisów będą pociągnięte do odpowiedzialności. II. PRZEPISY PORZĄDKOWE Na terenie obozu zabronione jest m.in.: używanie otwartego ognia poza wyznaczonymi miejscami; przechowywanie materiałów palnych bliżej niż 0,5 m od miejsc przeznaczonych do palenia ognisk; używanie lamp naftowych niezgodnie z przeznaczeniem; palenie tytoniu (całkowity zakaz). Ciecze palne (benzyna, nafta, spirytus) przechowywać wyłącznie w pojemnikach z materiałów trudnozapalnych, szczelnie zamkniętych. Wszelkie nieprawidłowości w zakresie bezpieczeństwa pożarowego należy natychmiast zgłosić komendantowi obozu. Po zakończeniu dziennych zajęć sprawdzić, czy wszystkie piece, ogniska i lampy zostały zgaszone. Wartownicy pełniący straż nocną używają wyłącznie latarek. III. SPRZĘT GAŚNICZY Każdy obozowicz obowiązany jest: znać rodzaje i sposób użycia podręcznego sprzętu gaśniczego, znać miejsca jego rozmieszczenia na terenie obozu. IV. POSTĘPOWANIE W PRZYPADKU POWSTANIA POŻARU Każdy obozowicz, z chwilą zauważenia pożaru, obowiązany jest: zaalarmować harcerzy w najbliższym otoczeniu pożaru i komendanta obozu; powiadomić STRAŻ POŻARNĄ — tel. 998 ; przystąpić do akcji gaśniczej z zachowaniem szczególnej ostrożności i dbając o własne bezpieczeństwo. Wszyscy harcerze bezwzględnie podporządkowują się rozkazom komendanta obozu, a po przybyciu straży — jej dowódcy. miejscowość,",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Regulamin obozu",
+      "chunk": 1
+    }
+  },
+  {
+    "pageContent": "chwilą zauważenia pożaru, obowiązany jest: zaalarmować harcerzy w najbliższym otoczeniu pożaru i komendanta obozu; powiadomić STRAŻ POŻARNĄ — tel. 998 ; przystąpić do akcji gaśniczej z zachowaniem szczególnej ostrożności i dbając o własne bezpieczeństwo. Wszyscy harcerze bezwzględnie podporządkowują się rozkazom komendanta obozu, a po przybyciu straży — jej dowódcy. miejscowość, data ................................. Podpis kierownika obozu",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Regulamin obozu",
+      "chunk": 2
+    }
+  },
+  {
+    "pageContent": "LISTA KONTAKTOWA OBOZU · – · KIEROWNICTWO OBOZU Kierownik obozu · Wychowawca · Wychowawca · KONTAKTY ALARMOWE Pogotowie / Alarmowy 999 / 112 Straż Pożarna 998 · Policja 997 · Szpital / Przychodnia STOWARZYSZENIE — KONTAKTY CENTRALNE Biuro Stowarzyszenia 22 822 32 29 / 668 415 726 biuro@skauci-europy.pl Ochrona Dzieci i Młodzieży 731 988 833 ochrona.dim@skauci-europy.pl Psycholog 730 988 833 wsparcie.psychologiczne@skauci-europy.pl Szef Kursu (Wypoczynek) 508 510 456 wypoczynek@skauci-europy.edu.pl HUFIEC: Hufcowa/y ................................. Z-ca Hufcowej/go ................................. Asystent/ka ds. wypoczynku .................................",
+    "metadata": {
+      "source": "dokumenty-szablony.js",
+      "title": "Instrukcja ppoż.",
+      "chunk": 0
+    }
+  }
+]

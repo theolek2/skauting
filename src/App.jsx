@@ -13,6 +13,7 @@ import DiaryTab from './components/DiaryTab'
 import DocumentsTab from './components/DocumentsTab'
 import InstructionsTab from './components/InstructionsTab'
 import JadlospisTab from './components/JadlospisTab'
+import RobertTab from './components/RobertTab'
 import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
@@ -340,6 +341,14 @@ export default function App() {
                   <div className="text-xs text-gray-400">Krajowa mapa Skautów Europy</div>
                 </div>
               </button>
+              <button onClick={() => { setActiveTabMain('robert'); setMainSection('before'); setShowMenu(false) }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition text-left">
+                <span className="text-2xl">🤖</span>
+                <div>
+                  <div className="font-semibold text-sm text-gray-800">Robert AI</div>
+                  <div className="text-xs text-gray-400">Asystent skautowy</div>
+                </div>
+              </button>
               <hr />
               <button onClick={() => { setMainSection('settings'); setShowMenu(false) }}
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition text-left">
@@ -391,6 +400,9 @@ export default function App() {
           )}
           {activeTab === 'campsmap' && (
             <CampsMapTab user={user} meta={meta} />
+          )}
+          {activeTab === 'robert' && (
+            <RobertTab />
           )}
           {activeTab === 'plan' && (
             <div className="flex flex-1 overflow-hidden">
