@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTasks, createTask, updateTask, deleteTask, logActivity, getActivityFeed, getDefaultTemplate, inviteExternalUser } from '../lib/supabase'
+import { getTasks, createTask, updateTask, deleteTask, logActivity, getActivityFeed, getDefaultTemplate } from '../lib/supabase'
 
 const COLUMNS = [
   { id: 'todo',       label: 'Do zrobienia',  color: 'bg-gray-100',    dot: '⚪' },
@@ -58,7 +58,13 @@ function InviteModal({ onClose, onInvited }) {
     setLoading(true)
     setErr('')
     try {
-      await inviteExternalUser({ email, name, role: 'przyboczny' })
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), name: name.trim(), role: 'przyboczny' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Błąd zaproszenia')
       onInvited()
     } catch (e) { setErr(e.message) }
     finally { setLoading(false) }
