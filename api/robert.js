@@ -14,7 +14,7 @@ Jeśli nie jesteś pewien — powiedz to wprost. Nie wymyślaj przepisów ani da
 Kontekst z dokumentów skautowych:
 {context}
 
-Jeśli kontekst nie zawiera odpowiedzi, odpowiedz na podstawie ogólnej wiedzy o harcerstwie.`
+Jeśli kontekst nie zawiera odpowiedzi, poproś o doprecyzowanie pytania.`
 
 // ── Mapowanie źródeł → linki w apce ───────────────────────────────────────────
 const LINK_MAP = [
