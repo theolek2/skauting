@@ -18,9 +18,42 @@ const THINK_GIFS = ['think.gif', 'lupa.gif']
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
+// Awatar z białym tłem — wspiera crossfade
+function AvCircle({ gif, size, border = 'border-0', className = '' }) {
+  return (
+    <div className={`bg-white rounded-full overflow-hidden relative shrink-0 ${border} ${className}`}
+      style={{ width: size, height: size }}>
+      <img src={`${BASE}/${gif}`} alt="Robert" className="absolute inset-0 w-full h-full object-cover" />
+    </div>
+  )
+}
+
+// Awatar z crossfade (dwie warstwy)
+function AvCrossfade({ newGif, oldGif, size, border = 'border-0', className = '', onDone }) {
+  return (
+    <div className={`bg-white rounded-full overflow-hidden relative shrink-0 ${border} ${className}`}
+      style={{ width: size, height: size }}>
+      {/* Nowy GIF — na spodzie, zawsze widoczny */}
+      <img src={`${BASE}/${newGif}`} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      {/* Stary GIF — na wierzchu, zanika */}
+      {oldGif && (
+        <img
+          key={oldGif + Date.now()}
+          src={`${BASE}/${oldGif}`}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ animation: 'fadeOut 500ms forwards' }}
+          onAnimationEnd={onDone}
+        />
+      )}
+    </div>
+  )
+}
+
 export default function FloatingRobert({ onNavigate, hidden }) {
-  const [phase, setPhase] = useState('idle') // idle | open | thinking
+  const [phase, setPhase] = useState('idle')
   const [idleGif, setIdleGif] = useState(() => pick(IDLE_GIFS))
+  const [fadeOutGif, setFadeOutGif] = useState(null)
   const [thinkGif, setThinkGif] = useState(() => pick(THINK_GIFS))
   const [visible, setVisible] = useState(true)
   const [maximized, setMaximized] = useState(false)
@@ -32,21 +65,29 @@ export default function FloatingRobert({ onNavigate, hidden }) {
   const [error, setError] = useState('')
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const idleRef = useRef(idleGif)
+  useEffect(() => { idleRef.current = idleGif }, [idleGif])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Rotacja idle GIF co 10s — zawsze, niezależnie od fazy
+  // Rotacja crossfade co 5s
   useEffect(() => {
     const timer = setInterval(() => {
-      setVisible(false)
-      setTimeout(() => {
-        setIdleGif(pick(IDLE_GIFS))
-        setVisible(true)
-      }, 250)
-    }, 10000)
+      setFadeOutGif(idleRef.current)
+      setIdleGif(pick(IDLE_GIFS))
+    }, 5000)
     return () => clearInterval(timer)
+  }, [])
+
+  // Wstrzyknij CSS keyframe
+  useEffect(() => {
+    if (document.getElementById('robert-fade-style')) return
+    const style = document.createElement('style')
+    style.id = 'robert-fade-style'
+    style.textContent = '@keyframes fadeOut{from{opacity:1}to{opacity:0}}'
+    document.head.appendChild(style)
   }, [])
 
   const handleOpen = () => {
@@ -65,6 +106,7 @@ export default function FloatingRobert({ onNavigate, hidden }) {
     setMaximized(false)
     setTimeout(() => {
       setPhase('idle')
+      setFadeOutGif(idleRef.current)
       setIdleGif(pick(IDLE_GIFS))
       setVisible(true)
     }, 200)
@@ -124,6 +166,10 @@ export default function FloatingRobert({ onNavigate, hidden }) {
     ? 'fixed inset-4 z-[9999]'
     : 'fixed bottom-5 right-5 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-5rem)]'
 
+  const headAvatarSize  = maximized ? 80 : 44
+  const headNameCls     = maximized ? 'text-lg' : 'text-sm'
+  const headSubCls      = maximized ? 'text-xs' : 'text-[10px]'
+
   return (
     <>
       {showButton && (
@@ -132,9 +178,9 @@ export default function FloatingRobert({ onNavigate, hidden }) {
           className={`fixed bottom-5 right-5 z-[9999] cursor-pointer hover:scale-110 active:scale-95 transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
           title="Robert — asystent skautowy"
         >
-          <div className="bg-white rounded-full overflow-hidden w-28 h-28 border-3 border-green-700 shadow-xl">
-            <img src={`${BASE}/${idleGif}`} alt="Robert" className="w-full h-full object-cover" />
-          </div>
+          <AvCrossfade newGif={idleGif} oldGif={fadeOutGif} size={112} border="border-3 border-green-700"
+            onDone={() => setFadeOutGif(null)}
+            className="shadow-xl" />
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
         </div>
       )}
@@ -143,12 +189,14 @@ export default function FloatingRobert({ onNavigate, hidden }) {
         <div className={`${chatCls} bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <div className="bg-green-800 text-white px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="bg-white rounded-full overflow-hidden w-11 h-11 border-2 border-white/30 shrink-0">
-                <img src={`${BASE}/${loading ? thinkGif : idleGif}`} alt="Robert" className="w-full h-full object-cover" />
-              </div>
+              {loading
+                ? <AvCircle gif={thinkGif} size={headAvatarSize} border="border-2 border-white/30" />
+                : <AvCrossfade newGif={idleGif} oldGif={fadeOutGif} size={headAvatarSize}
+                    border="border-2 border-white/30" onDone={() => setFadeOutGif(null)} />
+              }
               <div>
-                <div className="font-semibold text-sm">Robert</div>
-                <div className="text-green-300 text-[10px]">
+                <div className={`font-semibold ${headNameCls}`}>Robert</div>
+                <div className={`text-green-300 ${headSubCls}`}>
                   {loading ? 'Analizuje...' : 'Asystent skautowy'}
                 </div>
               </div>
@@ -171,9 +219,7 @@ export default function FloatingRobert({ onNavigate, hidden }) {
               return (
                 <div key={i} className={`flex gap-2 ${isRobert ? '' : 'flex-row-reverse'}`}>
                   {isRobert && (
-                    <div className="bg-white rounded-full overflow-hidden w-9 h-9 border border-green-300 shrink-0 mt-0.5">
-                      <img src={`${BASE}/${idleGif}`} alt="R" className="w-full h-full object-cover" />
-                    </div>
+                    <AvCircle gif={idleGif} size={36} border="border border-green-300" className="mt-0.5" />
                   )}
                   <div>
                     <div className={`rounded-xl px-3 py-2 text-xs leading-relaxed max-w-[260px] ${
@@ -204,9 +250,7 @@ export default function FloatingRobert({ onNavigate, hidden }) {
 
             {loading && (
               <div className="flex gap-2">
-                <div className="bg-white rounded-full overflow-hidden w-10 h-10 border border-green-300 shrink-0 mt-0.5">
-                  <img src={`${BASE}/${thinkGif}`} alt="Myśli..." className="w-full h-full object-cover" />
-                </div>
+                <AvCircle gif={thinkGif} size={40} border="border border-green-300" className="mt-0.5" />
                 <div className="bg-gray-100 rounded-xl rounded-tl-sm px-3 py-2">
                   <span className="text-xs text-gray-400 italic">Robert analizuje...</span>
                 </div>
