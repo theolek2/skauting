@@ -95,7 +95,7 @@ async function retrieve(docs, question, hfToken, k = 4) {
 async function groqChat(groqKey, systemPrompt, userPrompt, history) {
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...history.slice(-6).map(m => ({
+    ...history.slice(-3).map(m => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content,
     })),
@@ -112,7 +112,7 @@ async function groqChat(groqKey, systemPrompt, userPrompt, history) {
       model: 'llama-3.1-8b-instant',
       messages,
       temperature: 0.3,
-      max_tokens: 1024,
+      max_tokens: 512,
     }),
   })
 
@@ -141,10 +141,10 @@ export default async function handler(req, res) {
     // 1. Wczytaj bazę wiedzy (dynamicznie, nie jako import)
     const docs = loadDocs()
 
-    // 2. Retrieval
-    const chunks = await retrieve(docs, question, hfToken)
+    // 2. Retrieval — maks 2 chunki, każdy do 350 znaków (oszczędzamy tokeny)
+    const chunks = await retrieve(docs, question, hfToken, 2)
     const context = chunks.length > 0
-      ? chunks.map((c, i) => `[${i + 1}] (${c.metadata?.title || c.metadata?.source})\n${c.pageContent}`).join('\n\n')
+      ? chunks.map((c, i) => `[${i + 1}] ${(c.pageContent || '').slice(0, 350)}`).join('\n')
       : 'Brak pasujących dokumentów w bazie wiedzy.'
 
     // 3. System prompt z kontekstem
