@@ -14,6 +14,7 @@ import DocumentsTab from './components/DocumentsTab'
 import InstructionsTab from './components/InstructionsTab'
 import JadlospisTab from './components/JadlospisTab'
 import RobertTab from './components/RobertTab'
+import FloatingRobert from './components/FloatingRobert'
 import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
@@ -540,6 +541,10 @@ export default function App() {
         </div>
       )}
       <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} origin={confettiOrigin} />
+      <FloatingRobert onNavigate={(tab) => {
+        const valid = ['camp','instructions','plan','jadlospis','diary','docs','map']
+        if (valid.includes(tab)) { setActiveTabMain(tab); setMainSection('before') }
+      }} />
     </div>
   )
 }
