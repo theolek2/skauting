@@ -44,70 +44,8 @@ function loadEnv() {
 }
 loadEnv()
 
-const EMBED_KEY = process.env.HF_TOKEN || process.env.DEEPSEEK_API_KEY
-const USE_DEEPSEEK = !!process.env.DEEPSEEK_API_KEY
+// DeepSeek nie ma publicznego api embeddingów — pomiń, używamy BM25 keyword
 
-if (!EMBED_KEY) {
-  console.warn('⚠️  Brak HF_TOKEN ani DEEPSEEK_API_KEY — chunki BEZ embeddingów (BM25 fallback).')
-}
-
-async function getEmbedding(text) {
-  if (!EMBED_KEY) return null
-  try {
-    if (USE_DEEPSEEK) {
-      // DeepSeek embeddings API
-      const res = await fetch('https://api.deepseek.com/v1/embeddings', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${EMBED_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'deepseek-chat', input: text.slice(0, 2000) }),
-      })
-      if (!res.ok) {
-        console.warn(`DeepSeek embed błąd ${res.status}`)
-        return null
-      }
-      const data = await res.json()
-      return data.data?.[0]?.embedding || null
-    } else {
-      // HuggingFace fallback
-      const res = await fetch(
-        'https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${EMBED_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputs: text.slice(0, 512), options: { wait_for_model: true } }),
-        }
-      )
-      if (!res.ok) return null
-      const data = await res.json()
-      return Array.isArray(data[0]) ? data[0] : data
-    }
-  } catch { return null }
-}
-
-// Pobierz embedding z HuggingFace Inference API
-async function getEmbedding(text) {
-  if (!HF_TOKEN) return null
-  try {
-    const res = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${HF_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputs: text.slice(0, 512), options: { wait_for_model: true } }),
-      }
-    )
-    if (!res.ok) {
-      console.warn(`HF API błąd ${res.status}: ${await res.text()}`)
-      return null
-    }
-    const data = await res.json()
-    // Wynik może być [[...]] lub [...] zależnie od wersji API
-    return Array.isArray(data[0]) ? data[0] : data
-  } catch (e) {
-    console.warn('HF embedding błąd:', e.message)
-    return null
-  }
-}
 
 // Usuń tagi HTML i placeholdery
 function stripHtml(html) {
@@ -267,29 +205,14 @@ for (const doc of allChunks) {
   }
 }
 
-console.log(`\n📚 ${unique.length} unikalnych chunków — obliczam embeddingi...\n`)
+console.log(`\n📚 ${unique.length} unikalnych chunków (BM25 keyword retrieval)\n`)
 
-// 3. Embeddingi HuggingFace (z rate limiting)
-let embedded = 0, failed = 0
-for (let i = 0; i < unique.length; i++) {
-  const doc = unique[i]
-  const emb = await getEmbedding(doc.pageContent)
-  if (emb) {
-    doc.embedding = emb
-    embedded++
-  } else {
-    failed++
-  }
-  if (EMBED_KEY && i < unique.length - 1) await new Promise(r => setTimeout(r, 200))
-  process.stdout.write(`\r  [${i + 1}/${unique.length}] ✅ ${embedded} embeddingów, ⚠️ ${failed} bez`)
-}
-console.log('\n')
+// Embeddingi pominięte — DeepSeek nie ma publicznego API, HF model niedostępny
+// BM25 keyword retrieval działa dobrze dla polskiego + DeepSeek 64K kontekst
 
-// 4. Zapisz
+// 3. Zapisz
 const outPath = join(ROOT, 'src', 'data', 'robert-docs.json')
 writeFileSync(outPath, JSON.stringify(unique, null, 2), 'utf-8')
 console.log(`💾 Zapisano → src/data/robert-docs.json`)
-console.log(`   ${embedded} chunków z embeddingami, ${failed} bez (BM25 fallback)`)
-if (failed > 0 && !EMBED_KEY) {
-  console.log('\n👉 Aby dodać embeddingi: ustaw HF_TOKEN w .env.local i uruchom ponownie')
-}
+console.log(`   ${unique.length} chunków (BM25 keyword retrieval)`)
+
