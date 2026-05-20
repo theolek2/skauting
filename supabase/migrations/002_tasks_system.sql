@@ -112,7 +112,7 @@ CREATE POLICY "All on task_dependencies" ON task_dependencies FOR ALL USING (tru
 -- 8. Szablony tablicy
 CREATE TABLE IF NOT EXISTS task_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
+  name text NOT NULL UNIQUE,
   created_by uuid REFERENCES profiles(id),
   tasks jsonb NOT NULL DEFAULT '[]',
   is_default boolean DEFAULT false,
@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS task_templates (
 ALTER TABLE task_templates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "All on task_templates" ON task_templates FOR ALL USING (true) WITH CHECK (true);
 
--- Wstaw domyślny szablon
+-- Wstaw domyślny szablon (bezpiecznie: usuń stary jeśli istnieje)
+DELETE FROM task_templates WHERE is_default = true;
 INSERT INTO task_templates (name, is_default, tasks) VALUES
 ('Domyślny szablon obozu', true, '[
   {"title":"Uzupełnij dane obozu","description":"Jednostka, kierownik, daty, miejsce","priority":"high","source_tab":"camp"},
@@ -140,8 +141,7 @@ INSERT INTO task_templates (name, is_default, tasks) VALUES
   {"title":"Budżet","description":"Kosztorys + składki","priority":"high"},
   {"title":"Apteczka","description":"Sprawdź i uzupełnij","priority":"medium"},
   {"title":"Sprzęt obozowy","description":"Namioty, kuchnia, narzędzia","priority":"medium"}
-]')
-ON CONFLICT DO NOTHING;
+]');
 
 -- 9. Pliki dropboxa (obozowe)
 CREATE TABLE IF NOT EXISTS shared_files (
