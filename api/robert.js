@@ -12,13 +12,16 @@ const SYSTEM_PROMPT = `Jesteś Robertem — przyjaznym asystentem skautowym Stow
 
 Pomagasz drużynowym i komendantom w organizacji obozów harcerskich: dokumentach urzędowych, przepisach przeciwpożarowych, prawie harcerskim, planowaniu obozu, bezpieczeństwie uczestników.
 
-Odpowiadaj po polsku, zwięźle i przyjaźnie. Jeśli kontekst zawiera odpowiedź — użyj go.
-Jeśli nie jesteś pewien — powiedz to wprost. Nie wymyślaj przepisów ani dat.
+WAŻNE — zasady odpowiadania:
+- Odpowiadaj WYŁĄCZNIE na podstawie dostarczonego kontekstu gdy pytanie dotyczy wymagań urzędowych, dokumentów, terminów lub przepisów prawnych.
+- NIE twierdzisz, że "nie trzeba wysyłać dokumentów" ani że "brak wymagań" jeśli kontekst tego wprost i jednoznacznie nie stwierdza. Brak informacji w kontekście ≠ brak obowiązku.
+- Jeśli kontekst jest niewystarczający, napisz: "Nie mam pewności co do tego wymagania — sprawdź aktualne przepisy lub zapytaj hufcowego."
+- Nie wymyślaj przepisów, terminów ani numerów aktów prawnych.
 
 Kontekst z dokumentów skautowych:
 {context}
 
-Jeśli kontekst nie zawiera odpowiedzi, poproś o doprecyzowanie pytania.`
+Jeśli kontekst nie zawiera odpowiedzi — powiedz to wprost i poproś o doprecyzowanie pytania.`
 
 // ── Ładowanie danych (z cache) ────────────────────────────────────────────────
 let _fileMap = null
@@ -65,34 +68,32 @@ async function queryEmbedding(text, jinaKey) {
   } catch { return null }
 }
 
-// ── Keyword retrieval ─────────────────────────────────────────────────────────
-function keywordRetrieve(docs, question, k = 8) {
+// ── Hybrid retrieval: 60% semantic + 40% keyword ─────────────────────────────
+async function retrieve(docs, question, jinaKey, k = 8) {
   const words = question.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+
+  // Keyword scores (zawsze, 0–1)
+  const kwMap = new Map(docs.map(d => {
+    const c = d.pageContent?.toLowerCase() || ''
+    const hits = words.reduce((s, w) => s + (c.includes(w) ? 1 : 0), 0)
+    return [d, words.length > 0 ? hits / words.length : 0]
+  }))
+
+  // Semantic scores (jeśli embeddingi dostępne)
+  let semMap = new Map(docs.map(d => [d, 0]))
+  if (docs.some(d => d.embedding) && jinaKey) {
+    const qEmb = await queryEmbedding(question, jinaKey)
+    if (qEmb) {
+      semMap = new Map(docs.map(d => [d, d.embedding ? cosineSim(qEmb, d.embedding) : 0]))
+    }
+  }
+
+  // Scal: 60% semantic + 40% keyword
   return docs
-    .map(d => {
-      const content = d.pageContent?.toLowerCase() || ''
-      const score = words.reduce((s, w) => s + (content.includes(w) ? 1 : 0), 0)
-      return { ...d, score }
-    })
+    .map(d => ({ ...d, score: 0.6 * (semMap.get(d) || 0) + 0.4 * (kwMap.get(d) || 0) }))
     .filter(d => d.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, k)
-}
-
-// ── Retrieval (cosine + BM25 fallback) ────────────────────────────────────────
-async function retrieve(docs, question, jinaKey) {
-  const hasEmbeddings = docs.some(d => d.embedding)
-  if (hasEmbeddings && jinaKey) {
-    const qEmb = await queryEmbedding(question, jinaKey)
-    if (qEmb) {
-      return docs
-        .filter(d => d.embedding)
-        .map(d => ({ ...d, score: cosineSim(qEmb, d.embedding) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 8)
-    }
-  }
-  return keywordRetrieve(docs, question, 8)
 }
 
 // ── Źródła plików (URL-e do PDF-ów) ────────────────────────────────────────────
