@@ -402,7 +402,13 @@ export default function App() {
             <CampsMapTab user={user} meta={meta} />
           )}
           {activeTab === 'robert' && (
-            <RobertTab />
+            <RobertTab onNavigate={(tab) => {
+              const valid = ['camp','instructions','plan','jadlospis','diary','docs','map']
+              if (valid.includes(tab)) {
+                setActiveTabMain(tab)
+                setMainSection('before')
+              }
+            }} />
           )}
           {activeTab === 'plan' && (
             <div className="flex flex-1 overflow-hidden">

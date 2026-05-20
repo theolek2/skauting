@@ -44,7 +44,28 @@ function loadEnv() {
 }
 loadEnv()
 
-// DeepSeek nie ma publicznego api embeddingów — pomiń, używamy BM25 keyword
+const JINA_KEY = process.env.JINA_API_KEY || process.env.DEEPSEEK_API_KEY
+
+if (!JINA_KEY) {
+  console.warn('⚠️  Brak JINA_API_KEY — embeddingi nie zostaną wygenerowane.')
+}
+
+async function getEmbedding(text) {
+  if (!JINA_KEY) return null
+  try {
+    const res = await fetch('https://api.jina.ai/v1/embeddings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${JINA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'jina-embeddings-v3', input: text.slice(0, 2000) }),
+    })
+    if (!res.ok) {
+      console.warn(`Jina embed błąd ${res.status}`)
+      return null
+    }
+    const data = await res.json()
+    return data.data?.[0]?.embedding || null
+  } catch { return null }
+}
 
 
 // Usuń tagi HTML i placeholdery
@@ -205,14 +226,29 @@ for (const doc of allChunks) {
   }
 }
 
-console.log(`\n📚 ${unique.length} unikalnych chunków (BM25 keyword retrieval)\n`)
+console.log(`\n📚 ${unique.length} unikalnych chunków — Jina embeddings...\n`)
 
-// Embeddingi pominięte — DeepSeek nie ma publicznego API, HF model niedostępny
-// BM25 keyword retrieval działa dobrze dla polskiego + DeepSeek 64K kontekst
+let embedded = 0, failed = 0
+for (let i = 0; i < unique.length; i++) {
+  const doc = unique[i]
+  const emb = await getEmbedding(doc.pageContent)
+  if (emb) {
+    doc.embedding = emb
+    embedded++
+  } else {
+    failed++
+  }
+  if (JINA_KEY && i < unique.length - 1) await new Promise(r => setTimeout(r, 200))
+  process.stdout.write(`\r  [${i + 1}/${unique.length}] ✅ ${embedded} emb, ⚠️ ${failed} bez`)
+}
+console.log('\n')
 
 // 3. Zapisz
 const outPath = join(ROOT, 'src', 'data', 'robert-docs.json')
 writeFileSync(outPath, JSON.stringify(unique, null, 2), 'utf-8')
 console.log(`💾 Zapisano → src/data/robert-docs.json`)
-console.log(`   ${unique.length} chunków (BM25 keyword retrieval)`)
+console.log(`   ${unique.length} chunków, ${embedded} z embeddingami`)
+if (failed > 0 && !JINA_KEY) {
+  console.log('\n👉 Aby dodać embeddingi: dodaj JINA_API_KEY do .env.local i uruchom ponownie')
+}
 

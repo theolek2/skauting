@@ -9,27 +9,45 @@ const SUGGESTIONS = [
   'Co powinien zawierać regulamin obozu?',
 ]
 
-function Message({ msg }) {
+function Message({ msg, onNavigate }) {
   const isRobert = msg.role === 'assistant'
   return (
     <div className={`flex gap-3 ${isRobert ? '' : 'flex-row-reverse'}`}>
       {isRobert && (
         <div className="w-8 h-8 rounded-full bg-green-700 flex items-center justify-center text-white text-sm font-bold shrink-0 mt-0.5">R</div>
       )}
-      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-        isRobert
-          ? 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
-          : 'bg-green-700 text-white rounded-tr-sm'
-      }`}>
-        {msg.content.split('\n').map((line, i) => (
-          <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br/>}</span>
-        ))}
+      <div className="max-w-[80%]">
+        <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+          isRobert
+            ? 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
+            : 'bg-green-700 text-white rounded-tr-sm'
+        }`}>
+          {msg.content.split('\n').map((line, i) => (
+            <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br/>}</span>
+          ))}
+        </div>
+        {/* Linki do dokumentów */}
+        {isRobert && msg.links?.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {msg.links.map((link, i) => (
+              <button key={i}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onNavigate?.(link.tab, link.template)
+                }}
+                className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-2.5 py-1 hover:bg-green-100 transition flex items-center gap-1">
+                <span>📄</span>
+                <span>{link.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-export default function RobertTab() {
+export default function RobertTab({ onNavigate }) {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Cześć! Jestem Robert — Twój asystent skautowy. Mogę pomóc z organizacją obozu, dokumentami, przepisami ppoż. i prawem harcerskim. O co chcesz zapytać?' }
   ])
@@ -64,7 +82,11 @@ export default function RobertTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Błąd serwera')
-      setMessages(prev => [...prev, { role: 'assistant', content: data.answer }])
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.answer,
+        links: data.links || [],
+      }])
     } catch (err) {
       setError(err.message)
       setMessages(prev => [...prev, {
@@ -100,7 +122,7 @@ export default function RobertTab() {
 
       {/* Historia czatu */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {messages.map((msg, i) => <Message key={i} msg={msg} />)}
+        {messages.map((msg, i) => <Message key={i} msg={msg} onNavigate={onNavigate} />)}
 
         {loading && (
           <div className="flex gap-3">
@@ -115,7 +137,6 @@ export default function RobertTab() {
           </div>
         )}
 
-        {/* Sugestie — tylko gdy brak historii */}
         {messages.length === 1 && !loading && (
           <div className="space-y-2 pt-2">
             <p className="text-xs text-gray-400 text-center">Przykładowe pytania:</p>
@@ -133,7 +154,6 @@ export default function RobertTab() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Błąd */}
       {error && (
         <div className="mx-4 mb-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-600">
           ⚠️ {error}
@@ -162,7 +182,7 @@ export default function RobertTab() {
           </button>
         </div>
         <p className="text-xs text-gray-400 mt-1.5 text-center">
-          Powered by DeepSeek · baza wiedzy Skautów Europy
+          Powered by DeepSeek + Jina · baza wiedzy Skautów Europy
         </p>
       </div>
     </div>
