@@ -1,53 +1,62 @@
 // POST /api/invite — wyślij magic link do przybocznego
-import { inviteExternalUser } from '../src/lib/supabase.js'
+// Inline Supabase (omija problem z import.meta.env na Vercelu)
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { email, name, phone, role } = req.body || {}
   if (!email?.trim() || !name?.trim()) return res.status(400).json({ error: 'Email i imię wymagane' })
 
   try {
-    const user = await inviteExternalUser({
-      email: email.trim().toLowerCase(),
-      name: name.trim(),
-      phone,
-      role: role || 'przyboczny',
-      invitedBy: null,
-    })
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL || '',
+      process.env.VITE_SUPABASE_ANON_KEY || ''
+    )
 
-    const inviteUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/magic-login?token=${user.magic_token}`
+    const token = crypto.randomUUID()
+    const { data, error } = await supabase
+      .from('external_users')
+      .upsert([{
+        email: email.trim().toLowerCase(),
+        display_name: name.trim(),
+        phone,
+        role: role || 'przyboczny',
+        invited_by: null,
+        magic_token: token,
+        token_expires: new Date(Date.now() + 7 * 86400000).toISOString(),
+      }], { onConflict: 'email' })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    const inviteUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/magic-login?token=${token}`
 
     // Wyślij mail przez Resend
-    try {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'CampOS <oboz@skauci-europy.pl>',
-          to: email,
-          subject: `Zaproszenie do CampOS — ${name}`,
-          html: `
-            <h2>CampOS — Skauci Europy</h2>
-            <p>Cześć <b>${name}</b>!</p>
-            <p>Zostałeś zaproszony do współpracy przy organizacji obozu harcerskiego.</p>
-            <p><a href="${inviteUrl}" style="background:#2d6a2d;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
-              Otwórz CampOS →
-            </a></p>
-            <p style="color:#888;font-size:12px;">Link ważny 7 dni</p>
-          `,
-        }),
-      })
-      console.log('Resend invite sent to', email)
-    } catch (e) {
-      console.warn('Resend error:', e.message)
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'CampOS <oboz@skauci-europy.pl>',
+            to: email,
+            subject: `Zaproszenie do CampOS — ${name}`,
+            html: `<p>Cześć <b>${name}</b>!</p><p>Zostałeś zaproszony do pracy przy obozie.</p><p><a href="${inviteUrl}">Otwórz CampOS →</a></p><p style="color:#888;font-size:12px;">Link ważny 7 dni</p>`,
+          }),
+        })
+      } catch (e) { console.warn('Resend:', e.message) }
     }
 
-    res.status(200).json({ success: true, token: user.magic_token })
+    return res.status(200).json({ success: true, token, url: inviteUrl })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    console.error('invite error:', e)
+    return res.status(500).json({ error: e.message || 'Błąd serwera' })
   }
 }
+
+export default handler

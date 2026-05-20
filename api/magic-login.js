@@ -1,23 +1,40 @@
 // GET /api/magic-login?token=xxx — zweryfikuj i zaloguj przybocznego
-import { getExternalUserByToken, updateExternalUser } from '../src/lib/supabase.js'
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { token } = req.query
+  const token = req.query?.token
   if (!token) return res.status(400).json({ error: 'Brak tokena' })
 
   try {
-    const user = await getExternalUserByToken(token)
-    if (!user) return res.status(401).json({ error: 'Token nieważny lub wygasł' })
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL || '',
+      process.env.VITE_SUPABASE_ANON_KEY || ''
+    )
 
-    await updateExternalUser(user.id, {
-      last_login: new Date().toISOString(),
-      magic_token: null,
-      token_expires: null,
-    })
+    // Znajdź usera po tokenie
+    const { data: user, error: err1 } = await supabase
+      .from('external_users')
+      .select('*, external_roles:campos_roles(permissions)')
+      .eq('magic_token', token)
+      .gte('token_expires', new Date().toISOString())
+      .single()
 
-    res.status(200).json({
+    if (err1 || !user) return res.status(401).json({ error: 'Token nieważny lub wygasł' })
+
+    // Wyczyść token
+    const { error: err2 } = await supabase
+      .from('external_users')
+      .update({
+        last_login: new Date().toISOString(),
+        magic_token: null,
+        token_expires: null,
+      })
+      .eq('id', user.id)
+
+    if (err2) throw err2
+
+    return res.status(200).json({
       user: {
         id: user.id,
         email: user.email,
@@ -27,6 +44,7 @@ export default async function handler(req, res) {
       },
     })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    console.error('magic-login error:', e)
+    return res.status(500).json({ error: e.message || 'Błąd serwera' })
   }
 }
