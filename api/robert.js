@@ -101,7 +101,8 @@ function getSources(rawSources) {
   const results = []
   const seen = new Set()
   for (const src of rawSources) {
-    const entry = map[src]
+    // Próbuj klucz z rozszerzeniem i bez (metadata.title może nie mieć .txt)
+    const entry = map[src] || map[src + '.txt'] || map[src + '.md'] || map[src + '.pdf']
     if (!entry || seen.has(entry.title)) continue
     seen.add(entry.title)
     results.push({ title: entry.title, file: entry.file, url: entry.url || null })
