@@ -21,9 +21,18 @@ const EXIT_GIF  = 'wybieg.gif'
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
-const TIMING = { enter: 1400, exit: 1400 }
+const TIMING = { enter: 1400, exit: 1400, rotate: 25000 }
 
-export default function FloatingRobert({ onNavigate }) {
+function GifAvatar({ gif, size, border = true }) {
+  return (
+    <div className={`bg-white rounded-full overflow-hidden shrink-0 ${border ? 'border-3 border-green-700' : ''}`}
+      style={{ width: size, height: size }}>
+      <img src={`${BASE}/${gif}`} alt="Robert" className="w-full h-full object-cover" />
+    </div>
+  )
+}
+
+export default function FloatingRobert({ onNavigate, hidden }) {
   const [phase, setPhase] = useState('idle')
   const [idleGif, setIdleGif] = useState(() => pick(IDLE_GIFS))
   const [thinkGif, setThinkGif] = useState(() => pick(THINK_GIFS))
@@ -41,7 +50,18 @@ export default function FloatingRobert({ onNavigate }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  useEffect(() => () => {}, [])
+  // Losowa rotacja idle GIF-ów
+  useEffect(() => {
+    if (phase !== 'idle') return
+    const timer = setInterval(() => {
+      setVisible(false)
+      setTimeout(() => {
+        setIdleGif(pick(IDLE_GIFS))
+        setVisible(true)
+      }, 250)
+    }, TIMING.rotate)
+    return () => clearInterval(timer)
+  }, [phase])
 
   const handleOpen = () => {
     if (phase !== 'idle') return
@@ -112,6 +132,8 @@ export default function FloatingRobert({ onNavigate }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
+  if (hidden) return null
+
   const showEnterExit = phase === 'entering' || phase === 'exiting'
   const showButton     = phase === 'idle'
   const showChat       = phase === 'open' || phase === 'thinking'
@@ -124,22 +146,14 @@ export default function FloatingRobert({ onNavigate }) {
           className={`fixed bottom-5 right-5 z-[9999] cursor-pointer hover:scale-110 active:scale-95 transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
           title="Robert — asystent skautowy"
         >
-          <img
-            src={`${BASE}/${idleGif}`}
-            alt="Robert"
-            className="w-28 h-28 object-cover rounded-full shadow-xl border-3 border-green-700"
-          />
+          <GifAvatar gif={idleGif} size={112} />
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
         </div>
       )}
 
       {showEnterExit && (
         <div className={`fixed bottom-5 right-5 z-[9999] pointer-events-none transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-          <img
-            src={`${BASE}/${phase === 'entering' ? ENTER_GIF : EXIT_GIF}`}
-            alt={phase === 'entering' ? 'Robert wbiega' : 'Robert wybiega'}
-            className="w-28 h-28 object-cover rounded-full shadow-xl border-2 border-green-700"
-          />
+          <GifAvatar gif={phase === 'entering' ? ENTER_GIF : EXIT_GIF} size={112} />
         </div>
       )}
 
@@ -147,11 +161,9 @@ export default function FloatingRobert({ onNavigate }) {
         <div className={`fixed bottom-5 right-5 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-5rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-[9999] overflow-hidden transition-all duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <div className="bg-green-800 text-white px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
-              <img
-                src={`${BASE}/${loading ? thinkGif : idleGif}`}
-                alt="Robert"
-                className="w-11 h-11 rounded-full object-cover border-2 border-white/30"
-              />
+              <div className="bg-white rounded-full overflow-hidden w-14 h-14 border-2 border-white/30 shrink-0">
+                <img src={`${BASE}/${loading ? thinkGif : idleGif}`} alt="Robert" className="w-full h-full object-cover" />
+              </div>
               <div>
                 <div className="font-semibold text-sm">Robert</div>
                 <div className="text-green-300 text-[10px]">
@@ -171,11 +183,9 @@ export default function FloatingRobert({ onNavigate }) {
               return (
                 <div key={i} className={`flex gap-2 ${isRobert ? '' : 'flex-row-reverse'}`}>
                   {isRobert && (
-                    <img
-                      src={`${BASE}/${idleGif}`}
-                      alt="R"
-                      className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 border border-green-300"
-                    />
+                    <div className="bg-white rounded-full overflow-hidden w-9 h-9 border border-green-300 shrink-0 mt-0.5">
+                      <img src={`${BASE}/${idleGif}`} alt="R" className="w-full h-full object-cover" />
+                    </div>
                   )}
                   <div>
                     <div className={`rounded-xl px-3 py-2 text-xs leading-relaxed max-w-[260px] ${
@@ -206,11 +216,9 @@ export default function FloatingRobert({ onNavigate }) {
 
             {loading && (
               <div className="flex gap-2">
-                <img
-                  src={`${BASE}/${thinkGif}`}
-                  alt="Myśli..."
-                  className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 border border-green-300"
-                />
+                <div className="bg-white rounded-full overflow-hidden w-10 h-10 border border-green-300 shrink-0 mt-0.5">
+                  <img src={`${BASE}/${thinkGif}`} alt="Myśli..." className="w-full h-full object-cover" />
+                </div>
                 <div className="bg-gray-100 rounded-xl rounded-tl-sm px-3 py-2">
                   <span className="text-xs text-gray-400 italic">Robert analizuje...</span>
                 </div>

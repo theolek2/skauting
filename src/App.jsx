@@ -541,7 +541,7 @@ export default function App() {
         </div>
       )}
       <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} origin={confettiOrigin} />
-      <FloatingRobert onNavigate={(tab) => {
+      <FloatingRobert hidden={mainSection === 'before' && activeTab === 'robert'} onNavigate={(tab) => {
         const valid = ['camp','instructions','plan','jadlospis','diary','docs','map']
         if (valid.includes(tab)) { setActiveTabMain(tab); setMainSection('before') }
       }} />

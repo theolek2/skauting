@@ -1,5 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 
+const IDLE_GIFS = [
+  'A_cheerful_boy_scout_sitting_by_a_campfire_ro.gif',
+  'A_cheerful_boy_scout_sitting_by_a_campfire_ty.gif',
+  'Harcerz_siedzcy_przy_ognisku_cieszy_si_i_bi.gif',
+  'The_boy_scout_from_the_original_video_stands.gif',
+  'The_boy_scout_from_the_reference_images_unfol.gif',
+  'The_boy_scout_looks_directly_at_the_camera_wi.gif',
+  'The_boy_scout_pulls_out_a_pair_of_binoculars.gif',
+  'The_boy_scout_takes_a_refreshing_sip_from_an.gif',
+  'Masz_grafike_to_ma_byc_pierwsza_i_ostatnia_kl.gif',
+]
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+
 const SUGGESTIONS = [
   'Co muszę zrobić żeby zorganizować obóz?',
   'Jakie dokumenty wysłać do PSP?',
@@ -51,6 +64,7 @@ export default function RobertTab({ onNavigate }) {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Cześć! Jestem Robert — Twój asystent skautowy. Mogę pomóc z organizacją obozu, dokumentami, przepisami ppoż. i prawem harcerskim. O co chcesz zapytać?' }
   ])
+  const [idleGif] = useState(() => pick(IDLE_GIFS))
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -108,7 +122,9 @@ export default function RobertTab({ onNavigate }) {
       {/* Nagłówek */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-green-700 flex items-center justify-center text-white font-bold text-lg">R</div>
+          <div className="bg-white rounded-full overflow-hidden w-10 h-10 shrink-0">
+            <img src={`/filmiki/${idleGif}`} alt="Robert" className="w-full h-full object-cover" />
+          </div>
           <div>
             <h2 className="font-bold text-gray-800">Robert</h2>
             <p className="text-xs text-gray-500">Asystent skautowy · Skauci Europy</p>
