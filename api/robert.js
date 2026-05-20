@@ -6,29 +6,38 @@ import { join } from 'path'
 
 const HF_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
 
-const SYSTEM_PROMPT = `Jesteś Robertem — przyjaznym asystentem skautowym Stowarzyszenia Harcerstwa Katolickiego „Zawisza" (Skauci Europy).
-
-Pomagasz drużynowym i komendantom w organizacji obozów harcerskich: dokumentach urzędowych, przepisach przeciwpożarowych, prawie harcerskim, planowaniu obozu, bezpieczeństwie uczestników.
-
-Odpowiadaj po polsku, zwięźle i przyjaźnie. Jeśli kontekst zawiera odpowiedź — użyj go.
-Jeśli nie jesteś pewien — powiedz to wprost. Nie wymyślaj przepisów ani dat.
-
-Kontekst z dokumentów skautowych:
-{context}
-
-Jeśli kontekst nie zawiera odpowiedzi, odpowiedz na podstawie ogólnej wiedzy o harcerstwie.`
-
-// ── Lazy load bazy wiedzy (unikamy 274 KB importu w bundlerze Vercela) ─────────
-let _docsCache = null
-
-function loadDocs() {
-  if (_docsCache) return _docsCache
-  try {
-    const path = join(process.cwd(), 'src', 'data', 'robert-docs.json')
-    _docsCache = JSON.parse(readFileSync(path, 'utf-8'))
-  } catch {
-    _docsCache = []
+// ── Embedding (DeepSeek z HF fallback) ────────────────────────────────────────
+async function getEmbedding(text, apiKey, hfToken) {
+  // Prefer DeepSeek jeśli klucz dostępny
+  if (apiKey) {
+    try {
+      const res = await fetch('https://api.deepseek.com/v1/embeddings', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'deepseek-chat', input: text.slice(0, 2000) }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        return data.data?.[0]?.embedding || null
+      }
+    } catch {}
   }
+  // HF fallback
+  if (!hfToken) return null
+  try {
+    const res = await fetch(
+      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${hfToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: text.slice(0, 512), options: { wait_for_model: true } }),
+      }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return Array.isArray(data[0]) ? data[0] : data
+  } catch { return null }
+}
   return _docsCache
 }
 
@@ -74,12 +83,12 @@ function keywordRetrieve(docs, query, k = 4) {
 }
 
 // ── Retrieval (cosine + BM25 fallback) ────────────────────────────────────────
-async function retrieve(docs, question, hfToken, k = 4) {
+async function retrieve(docs, question, apiKey, hfToken, k = 4) {
   const hasEmbeddings = docs.some(d => d.embedding)
 
-  if (hasEmbeddings && hfToken) {
+  if (hasEmbeddings && (apiKey || hfToken)) {
     try {
-      const qEmb = await getEmbedding(question, hfToken)
+      const qEmb = await getEmbedding(question, apiKey, hfToken)
       return docs
         .filter(d => d.embedding)
         .map(d => ({ ...d, score: cosineSim(qEmb, d.embedding) }))
@@ -142,7 +151,7 @@ export default async function handler(req, res) {
     const docs = loadDocs()
 
     // 2. Retrieval
-    const chunks = await retrieve(docs, question, hfToken, 4)
+    const chunks = await retrieve(docs, question, apiKey, hfToken, 4)
     const context = chunks.length > 0
       ? chunks.map((c, i) => `[${i + 1}] (${c.metadata?.title || c.metadata?.source})\n${c.pageContent}`).join('\n\n')
       : 'Brak pasujących dokumentów w bazie wiedzy.'

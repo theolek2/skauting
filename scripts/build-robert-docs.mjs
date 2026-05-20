@@ -44,12 +44,44 @@ function loadEnv() {
 }
 loadEnv()
 
-const HF_TOKEN = process.env.HF_TOKEN
-const HF_MODEL = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+const EMBED_KEY = process.env.HF_TOKEN || process.env.DEEPSEEK_API_KEY
+const USE_DEEPSEEK = !!process.env.DEEPSEEK_API_KEY
 
-if (!HF_TOKEN) {
-  console.warn('⚠️  Brak HF_TOKEN — chunki zostaną zapisane BEZ embeddingów (BM25 fallback).')
-  console.warn('   Dodaj HF_TOKEN=hf_... do .env.local\n')
+if (!EMBED_KEY) {
+  console.warn('⚠️  Brak HF_TOKEN ani DEEPSEEK_API_KEY — chunki BEZ embeddingów (BM25 fallback).')
+}
+
+async function getEmbedding(text) {
+  if (!EMBED_KEY) return null
+  try {
+    if (USE_DEEPSEEK) {
+      // DeepSeek embeddings API
+      const res = await fetch('https://api.deepseek.com/v1/embeddings', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${EMBED_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'deepseek-chat', input: text.slice(0, 2000) }),
+      })
+      if (!res.ok) {
+        console.warn(`DeepSeek embed błąd ${res.status}`)
+        return null
+      }
+      const data = await res.json()
+      return data.data?.[0]?.embedding || null
+    } else {
+      // HuggingFace fallback
+      const res = await fetch(
+        'https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${EMBED_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputs: text.slice(0, 512), options: { wait_for_model: true } }),
+        }
+      )
+      if (!res.ok) return null
+      const data = await res.json()
+      return Array.isArray(data[0]) ? data[0] : data
+    }
+  } catch { return null }
 }
 
 // Pobierz embedding z HuggingFace Inference API
@@ -248,8 +280,7 @@ for (let i = 0; i < unique.length; i++) {
   } else {
     failed++
   }
-  // Krótka pauza żeby nie przekroczyć rate limit HF
-  if (HF_TOKEN && i < unique.length - 1) await new Promise(r => setTimeout(r, 200))
+  if (EMBED_KEY && i < unique.length - 1) await new Promise(r => setTimeout(r, 200))
   process.stdout.write(`\r  [${i + 1}/${unique.length}] ✅ ${embedded} embeddingów, ⚠️ ${failed} bez`)
 }
 console.log('\n')
@@ -259,6 +290,6 @@ const outPath = join(ROOT, 'src', 'data', 'robert-docs.json')
 writeFileSync(outPath, JSON.stringify(unique, null, 2), 'utf-8')
 console.log(`💾 Zapisano → src/data/robert-docs.json`)
 console.log(`   ${embedded} chunków z embeddingami, ${failed} bez (BM25 fallback)`)
-if (failed > 0 && !HF_TOKEN) {
+if (failed > 0 && !EMBED_KEY) {
   console.log('\n👉 Aby dodać embeddingi: ustaw HF_TOKEN w .env.local i uruchom ponownie')
 }
