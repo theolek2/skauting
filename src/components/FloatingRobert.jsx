@@ -118,9 +118,9 @@ export default function FloatingRobert({ onNavigate }) {
           <img
             src={`${BASE}/${idleGif}`}
             alt="Robert"
-            className="w-20 h-20 object-cover rounded-full shadow-xl border-2 border-green-700"
+            className="w-28 h-28 object-cover rounded-full shadow-xl border-3 border-green-700"
           />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
         </div>
       )}
 
@@ -129,7 +129,7 @@ export default function FloatingRobert({ onNavigate }) {
           <img
             src={`${BASE}/${phase === 'entering' ? ENTER_GIF : EXIT_GIF}`}
             alt={phase === 'entering' ? 'Robert wbiega' : 'Robert wybiega'}
-            className="w-20 h-20 object-cover rounded-full shadow-xl border-2 border-green-700"
+            className="w-28 h-28 object-cover rounded-full shadow-xl border-2 border-green-700"
           />
         </div>
       )}
@@ -141,7 +141,7 @@ export default function FloatingRobert({ onNavigate }) {
               <img
                 src={`${BASE}/${loading ? thinkGif : idleGif}`}
                 alt="Robert"
-                className="w-9 h-9 rounded-full object-cover border-2 border-white/30"
+                className="w-11 h-11 rounded-full object-cover border-2 border-white/30"
               />
               <div>
                 <div className="font-semibold text-sm">Robert</div>
