@@ -162,7 +162,7 @@ export default function RobertTab() {
           </button>
         </div>
         <p className="text-xs text-gray-400 mt-1.5 text-center">
-          Powered by Groq · llama3-8b · baza wiedzy Skautów Europy
+          Powered by DeepSeek · baza wiedzy Skautów Europy
         </p>
       </div>
     </div>

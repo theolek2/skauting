@@ -91,34 +91,34 @@ async function retrieve(docs, question, hfToken, k = 4) {
   return keywordRetrieve(docs, question, k)
 }
 
-// ── Groq API (OpenAI-compatible) ──────────────────────────────────────────────
-async function groqChat(groqKey, systemPrompt, userPrompt, history) {
+// ── DeepSeek API (OpenAI-compatible) ──────────────────────────────────────────
+async function deepseekChat(apiKey, systemPrompt, userPrompt, history) {
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...history.slice(-3).map(m => ({
+    ...history.slice(-6).map(m => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content,
     })),
     { role: 'user', content: userPrompt },
   ]
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${groqKey}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'deepseek-chat',
       messages,
       temperature: 0.3,
-      max_tokens: 512,
+      max_tokens: 1500,
     }),
   })
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`Groq API ${res.status}: ${text.slice(0, 200)}`)
+    throw new Error(`DeepSeek API ${res.status}: ${text.slice(0, 200)}`)
   }
 
   const data = await res.json()
@@ -132,26 +132,26 @@ export default async function handler(req, res) {
   const { question, history = [] } = req.body || {}
   if (!question?.trim()) return res.status(400).json({ error: 'Brak pytania' })
 
-  const groqKey = process.env.GROQ_API_KEY
+  const apiKey = process.env.DEEPSEEK_API_KEY
   const hfToken = process.env.HF_TOKEN
 
-  if (!groqKey) return res.status(500).json({ error: 'Brak GROQ_API_KEY' })
+  if (!apiKey) return res.status(500).json({ error: 'Brak DEEPSEEK_API_KEY' })
 
   try {
     // 1. Wczytaj bazę wiedzy (dynamicznie, nie jako import)
     const docs = loadDocs()
 
-    // 2. Retrieval — maks 2 chunki, każdy do 350 znaków (oszczędzamy tokeny)
-    const chunks = await retrieve(docs, question, hfToken, 2)
+    // 2. Retrieval
+    const chunks = await retrieve(docs, question, hfToken, 4)
     const context = chunks.length > 0
-      ? chunks.map((c, i) => `[${i + 1}] ${(c.pageContent || '').slice(0, 350)}`).join('\n')
+      ? chunks.map((c, i) => `[${i + 1}] (${c.metadata?.title || c.metadata?.source})\n${c.pageContent}`).join('\n\n')
       : 'Brak pasujących dokumentów w bazie wiedzy.'
 
     // 3. System prompt z kontekstem
     const systemPrompt = SYSTEM_PROMPT.replace('{context}', context)
 
-    // 4. Groq LLM
-    const answer = await groqChat(groqKey, systemPrompt, question, history)
+    // 4. DeepSeek LLM
+    const answer = await deepseekChat(apiKey, systemPrompt, question, history)
 
     res.status(200).json({
       answer,
