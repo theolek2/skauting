@@ -27,6 +27,7 @@ export default function FloatingRobert({ onNavigate }) {
   const [phase, setPhase] = useState('idle')
   const [idleGif, setIdleGif] = useState(() => pick(IDLE_GIFS))
   const [thinkGif, setThinkGif] = useState(() => pick(THINK_GIFS))
+  const [visible, setVisible] = useState(true)
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Cześć! Jestem Robert. O co chcesz zapytać?' }
   ])
@@ -44,20 +45,26 @@ export default function FloatingRobert({ onNavigate }) {
 
   const handleOpen = () => {
     if (phase !== 'idle') return
-    setPhase('entering')
+    setVisible(false)
+    setTimeout(() => { setPhase('entering'); setVisible(true) }, 200)
     setTimeout(() => {
       setPhase('open')
       setTimeout(() => inputRef.current?.focus(), 200)
-    }, TIMING.enter)
+    }, TIMING.enter + 200)
   }
 
   const handleClose = () => {
     if (phase !== 'open' && phase !== 'thinking') return
-    setPhase('exiting')
+    setVisible(false)
+    setTimeout(() => { setPhase('exiting'); setVisible(true) }, 200)
     setTimeout(() => {
-      setPhase('idle')
-      setIdleGif(pick(IDLE_GIFS))
-    }, TIMING.exit)
+      setVisible(false)
+      setTimeout(() => {
+        setPhase('idle')
+        setIdleGif(pick(IDLE_GIFS))
+        setVisible(true)
+      }, 250)
+    }, TIMING.exit + 200)
   }
 
   const send = async (text) => {
@@ -69,7 +76,8 @@ export default function FloatingRobert({ onNavigate }) {
     setMessages(newMessages)
     setLoading(true)
     setThinkGif(pick(THINK_GIFS))
-    setPhase('thinking')
+    setVisible(false)
+    setTimeout(() => { setPhase('thinking'); setVisible(true) }, 200)
     try {
       const res = await fetch('/api/robert', {
         method: 'POST',
@@ -94,8 +102,9 @@ export default function FloatingRobert({ onNavigate }) {
       }])
     } finally {
       setLoading(false)
-      setPhase('open')
-      setTimeout(() => inputRef.current?.focus(), 100)
+      setVisible(false)
+      setTimeout(() => { setPhase('open'); setVisible(true) }, 200)
+      setTimeout(() => inputRef.current?.focus(), 300)
     }
   }
 
@@ -112,7 +121,7 @@ export default function FloatingRobert({ onNavigate }) {
       {showButton && (
         <div
           onClick={handleOpen}
-          className="fixed bottom-5 right-5 z-[9999] cursor-pointer hover:scale-110 active:scale-95 transition-all"
+          className={`fixed bottom-5 right-5 z-[9999] cursor-pointer hover:scale-110 active:scale-95 transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
           title="Robert — asystent skautowy"
         >
           <img
@@ -125,7 +134,7 @@ export default function FloatingRobert({ onNavigate }) {
       )}
 
       {showEnterExit && (
-        <div className="fixed bottom-5 right-5 z-[9999] pointer-events-none">
+        <div className={`fixed bottom-5 right-5 z-[9999] pointer-events-none transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
           <img
             src={`${BASE}/${phase === 'entering' ? ENTER_GIF : EXIT_GIF}`}
             alt={phase === 'entering' ? 'Robert wbiega' : 'Robert wybiega'}
@@ -135,7 +144,7 @@ export default function FloatingRobert({ onNavigate }) {
       )}
 
       {showChat && (
-        <div className="fixed bottom-5 right-5 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-5rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-[9999] overflow-hidden">
+        <div className={`fixed bottom-5 right-5 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-5rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-[9999] overflow-hidden transition-all duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <div className="bg-green-800 text-white px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
               <img
