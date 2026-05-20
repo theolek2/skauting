@@ -16,27 +16,14 @@ const IDLE_GIFS = [
 
 const THINK_GIFS = ['think.gif', 'lupa.gif']
 
-const ENTER_GIF = 'wbieg.gif'
-const EXIT_GIF  = 'wybieg.gif'
-
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
-const TIMING = { enter: 1400, exit: 1400, rotate: 25000 }
-
-function GifAvatar({ gif, size, border = true }) {
-  return (
-    <div className={`bg-white rounded-full overflow-hidden shrink-0 ${border ? 'border-3 border-green-700' : ''}`}
-      style={{ width: size, height: size }}>
-      <img src={`${BASE}/${gif}`} alt="Robert" className="w-full h-full object-cover" />
-    </div>
-  )
-}
-
 export default function FloatingRobert({ onNavigate, hidden }) {
-  const [phase, setPhase] = useState('idle')
+  const [phase, setPhase] = useState('idle') // idle | open | thinking
   const [idleGif, setIdleGif] = useState(() => pick(IDLE_GIFS))
   const [thinkGif, setThinkGif] = useState(() => pick(THINK_GIFS))
   const [visible, setVisible] = useState(true)
+  const [maximized, setMaximized] = useState(false)
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Cześć! Jestem Robert. O co chcesz zapytać?' }
   ])
@@ -50,41 +37,37 @@ export default function FloatingRobert({ onNavigate, hidden }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Losowa rotacja idle GIF-ów
+  // Rotacja idle GIF co 10s — zawsze, niezależnie od fazy
   useEffect(() => {
-    if (phase !== 'idle') return
     const timer = setInterval(() => {
       setVisible(false)
       setTimeout(() => {
         setIdleGif(pick(IDLE_GIFS))
         setVisible(true)
       }, 250)
-    }, TIMING.rotate)
+    }, 10000)
     return () => clearInterval(timer)
-  }, [phase])
+  }, [])
 
   const handleOpen = () => {
     if (phase !== 'idle') return
+    setMaximized(false)
     setVisible(false)
-    setTimeout(() => { setPhase('entering'); setVisible(true) }, 200)
     setTimeout(() => {
       setPhase('open')
+      setVisible(true)
       setTimeout(() => inputRef.current?.focus(), 200)
-    }, TIMING.enter + 200)
+    }, 200)
   }
 
   const handleClose = () => {
-    if (phase !== 'open' && phase !== 'thinking') return
     setVisible(false)
-    setTimeout(() => { setPhase('exiting'); setVisible(true) }, 200)
+    setMaximized(false)
     setTimeout(() => {
-      setVisible(false)
-      setTimeout(() => {
-        setPhase('idle')
-        setIdleGif(pick(IDLE_GIFS))
-        setVisible(true)
-      }, 250)
-    }, TIMING.exit + 200)
+      setPhase('idle')
+      setIdleGif(pick(IDLE_GIFS))
+      setVisible(true)
+    }, 200)
   }
 
   const send = async (text) => {
@@ -134,9 +117,12 @@ export default function FloatingRobert({ onNavigate, hidden }) {
 
   if (hidden) return null
 
-  const showEnterExit = phase === 'entering' || phase === 'exiting'
-  const showButton     = phase === 'idle'
-  const showChat       = phase === 'open' || phase === 'thinking'
+  const showButton = phase === 'idle'
+  const showChat   = phase === 'open' || phase === 'thinking'
+
+  const chatCls = maximized
+    ? 'fixed inset-4 z-[9999]'
+    : 'fixed bottom-5 right-5 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-5rem)]'
 
   return (
     <>
@@ -146,22 +132,18 @@ export default function FloatingRobert({ onNavigate, hidden }) {
           className={`fixed bottom-5 right-5 z-[9999] cursor-pointer hover:scale-110 active:scale-95 transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
           title="Robert — asystent skautowy"
         >
-          <GifAvatar gif={idleGif} size={112} />
+          <div className="bg-white rounded-full overflow-hidden w-28 h-28 border-3 border-green-700 shadow-xl">
+            <img src={`${BASE}/${idleGif}`} alt="Robert" className="w-full h-full object-cover" />
+          </div>
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
         </div>
       )}
 
-      {showEnterExit && (
-        <div className={`fixed bottom-5 right-5 z-[9999] pointer-events-none transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-          <GifAvatar gif={phase === 'entering' ? ENTER_GIF : EXIT_GIF} size={112} />
-        </div>
-      )}
-
       {showChat && (
-        <div className={`fixed bottom-5 right-5 w-96 max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-5rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-[9999] overflow-hidden transition-all duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className={`${chatCls} bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden transition-all duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <div className="bg-green-800 text-white px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="bg-white rounded-full overflow-hidden w-14 h-14 border-2 border-white/30 shrink-0">
+              <div className="bg-white rounded-full overflow-hidden w-11 h-11 border-2 border-white/30 shrink-0">
                 <img src={`${BASE}/${loading ? thinkGif : idleGif}`} alt="Robert" className="w-full h-full object-cover" />
               </div>
               <div>
@@ -171,10 +153,16 @@ export default function FloatingRobert({ onNavigate, hidden }) {
                 </div>
               </div>
             </div>
-            <button onClick={handleClose}
-              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 text-white/70 hover:text-white text-lg leading-none transition">
-              ×
-            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setMaximized(m => !m)}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 text-white/70 hover:text-white transition text-sm">
+                {maximized ? '⛷' : '⛶'}
+              </button>
+              <button onClick={handleClose}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 text-white/70 hover:text-white text-lg leading-none transition">
+                ×
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-3 text-sm">
