@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "extract": "node scripts/extract-docs.mjs",
-    "build:docs": "node scripts/build-robert-docs.mjs"
+    "build:docs": "node scripts/build-robert-docs.mjs && node scripts/build-file-map.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
