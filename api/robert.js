@@ -10,18 +10,16 @@ const ROOT = join(__dirname, '..')
 
 const SYSTEM_PROMPT = `Jesteś Robertem — przyjaznym asystentem skautowym Stowarzyszenia Harcerstwa Katolickiego „Zawisza" (Skauci Europy).
 
-Pomagasz drużynowym i komendantom w organizacji obozów harcerskich: dokumentach urzędowych, przepisach przeciwpożarowych, prawie harcerskim, planowaniu obozu, bezpieczeństwie uczestników.
+Pomagasz drużynowym i komendantom w organizacji obozów harcerskich: dokumentach urzędowych, przepisach ppoż., prawie harcerskim, planowaniu obozu, bezpieczeństwie uczestników.
 
-WAŻNE — zasady odpowiadania:
-- Odpowiadaj WYŁĄCZNIE na podstawie dostarczonego kontekstu gdy pytanie dotyczy wymagań urzędowych, dokumentów, terminów lub przepisów prawnych.
-- NIE twierdzisz, że "nie trzeba wysyłać dokumentów" ani że "brak wymagań" jeśli kontekst tego wprost i jednoznacznie nie stwierdza. Brak informacji w kontekście ≠ brak obowiązku.
-- Jeśli kontekst jest niewystarczający, napisz: "Nie mam pewności co do tego wymagania — sprawdź aktualne przepisy lub zapytaj hufcowego."
-- Nie wymyślaj przepisów, terminów ani numerów aktów prawnych.
+Zasady odpowiadania:
+1. Jeśli kontekst zawiera odpowiedź — użyj go jako głównego źródła i powołaj się na dokument.
+2. Jeśli kontekst nie zawiera odpowiedzi — możesz odpowiedzieć na podstawie ogólnej wiedzy o harcerstwie, ale wyraźnie zaznacz: "Z mojej wiedzy ogólnej (nie z dostarczonych dokumentów):".
+3. NIE twierdzisz że "nie ma wymogu" lub "nie trzeba wysyłać dokumentów" gdy dotyczy to przepisów prawnych — zamiast tego napisz "Nie znalazłem tej informacji w dostępnych dokumentach, sprawdź aktualne przepisy."
+4. Nie wymyślaj konkretnych numerów aktów prawnych ani dat jeśli ich nie masz w kontekście.
 
 Kontekst z dokumentów skautowych:
-{context}
-
-Jeśli kontekst nie zawiera odpowiedzi — powiedz to wprost i poproś o doprecyzowanie pytania.`
+{context}`
 
 // ── Ładowanie danych (z cache) ────────────────────────────────────────────────
 let _fileMap = null
@@ -70,13 +68,16 @@ async function queryEmbedding(text, jinaKey) {
 
 // ── Hybrid retrieval: 60% semantic + 40% keyword ─────────────────────────────
 async function retrieve(docs, question, jinaKey, k = 8) {
-  const words = question.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+  // Rdzenie (pierwsze 5 znaków) radzą sobie z polską morfologią:
+  // "wychowawcę" → "wychow", "wychowawca" → "wychow" — oba pasują do tego samego dokumentu
+  const words = question.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+  const stems = words.map(w => w.slice(0, 5))
 
   // Keyword scores (zawsze, 0–1)
   const kwMap = new Map(docs.map(d => {
     const c = d.pageContent?.toLowerCase() || ''
-    const hits = words.reduce((s, w) => s + (c.includes(w) ? 1 : 0), 0)
-    return [d, words.length > 0 ? hits / words.length : 0]
+    const hits = stems.reduce((s, stem) => s + (c.includes(stem) ? 1 : 0), 0)
+    return [d, stems.length > 0 ? hits / stems.length : 0]
   }))
 
   // Semantic scores (jeśli embeddingi dostępne)
