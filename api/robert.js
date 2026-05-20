@@ -2,7 +2,11 @@
 // Jina embeddings + keyword fallback + linki do plików PDF
 
 import { readFileSync } from 'fs'
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const ROOT = join(__dirname, '..')
 
 const SYSTEM_PROMPT = `Jesteś Robertem — przyjaznym asystentem skautowym Stowarzyszenia Harcerstwa Katolickiego „Zawisza" (Skauci Europy).
 
@@ -22,14 +26,14 @@ let _docsCache = null
 
 function loadFileMap() {
   if (_fileMap) return _fileMap
-  try { _fileMap = JSON.parse(readFileSync(join(process.cwd(), 'src', 'data', 'file-map.json'), 'utf-8')) }
+  try { _fileMap = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'file-map.json'), 'utf-8')) }
   catch { _fileMap = {} }
   return _fileMap
 }
 
 function loadDocs() {
   if (_docsCache) return _docsCache
-  try { _docsCache = JSON.parse(readFileSync(join(process.cwd(), 'src', 'data', 'robert-docs.json'), 'utf-8')) }
+  try { _docsCache = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'robert-docs.json'), 'utf-8')) }
   catch { _docsCache = [] }
   return _docsCache
 }
