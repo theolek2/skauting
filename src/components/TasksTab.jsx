@@ -52,6 +52,8 @@ function InviteModal({ onClose, onInvited }) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
+  const [inviteUrl, setInviteUrl] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const handle = async e => {
     e.preventDefault()
@@ -65,27 +67,52 @@ function InviteModal({ onClose, onInvited }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Błąd zaproszenia')
-      onInvited()
+      setInviteUrl(data.url)
     } catch (e) { setErr(e.message) }
     finally { setLoading(false) }
   }
 
+  const copy = () => {
+    navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/40 z-[2000] flex items-center justify-center p-4">
-      <form onSubmit={handle} className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-        <h3 className="font-bold text-gray-800 mb-4">📨 Zaproś przybocznego</h3>
-        <input className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-green-500"
-          placeholder="Imię i nazwisko" value={name} onChange={e => setName(e.target.value)} required />
-        <input className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-green-500"
-          type="email" placeholder="email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
-        {err && <p className="text-red-500 text-xs mb-2">{err}</p>}
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 border rounded-lg py-2 text-sm text-gray-600">Anuluj</button>
-          <button type="submit" disabled={loading} className="flex-1 bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 disabled:opacity-50">
-            {loading ? 'Wysyłam...' : 'Wyślij zaproszenie'}
-          </button>
+      {inviteUrl ? (
+        <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+          <div className="text-4xl mb-3">✅</div>
+          <h3 className="font-bold text-gray-800 mb-2">Zaproszenie utworzone!</h3>
+          <p className="text-xs text-gray-500 mb-3">Skopiuj link i wyślij przybocznemu (SMS, Messenger, WhatsApp)</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 break-all mb-3 select-all">{inviteUrl}</div>
+          <div className="flex gap-2">
+            <button onClick={copy}
+              className="flex-1 bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 transition">
+              {copied ? '✅ Skopiowano!' : '📋 Kopiuj link'}
+            </button>
+            <button onClick={() => { onInvited(); onClose() }}
+              className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition">
+              Zamknij
+            </button>
+          </div>
         </div>
-      </form>
+      ) : (
+        <form onSubmit={handle} className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+          <h3 className="font-bold text-gray-800 mb-4">📨 Zaproś przybocznego</h3>
+          <input className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-green-500"
+            placeholder="Imię i nazwisko" value={name} onChange={e => setName(e.target.value)} required />
+          <input className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-green-500"
+            type="email" placeholder="email@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+          {err && <p className="text-red-500 text-xs mb-2">{err}</p>}
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="flex-1 border rounded-lg py-2 text-sm text-gray-600">Anuluj</button>
+            <button type="submit" disabled={loading} className="flex-1 bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 disabled:opacity-50">
+              {loading ? 'Tworzę...' : 'Wyślij zaproszenie'}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }
