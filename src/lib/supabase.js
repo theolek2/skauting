@@ -237,7 +237,7 @@ export async function inviteExternalUser({ email, name, phone, role, invitedBy }
 export async function getExternalUserByToken(token) {
   const { data, error } = await supabase
     .from('external_users')
-    .select('*, external_roles:roles(permissions)')
+    .select('*, external_roles:campos_roles(permissions)')
     .eq('magic_token', token)
     .gte('token_expires', new Date().toISOString())
     .single()

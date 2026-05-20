@@ -6,17 +6,17 @@
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('camp-files', 'camp-files', false);
 
 -- 1. RBAC — Role i permisje (łatwoskalowalne)
-CREATE TABLE IF NOT EXISTS roles (
+CREATE TABLE IF NOT EXISTS campos_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL UNIQUE,
   label text NOT NULL,
   permissions jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz DEFAULT now()
 );
-ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on roles" ON roles FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE campos_roles ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN CREATE POLICY "cmp_roles_all" ON campos_roles FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-INSERT INTO roles (name, label, permissions) VALUES
+INSERT INTO campos_roles (name, label, permissions) VALUES
 ('druzynowy', 'Drużynowy', '{"tasks":["view","create","edit","delete","assign","comment","upload"],"files":["view","upload","delete"],"calendar":["view","create","edit","delete"],"invite":["create"],"analytics":["view"],"camp":["view","edit"]}'),
 ('przyboczny', 'Przyboczny', '{"tasks":["view","edit_own","comment","upload"],"files":["view","upload"],"calendar":["view","create"],"camp":["view"]}')
 ON CONFLICT (name) DO NOTHING;
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS external_users (
   email text NOT NULL,
   display_name text,
   phone text,
-  role text REFERENCES roles(name) DEFAULT 'przyboczny',
+  role text REFERENCES campos_roles(name) DEFAULT 'przyboczny',
   invited_by uuid REFERENCES profiles(id),
   magic_token text UNIQUE,
   token_expires timestamptz,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS external_users (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE external_users ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on external_users" ON external_users FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_ext_users_all" ON external_users FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 3. Zadania
 CREATE TABLE IF NOT EXISTS tasks (
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on tasks" ON tasks FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_tasks_all" ON tasks FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 4. Subtaski (checklisty)
 CREATE TABLE IF NOT EXISTS task_checklists (
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS task_checklists (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE task_checklists ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on task_checklists" ON task_checklists FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_checklists_all" ON task_checklists FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 5. Komentarze do zadań
 CREATE TABLE IF NOT EXISTS task_comments (
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS task_comments (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on task_comments" ON task_comments FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_comments_all" ON task_comments FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 6. Załączniki do zadań
 CREATE TABLE IF NOT EXISTS task_attachments (
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS task_attachments (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE task_attachments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on task_attachments" ON task_attachments FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_attachments_all" ON task_attachments FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 7. Dependencies między zadaniami
 CREATE TABLE IF NOT EXISTS task_dependencies (
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS task_dependencies (
   UNIQUE(task_id, depends_on)
 );
 ALTER TABLE task_dependencies ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on task_dependencies" ON task_dependencies FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_deps_all" ON task_dependencies FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 8. Szablony tablicy
 CREATE TABLE IF NOT EXISTS task_templates (
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS task_templates (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE task_templates ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on task_templates" ON task_templates FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_templates_all" ON task_templates FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Wstaw domyślny szablon (bezpiecznie: usuń stary jeśli istnieje)
 DELETE FROM task_templates WHERE is_default = true;
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS shared_files (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE shared_files ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on shared_files" ON shared_files FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_files_all" ON shared_files FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 10. Activity log
 CREATE TABLE IF NOT EXISTS activity_log (
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on activity_log" ON activity_log FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_activity_all" ON activity_log FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 11. Kalendarz
 CREATE TABLE IF NOT EXISTS calendar_events (
@@ -189,4 +189,4 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "All on calendar_events" ON calendar_events FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN CREATE POLICY "cmp_calendar_all" ON calendar_events FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
