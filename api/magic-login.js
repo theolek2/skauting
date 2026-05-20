@@ -1,4 +1,4 @@
-// GET /api/magic-login?token=xxx — zweryfikuj i zaloguj przybocznego
+// GET /api/magic-login?token=xxx — aktywuj konto przybocznego
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -12,35 +12,37 @@ export default async function handler(req, res) {
       process.env.VITE_SUPABASE_ANON_KEY || ''
     )
 
-    // Znajdź usera po tokenie
     const { data: user, error: err1 } = await supabase
       .from('external_users')
-      .select('*, external_roles:campos_roles(permissions)')
+      .select('*')
       .eq('magic_token', token)
       .gte('token_expires', new Date().toISOString())
       .single()
 
     if (err1 || !user) return res.status(401).json({ error: 'Token nieważny lub wygasł' })
 
-    // Wyczyść token
+    const sessionToken = crypto.randomUUID()
     const { error: err2 } = await supabase
       .from('external_users')
       .update({
-        last_login: new Date().toISOString(),
+        active: true,
+        session_token: sessionToken,
         magic_token: null,
         token_expires: null,
+        last_login: new Date().toISOString(),
       })
       .eq('id', user.id)
 
     if (err2) throw err2
 
     return res.status(200).json({
+      session_token: sessionToken,
       user: {
         id: user.id,
         email: user.email,
         display_name: user.display_name,
-        role: user.role,
-        permissions: user.external_roles?.permissions || {},
+        role: user.role || 'przyboczny',
+        robert_enabled: user.robert_enabled || false,
       },
     })
   } catch (e) {

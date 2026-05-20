@@ -48,6 +48,36 @@ export default function App() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiOrigin, setConfettiOrigin] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
+  const [externalUser, setExternalUser] = useState(null)  // przyboczny
+
+  // Sprawdź sesję przybocznego
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('skauting_external_session')
+      if (!raw) return
+      const sess = JSON.parse(raw)
+      if (!sess?.token) return
+      fetch('/api/session?token=' + encodeURIComponent(sess.token))
+        .then(r => r.json())
+        .then(data => {
+          if (data?.user) {
+            setExternalUser(data.user)
+            localStorage.setItem('skauting_external_session', JSON.stringify({
+              token: sess.token,
+              user: data.user,
+            }))
+          } else {
+            localStorage.removeItem('skauting_external_session')
+          }
+        })
+        .catch(() => {})
+    } catch {}
+  }, [])
+
+  const logoutExternal = () => {
+    localStorage.removeItem('skauting_external_session')
+    setExternalUser(null)
+  }
 
   const toggleProgress = (key, e) => {
     if (e?.currentTarget) {
@@ -199,7 +229,7 @@ export default function App() {
   const metaOk = meta.jednostka && meta.kierownik
 
   // ── Bramka logowania — cała aplikacja za auth ──────────────────────────────
-  if (!user) {
+  if (!user && !externalUser) {
     return (
       <div className="min-h-screen bg-green-900 flex flex-col items-center justify-center p-4">
         <div className="mb-8 text-center">
@@ -238,8 +268,8 @@ export default function App() {
 
   const MAIN_SECTIONS = [
     { id: 'dashboard', label: 'Pulpit',           icon: '🏠' },
-    { id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
-    { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' },
+    ...(!externalUser ? [{ id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
+      { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' }] : []),
     { id: 'tasks',    label: 'Zadania',           icon: '📌' },
   ]
 
@@ -280,8 +310,12 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-green-300 text-xs hidden md:block">{user?.email?.split('@')[0]}</span>
-            {activeTab === 'plan' && mainSection === 'before' && (
+            <span className="text-green-300 text-xs hidden md:block">{
+              externalUser ? externalUser.display_name || externalUser.email
+              : user?.email?.split('@')[0]
+            }</span>
+            {externalUser && <span className="text-green-400 text-xs hidden md:block">(przyboczny)</span>}
+            {activeTab === 'plan' && mainSection === 'before' && !externalUser && (
               <button onClick={handleExport} disabled={!metaOk}
                 className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
                   metaOk ? 'bg-white text-green-800 hover:bg-green-50' : 'bg-green-700 text-green-400 cursor-not-allowed'
@@ -289,7 +323,7 @@ export default function App() {
                 📄 PDF
               </button>
             )}
-            <button onClick={() => signOut()}
+            <button onClick={() => externalUser ? logoutExternal() : signOut()}
               className="text-xs text-green-400 hover:text-white px-2 py-1 rounded border border-green-700 hover:border-green-400 transition">
               Wyloguj
             </button>
@@ -503,7 +537,7 @@ export default function App() {
       {/* ZADANIA */}
       {mainSection === 'tasks' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ZadaniaTab user={user} meta={meta} />
+          <ZadaniaTab user={user} meta={meta} isDruzynowy={!!user} />
         </div>
       )}
 
@@ -525,7 +559,7 @@ export default function App() {
         </div>
       )}
       <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} origin={confettiOrigin} />
-      <FloatingRobert hidden={mainSection === 'before' && activeTab === 'robert'} onNavigate={(tab) => {
+      <FloatingRobert hidden={(mainSection === 'before' && activeTab === 'robert') || (externalUser && !externalUser.robert_enabled)} onNavigate={(tab) => {
         const valid = ['camp','instructions','plan','jadlospis','diary','docs','map']
         if (valid.includes(tab)) { setActiveTabMain(tab); setMainSection('before') }
       }} />

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>CampOS — Logowanie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #166534; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card { background: #fff; border-radius: 16px; padding: 2rem; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .logo { font-size: 3rem; margin-bottom: .5rem; }
+    .title { font-size: 1.25rem; font-weight: 700; color: #166534; margin-bottom: .5rem; }
+    .sub { font-size: .85rem; color: #666; margin-bottom: 1.5rem; }
+    .loader { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top-color: #166534; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .err { color: #dc2626; font-size: .85rem; margin-top: 1rem; }
+    .ok { font-size: 3rem; margin-bottom: .5rem; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">⚜️</div>
+  <div class="title">CampOS</div>
+  <div class="sub" id="msg">Weryfikuję zaproszenie...</div>
+  <div class="loader" id="loader"></div>
+  <div class="err" id="err"></div>
+</div>
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get('token')
+  if (!token) {
+    document.getElementById('loader').style.display = 'none'
+    document.getElementById('err').textContent = 'Brak tokena w linku. Poproś drużynowego o nowy link.'
+    return
+  }
+
+  try {
+    const res = await fetch('/api/magic-login?token=' + encodeURIComponent(token))
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Błąd')
+
+    localStorage.setItem('skauting_external_session', JSON.stringify({
+      token: data.session_token,
+      user: data.user,
+    }))
+
+    document.getElementById('msg').textContent = 'Zalogowano! Przekierowuję...'
+    document.getElementById('loader').style.display = 'none'
+    setTimeout(() => { window.location.href = '/' }, 500)
+  } catch (e) {
+    document.getElementById('loader').style.display = 'none'
+    document.getElementById('msg').textContent = 'Błąd logowania'
+    document.getElementById('err').textContent = e.message
+  }
+})()
+</script>
+</body>
+</html>
