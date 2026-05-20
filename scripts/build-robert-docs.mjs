@@ -57,7 +57,7 @@ async function getEmbedding(text) {
   if (!HF_TOKEN) return null
   try {
     const res = await fetch(
-      `https://api-inference.huggingface.co/pipeline/feature-extraction/${HF_MODEL}`,
+      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${HF_TOKEN}`, 'Content-Type': 'application/json' },
