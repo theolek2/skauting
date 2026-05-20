@@ -14,6 +14,9 @@ import DocumentsTab from './components/DocumentsTab'
 import InstructionsTab from './components/InstructionsTab'
 import JadlospisTab from './components/JadlospisTab'
 import RobertTab from './components/RobertTab'
+import TasksTab from './components/TasksTab'
+import CalendarTab from './components/CalendarTab'
+import FilesTab from './components/FilesTab'
 import FloatingRobert from './components/FloatingRobert'
 import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
@@ -250,6 +253,9 @@ export default function App() {
     { id: 'diary',       label: 'Dziennik zajęć' },
     { id: 'docs',        label: 'Dokumenty' },
     { id: 'map',         label: 'Mapa terenu' },
+    { id: 'tasks',       label: 'Zadania' },
+    { id: 'calendar',    label: 'Kalendarz' },
+    { id: 'files',       label: 'Pliki' },
   ]
 
   return (
@@ -398,6 +404,15 @@ export default function App() {
           )}
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab user={user} meta={meta} /></div>
+          )}
+          {activeTab === 'tasks' && (
+            <TasksTab user={user} meta={meta} />
+          )}
+          {activeTab === 'calendar' && (
+            <CalendarTab user={user} meta={meta} />
+          )}
+          {activeTab === 'files' && (
+            <FilesTab user={user} meta={meta} />
           )}
           {activeTab === 'campsmap' && (
             <CampsMapTab user={user} meta={meta} />

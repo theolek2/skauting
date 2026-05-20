@@ -217,3 +217,146 @@ export async function seedIngredients(names) {
     .upsert(rows, { onConflict: 'name', ignoreDuplicates: true })
   if (error) console.warn('seedIngredients:', error.message)
 }
+
+// ── Użytkownicy zewnętrzni (przyboczni) ──────────────────────────────────────
+export async function inviteExternalUser({ email, name, phone, role, invitedBy }) {
+  const token = crypto.randomUUID()
+  const { data, error } = await supabase
+    .from('external_users')
+    .upsert([{
+      email, display_name: name, phone, role: role || 'przyboczny',
+      invited_by: invitedBy, magic_token: token,
+      token_expires: new Date(Date.now() + 7 * 86400000).toISOString(),
+    }], { onConflict: 'email' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getExternalUserByToken(token) {
+  const { data, error } = await supabase
+    .from('external_users')
+    .select('*, external_roles:roles(permissions)')
+    .eq('magic_token', token)
+    .gte('token_expires', new Date().toISOString())
+    .single()
+  if (error || !data) return null
+  return data
+}
+
+export async function updateExternalUser(id, patch) {
+  const { error } = await supabase.from('external_users').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+// ── Zadania ───────────────────────────────────────────────────────────────────
+export async function getTasks({ assignedTo, createdBy, column, campId } = {}) {
+  let q = supabase.from('tasks')
+    .select('*, checklists:task_checklists(*), dependencies:task_dependencies!task_id(*), assigned:external_users(id,display_name), creator:profiles!created_by(id,display_name)')
+    .order('order')
+    .order('created_at', { ascending: false })
+  if (assignedTo) q = q.eq('assigned_to', assignedTo)
+  if (createdBy) q = q.eq('created_by', createdBy)
+  if (column) q = q.eq('column', column)
+  const { data, error } = await q
+  if (error) { console.warn('getTasks error:', error.message); return [] }
+  return data || []
+}
+
+export async function createTask(task) {
+  const { data, error } = await supabase.from('tasks').insert([task]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateTask(id, patch) {
+  const { error } = await supabase.from('tasks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteTask(id) {
+  const { error } = await supabase.from('tasks').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function toggleChecklistItem(itemId, done, userId) {
+  const patch = { done, done_at: done ? new Date().toISOString() : null, done_by: done ? userId : null }
+  const { error } = await supabase.from('task_checklists').update(patch).eq('id', itemId)
+  if (error) throw error
+}
+
+export async function addChecklistItem(taskId, item) {
+  const { data, error } = await supabase.from('task_checklists').insert([{ task_id: taskId, ...item }]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function addTaskComment(taskId, comment) {
+  const { data, error } = await supabase.from('task_comments').insert([{ task_id: taskId, ...comment }]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function getTaskComments(taskId) {
+  const { data } = await supabase.from('task_comments').select('*').eq('task_id', taskId).order('created_at')
+  return data || []
+}
+
+// ── Pliki (dropbox) ──────────────────────────────────────────────────────────
+export async function uploadSharedFile(file) {
+  const { data, error } = await supabase.from('shared_files').insert([file]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function getSharedFiles(campId) {
+  const { data } = await supabase.from('shared_files').select('*').eq('camp_id', campId).order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function deleteSharedFile(id) {
+  const { error } = await supabase.from('shared_files').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Kalendarz ─────────────────────────────────────────────────────────────────
+export async function getCalendarEvents({ year, month, campId } = {}) {
+  let q = supabase.from('calendar_events').select('*').order('date_start')
+  if (campId) q = q.eq('camp_id', campId)
+  const { data } = await q
+  return data || []
+}
+
+export async function createCalendarEvent(event) {
+  const { data, error } = await supabase.from('calendar_events').insert([event]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateCalendarEvent(id, patch) {
+  const { error } = await supabase.from('calendar_events').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteCalendarEvent(id) {
+  const { error } = await supabase.from('calendar_events').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Szablony ──────────────────────────────────────────────────────────────────
+export async function getDefaultTemplate() {
+  const { data } = await supabase.from('task_templates').select('*').eq('is_default', true).single()
+  return data
+}
+
+// ── Activity log ──────────────────────────────────────────────────────────────
+export async function logActivity(action, meta = {}) {
+  const { error } = await supabase.from('activity_log').insert([{ action, meta, user_type: 'internal' }])
+  if (error) console.warn('logActivity error:', error.message)
+}
+
+export async function getActivityFeed(limit = 30) {
+  const { data } = await supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(limit)
+  return data || []
+}
