@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import GIF_DURATIONS from '../data/gif-durations.json'
 
 const BASE = '/filmiki'
 
@@ -42,7 +43,7 @@ function AvCrossfade({ newGif, oldGif, size, border = 'border-0', className = ''
           src={`${BASE}/${oldGif}`}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ animation: 'fadeOut 500ms forwards' }}
+          style={{ animation: 'fadeOut 50ms forwards' }}
           onAnimationEnd={onDone}
         />
       )}
@@ -72,14 +73,15 @@ export default function FloatingRobert({ onNavigate, hidden }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Rotacja crossfade co 5s
+  // Rotacja: wyświetl GIF do pełnej długości, w ostatnich 50ms crossfade
   useEffect(() => {
-    const timer = setInterval(() => {
+    const dur = GIF_DURATIONS[idleGif] || 10000
+    const timer = setTimeout(() => {
       setFadeOutGif(idleRef.current)
       setIdleGif(pick(IDLE_GIFS))
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [])
+    }, Math.max(dur - 50, 100))
+    return () => clearTimeout(timer)
+  }, [idleGif])
 
   // Wstrzyknij CSS keyframe
   useEffect(() => {
