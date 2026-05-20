@@ -130,24 +130,26 @@ for (const filePath of files) {
     continue
   }
 
-  // PDF-y > 50 MB to skany/obrazki — pdf2json wywali OOM, pomiń
+  // PDF-y > 5 MB to prawdopodobnie skany/obrazki — pdf2json blokuje wątek, pomiń
   const fileSize = statSync(filePath).size
-  if (ext === '.pdf' && fileSize > 50 * 1024 * 1024) {
+  if (ext === '.pdf' && fileSize > 5 * 1024 * 1024) {
     console.log(`⚠️  ${rel}: za duży (${(fileSize / 1024 / 1024).toFixed(0)} MB) — plik skanowany, pomiń. Trzeba ręcznie Ctrl+A`)
     skip++
     continue
   }
 
+  const t0 = Date.now()
   try {
-    const text = await extractText(filePath)
+    const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout po 30s')), ms))
+    const text = await Promise.race([extractText(filePath), timeout(30000)])
     if (!text || text.trim().length < 20) {
-      console.log(`⚠️  ${rel}: za mało tekstu (${text?.trim().length || 0} znaków) — pomiń`)
+      console.log(`⚠️  ${rel}: za mało tekstu (${text?.trim().length || 0} znaków) — pomiń (${((Date.now()-t0)/1000).toFixed(0)}s)`)
       fail++
       continue
     }
     mkdirSync(outDir, { recursive: true })
     writeFileSync(outPath, text, 'utf-8')
-    console.log(`✅ ${rel} → docs_txt/${outRel}`)
+    console.log(`✅ ${rel} → docs_txt/${outRel} (${((Date.now()-t0)/1000).toFixed(0)}s)`)
     ok++
   } catch (e) {
     console.log(`❌ ${rel}: ${e.message}`)
