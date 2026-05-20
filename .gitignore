@@ -4,3 +4,6 @@ dist/
 .env
 *.local
 docs_txt/
+cd
+npm
+baza_wiedzy.jsonl

@@ -3,9 +3,11 @@
 // Wynik: docs_txt/ (lustrzana struktura docs/ ale wszystko jako .txt)
 // Potem możesz edytować pliki .txt przed npm run build:docs
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync, rmSync } from 'fs'
 import { join, dirname, extname, basename, relative } from 'path'
 import { fileURLToPath } from 'url'
+import { execSync } from 'child_process'
+import { tmpdir } from 'os'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -34,9 +36,11 @@ async function extractText(filePath) {
       parser.on('pdfParser_dataReady', data => {
         restore()
         const text = (data.Pages || []).flatMap(page =>
-          (page.Texts || []).map(t =>
-            decodeURIComponent(t.R?.map(r => r.T).join('') || '')
-          )
+          (page.Texts || []).map(t => {
+            try {
+              return decodeURIComponent(t.R?.map(r => r.T).join('') || '')
+            } catch { return t.R?.map(r => r.T).join('') || '' }
+          })
         ).join(' ').replace(/\s{2,}/g, ' ').trim()
         resolve(text)
       })
@@ -52,6 +56,24 @@ async function extractText(filePath) {
     return value
   }
 
+  if (ext === '.odt') {
+    // ODT to ZIP z content.xml — wypakuj przez PowerShell/.NET
+    const tmpDir = join(tmpdir(), `odt_${Date.now()}_${Math.random().toString(36).slice(2)}`)
+    try {
+      mkdirSync(tmpDir, { recursive: true })
+      const psCmd = `Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('${filePath.replace(/'/g, "''")}','${tmpDir.replace(/'/g, "''")}')`
+      execSync(`powershell -NoProfile -Command "${psCmd}"`, { timeout: 30000, stdio: 'pipe' })
+      const contentPath = join(tmpDir, 'content.xml')
+      if (existsSync(contentPath)) {
+        const xml = readFileSync(contentPath, 'utf-8')
+        return xml.replace(/<[^>]+>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim()
+      }
+    } catch {} finally {
+      try { rmSync(tmpDir, { recursive: true, force: true }) } catch {}
+    }
+    return null
+  }
+
   return null
 }
 
@@ -62,7 +84,7 @@ function collectFiles(dir) {
       const full = join(dir, entry)
       if (statSync(full).isDirectory()) {
         results.push(...collectFiles(full))
-      } else if (['.pdf', '.docx', '.doc', '.txt', '.md'].includes(extname(entry).toLowerCase())) {
+      } else if (['.pdf', '.docx', '.doc', '.odt', '.txt', '.md'].includes(extname(entry).toLowerCase())) {
         results.push(full)
       }
     }
@@ -94,7 +116,7 @@ for (const filePath of files) {
   const outPath = join(OUT_DIR, outRel)
   const outDir  = dirname(outPath)
 
-  // TXT/MD → kopiuj bez zmian (bez duplikowania)
+  // TXT/MD → kopiuj do docs_txt/ jako .txt jeśli jeszcze nie istnieją
   if (ext === '.txt' || ext === '.md') {
     // Pomiń — plik .txt jest już w docs/, nie duplikujemy
     skip++
@@ -104,6 +126,14 @@ for (const filePath of files) {
   // Sprawdź czy już skonwertowany
   if (existsSync(outPath)) {
     console.log(`⏭️  ${rel} (już istnieje → ${outRel})`)
+    skip++
+    continue
+  }
+
+  // PDF-y > 50 MB to skany/obrazki — pdf2json wywali OOM, pomiń
+  const fileSize = statSync(filePath).size
+  if (ext === '.pdf' && fileSize > 50 * 1024 * 1024) {
+    console.log(`⚠️  ${rel}: za duży (${(fileSize / 1024 / 1024).toFixed(0)} MB) — plik skanowany, pomiń. Trzeba ręcznie Ctrl+A`)
     skip++
     continue
   }
