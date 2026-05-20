@@ -251,7 +251,6 @@ export default function App() {
     { id: 'diary',       label: 'Dziennik zajęć' },
     { id: 'docs',        label: 'Dokumenty' },
     { id: 'map',         label: 'Mapa terenu' },
-    { id: 'tasks',       label: 'Zadania' },
   ]
 
   return (
@@ -401,9 +400,6 @@ export default function App() {
           {activeTab === 'map' && (
             <div className="flex flex-1 overflow-hidden"><MapTab user={user} meta={meta} /></div>
           )}
-          {activeTab === 'tasks' && (
-            <ZadaniaTab user={user} meta={meta} />
-          )}
           {activeTab === 'campsmap' && (
             <CampsMapTab user={user} meta={meta} />
           )}
@@ -506,25 +502,8 @@ export default function App() {
 
       {/* ZADANIA */}
       {mainSection === 'tasks' && (
-        <div className="flex-1 overflow-y-auto p-6 max-w-lg mx-auto w-full">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">📌 Zrealizowane funkcje</h2>
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-2 text-sm">
-            {[
-              '✅ Pulpit z postępem i grupami',
-              '✅ Konfetti przy zaznaczaniu Zrobione',
-              '✅ Dziennik zajęć + spis + PDF',
-              '✅ Dokumenty + multi-odbiorca + import PDF',
-              '✅ Auto-pobieranie danych z GPS (współrzędne)',
-              '✅ Checkboxy Zrobione w zakładkach',
-              '✅ Kadra — kierownik + wychowawcy',
-              '✅ Jadłospis z kaflami i składnikami',
-              '✅ Lista zakupów (2-dniowe okna)',
-              '✅ Mapa terenu + piktogramy',
-              '✅ Mapa obozów (krajowa)',
-            ].map((t, i) => (
-              <div key={i} className="flex items-center gap-2 py-1">{t}</div>
-            ))}
-          </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <ZadaniaTab user={user} meta={meta} />
         </div>
       )}
 
