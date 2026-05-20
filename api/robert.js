@@ -1,5 +1,5 @@
 // Robert — asystent skautowy
-// Jina embeddings + keyword fallback + linki do dokumentów w apce
+// Jina embeddings + keyword fallback + linki do plików PDF
 
 import { readFileSync } from 'fs'
 import { join } from 'path'
@@ -16,55 +16,21 @@ Kontekst z dokumentów skautowych:
 
 Jeśli kontekst nie zawiera odpowiedzi, poproś o doprecyzowanie pytania.`
 
-// ── Mapowanie źródeł → linki w apce ───────────────────────────────────────────
-const LINK_MAP = [
-  { match: /pismo|przewodnie|psp|straż|pozarna/i,        label: 'Pismo przewodnie (PSP)', tab: 'docs', template: 'przewodnie' },
-  { match: /zawiadomienie|obozie/i,                        label: 'Zawiadomienie o obozie', tab: 'docs', template: 'zawiadomienie' },
-  { match: /wójt|wojt|gmin|latryn/i,                       label: 'Pismo do Wójta', tab: 'docs', template: 'wojt' },
-  { match: /nadleśnictw|lesnictw|leśn/i,                   label: 'Wniosek do Nadleśnictwa', tab: 'docs', template: 'nadlesnictwo' },
-  { match: /szkol|pomieszczeń/i,                            label: 'Wniosek o pomieszczenia szkolne', tab: 'docs', template: 'szkola' },
-  { match: /pojazd|samochod|użyczenia/i,                   label: 'Umowa użyczenia pojazdu', tab: 'docs', template: 'pojazd' },
-  { match: /schronienie|tymczasow/i,                        label: 'Umowa tymcz. schronienie', tab: 'docs', template: 'schronienie' },
-  { match: /oświadczenie|właściciel/i,                      label: 'Oświadczenie właściciela', tab: 'docs', template: 'oswiadczenie' },
-  { match: /kontaktowa|lista kontakt/i,                     label: 'Lista kontaktowa', tab: 'docs', template: 'kontaktowa' },
-  { match: /regulamin oboz|regulaminu oboz/i,               label: 'Regulamin obozu', tab: 'docs', template: 'regulamin' },
-  { match: /ppoż|przeciwpoż|bezpieczeństw.*poż/i,          label: 'Instrukcja ppoż.', tab: 'docs', template: 'ppoz' },
-  { match: /sanepid|sanitarn|higien/i,                      label: 'Dokumenty', tab: 'docs' },
-  { match: /dane obozu|danych obozu|kadr|wychowawc/i,      label: 'Dane obozu', tab: 'camp' },
-  { match: /mapa terenu|mapę terenu|mapy terenu/i,          label: 'Mapa terenu', tab: 'map' },
-  { match: /plan zajęć|planu zajęć|dzień/i,                 label: 'Plan zajęć', tab: 'plan' },
-  { match: /jadłospis|posiłk|zakupy|składnik/i,            label: 'Jadłospis', tab: 'jadlospis' },
-  { match: /dziennik zajęć|dziennika/i,                     label: 'Dziennik zajęć', tab: 'diary' },
-  { match: /instrukcj/i,                                     label: 'Instrukcje', tab: 'instructions' },
-]
-
-function getLinks(question, sources) {
-  const links = []
-  const seen = new Set()
-  // Sprawdź każdy source i pytanie
-  for (const rule of LINK_MAP) {
-    if (seen.has(rule.label)) continue
-    const matchesSource = sources.some(s => rule.match.test(s.toLowerCase()))
-    const matchesQuestion = rule.match.test(question.toLowerCase())
-    if (matchesSource || matchesQuestion) {
-      seen.add(rule.label)
-      links.push({ label: rule.label, tab: rule.tab, template: rule.template || null })
-    }
-  }
-  return links.slice(0, 4)
-}
-
-// ── Lazy load bazy wiedzy ─────────────────────────────────────────────────────
+// ── Ładowanie danych (z cache) ────────────────────────────────────────────────
+let _fileMap = null
 let _docsCache = null
+
+function loadFileMap() {
+  if (_fileMap) return _fileMap
+  try { _fileMap = JSON.parse(readFileSync(join(process.cwd(), 'src', 'data', 'file-map.json'), 'utf-8')) }
+  catch { _fileMap = {} }
+  return _fileMap
+}
 
 function loadDocs() {
   if (_docsCache) return _docsCache
-  try {
-    const path = join(process.cwd(), 'src', 'data', 'robert-docs.json')
-    _docsCache = JSON.parse(readFileSync(path, 'utf-8'))
-  } catch {
-    _docsCache = []
-  }
+  try { _docsCache = JSON.parse(readFileSync(join(process.cwd(), 'src', 'data', 'robert-docs.json'), 'utf-8')) }
+  catch { _docsCache = [] }
   return _docsCache
 }
 
@@ -80,7 +46,7 @@ function cosineSim(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10)
 }
 
-// ── Jina embedding dla zapytania ──────────────────────────────────────────────
+// ── Jina embedding ────────────────────────────────────────────────────────────
 async function queryEmbedding(text, jinaKey) {
   if (!jinaKey) return null
   try {
@@ -95,8 +61,8 @@ async function queryEmbedding(text, jinaKey) {
   } catch { return null }
 }
 
-// ── Retrieval (cosine na embeddingach + BM25 fallback) ────────────────────────
-function keywordRetrieve(docs, question, k = 4) {
+// ── Keyword retrieval ─────────────────────────────────────────────────────────
+function keywordRetrieve(docs, question, k = 8) {
   const words = question.toLowerCase().split(/\s+/).filter(w => w.length > 2)
   return docs
     .map(d => {
@@ -109,9 +75,9 @@ function keywordRetrieve(docs, question, k = 4) {
     .slice(0, k)
 }
 
+// ── Retrieval (cosine + BM25 fallback) ────────────────────────────────────────
 async function retrieve(docs, question, jinaKey) {
   const hasEmbeddings = docs.some(d => d.embedding)
-
   if (hasEmbeddings && jinaKey) {
     const qEmb = await queryEmbedding(question, jinaKey)
     if (qEmb) {
@@ -122,8 +88,21 @@ async function retrieve(docs, question, jinaKey) {
         .slice(0, 8)
     }
   }
-
   return keywordRetrieve(docs, question, 8)
+}
+
+// ── Źródła plików (URL-e do PDF-ów) ────────────────────────────────────────────
+function getSources(rawSources) {
+  const map = loadFileMap()
+  const results = []
+  const seen = new Set()
+  for (const src of rawSources) {
+    const entry = map[src]
+    if (!entry || seen.has(entry.title)) continue
+    seen.add(entry.title)
+    results.push({ title: entry.title, file: entry.file, url: entry.url || null })
+  }
+  return results.slice(0, 5)
 }
 
 // ── DeepSeek Chat API ─────────────────────────────────────────────────────────
@@ -131,31 +110,16 @@ async function deepseekChat(apiKey, systemPrompt, userPrompt, history) {
   const messages = [
     { role: 'system', content: systemPrompt },
     ...history.slice(-6).map(m => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content,
+      role: m.role === 'user' ? 'user' : 'assistant', content: m.content,
     })),
     { role: 'user', content: userPrompt },
   ]
-
   const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages,
-      temperature: 0.3,
-      max_tokens: 1500,
-    }),
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'deepseek-chat', messages, temperature: 0.3, max_tokens: 1500 }),
   })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`DeepSeek API ${res.status}: ${text.slice(0, 200)}`)
-  }
-
+  if (!res.ok) { const t = await res.text(); throw new Error(`DeepSeek ${res.status}: ${t.slice(0, 200)}`) }
   const data = await res.json()
   return data.choices?.[0]?.message?.content || ''
 }
@@ -169,7 +133,6 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.DEEPSEEK_API_KEY
   const jinaKey = process.env.JINA_API_KEY
-
   if (!apiKey) return res.status(500).json({ error: 'Brak DEEPSEEK_API_KEY' })
 
   try {
@@ -179,17 +142,13 @@ export default async function handler(req, res) {
       ? chunks.map((c, i) => `[${i + 1}] (${c.metadata?.title || c.metadata?.source})\n${c.pageContent}`).join('\n\n')
       : 'Brak pasujących dokumentów w bazie wiedzy.'
 
-    const sources = [...new Set(chunks.map(c => c.metadata?.title || c.metadata?.source).filter(Boolean))]
-    const links = getLinks(question, sources)
+    const rawSources = [...new Set(chunks.map(c => c.metadata?.title || c.metadata?.source).filter(Boolean))]
+    const sources = getSources(rawSources)
 
     const systemPrompt = SYSTEM_PROMPT.replace('{context}', context)
     const answer = await deepseekChat(apiKey, systemPrompt, question, history)
 
-    res.status(200).json({
-      answer,
-      sources,
-      links,
-    })
+    res.status(200).json({ answer, sources })
   } catch (err) {
     console.error('Robert error:', err.message)
     res.status(500).json({ error: err.message || 'Błąd serwera' })

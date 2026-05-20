@@ -39,19 +39,22 @@ function Message({ msg, onNavigate }) {
             <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br/>}</span>
           ))}
         </div>
-        {/* Linki do dokumentów */}
+        {/* Źródła — pliki PDF */}
         {isRobert && msg.links?.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {msg.links.map((link, i) => (
-              <button key={i}
-                onClick={(e) => {
-                  e.preventDefault()
-                  onNavigate?.(link.tab, link.template)
-                }}
-                className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-2.5 py-1 hover:bg-green-100 transition flex items-center gap-1">
-                <span>📄</span>
-                <span>{link.label}</span>
-              </button>
+            {msg.links.map((src, i) => (
+              src.url ? (
+                <a key={i} href={src.url} target="_blank" rel="noopener"
+                  className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-2.5 py-1 hover:bg-green-100 transition flex items-center gap-1">
+                  <span>📥</span>
+                  <span>{src.title}</span>
+                </a>
+              ) : (
+                <span key={i} className="text-xs bg-gray-50 border border-gray-100 text-gray-400 rounded-lg px-2.5 py-1 flex items-center gap-1">
+                  <span>📄</span>
+                  <span>{src.title}</span>
+                </span>
+              )
             ))}
           </div>
         )}
@@ -99,7 +102,7 @@ export default function RobertTab({ onNavigate }) {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.answer,
-        links: data.links || [],
+        links: data.sources || [],
       }])
     } catch (err) {
       setError(err.message)

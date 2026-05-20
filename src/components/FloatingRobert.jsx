@@ -139,7 +139,7 @@ export default function FloatingRobert({ onNavigate, hidden }) {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.answer,
-        links: data.links || [],
+        links: data.sources || [],
       }])
     } catch (err) {
       setError(err.message)
@@ -235,13 +235,19 @@ export default function FloatingRobert({ onNavigate, hidden }) {
                     </div>
                     {isRobert && msg.links?.length > 0 && (
                       <div className="mt-1.5 flex flex-wrap gap-1">
-                        {msg.links.slice(0, 3).map((link, k) => (
-                          <button key={k}
-                            onClick={() => onNavigate?.(link.tab)}
-                            className="text-[10px] bg-green-50 border border-green-200 text-green-700 rounded-md px-2 py-0.5 hover:bg-green-100 transition flex items-center gap-0.5">
-                            <span>📄</span>
-                            <span className="truncate max-w-[120px]">{link.label}</span>
-                          </button>
+                        {msg.links.slice(0, 3).map((src, k) => (
+                          src.url ? (
+                            <a key={k} href={src.url} target="_blank" rel="noopener"
+                              className="text-[10px] bg-green-50 border border-green-200 text-green-700 rounded-md px-2 py-0.5 hover:bg-green-100 transition flex items-center gap-0.5">
+                              <span>📥</span>
+                              <span className="truncate max-w-[120px]">{src.title}</span>
+                            </a>
+                          ) : (
+                            <span key={k} className="text-[10px] bg-gray-50 border border-gray-100 text-gray-400 rounded-md px-2 py-0.5 flex items-center gap-0.5">
+                              <span>📄</span>
+                              <span className="truncate max-w-[120px]">{src.title}</span>
+                            </span>
+                          )
                         ))}
                       </div>
                     )}
