@@ -127,8 +127,18 @@ export default function TasksTab({ user, meta }) {
     setTasks(t)
     const f = await getActivityFeed(20)
     setFeed(f)
-    const { data: ext } = await supabase.from('external_users').select('id,display_name,email').eq('active', true)
-    setMembers(ext || [])
+    try {
+      const { data: ext } = await supabase.from('external_users').select('id,display_name,email').eq('active', true)
+      if (ext?.length) setMembers(ext)
+      else {
+        // Fallback: pokaż wszystkich (może RLS blokuje filtr active)
+        const { data: all } = await supabase.from('external_users').select('id,display_name,email')
+        setMembers(all || [])
+      }
+    } catch {
+      const { data: all } = await supabase.from('external_users').select('id,display_name,email')
+      setMembers(all || [])
+    }
   }, [])
 
   useEffect(() => { load() }, [load])

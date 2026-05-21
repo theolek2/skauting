@@ -265,7 +265,7 @@ export async function getTasks({ assignedTo, createdBy, column, campId } = {}) {
 }
 
 export async function createTask(task) {
-  const { data, error } = await supabase.from('tasks').insert([task]).select().single()
+  const { data, error } = await supabase.from('tasks').insert([task]).select('*, assigned:external_users(id,display_name)').single()
   if (error) throw error
   return data
 }
