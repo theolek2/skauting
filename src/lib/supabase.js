@@ -191,6 +191,20 @@ export async function loadCampMeta(userId) {
   return data?.camp_meta || null
 }
 
+// ── Checklista Instrukcji (przechowywana w camp_meta.checklist) ──────────────
+export async function saveChecklist(userId, checklist) {
+  // Pobierz aktualne camp_meta i zaktualizuj pole checklist
+  const { data } = await supabase.from('profiles').select('camp_meta').eq('id', userId).single()
+  const meta = data?.camp_meta || {}
+  const { error } = await supabase.from('profiles').update({ camp_meta: { ...meta, checklist } }).eq('id', userId)
+  if (error) throw error
+}
+
+export async function loadChecklist(userId) {
+  const { data } = await supabase.from('profiles').select('camp_meta').eq('id', userId).single()
+  return data?.camp_meta?.checklist || {}
+}
+
 // ── Składniki ────────────────────────────────────────────────────────────────
 export async function getAllIngredients() {
   const { data, error } = await supabase

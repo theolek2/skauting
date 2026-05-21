@@ -20,7 +20,7 @@ import Confetti from './components/Confetti'
 import { makeDay, DEFAULT_CAMP_ACTIVITIES } from './utils/defaults'
 import { generatePdf } from './utils/generatePdf'
 import { saveState, loadState } from './utils/storage'
-import { supabase, signOut, getProfile, upsertProfile, saveCampMeta, loadCampMeta } from './lib/supabase'
+import { supabase, signOut, getProfile, upsertProfile, saveCampMeta, loadCampMeta, saveChecklist, loadChecklist } from './lib/supabase'
 
 const DEFAULT_STATE = {
   meta: { jednostka: '', kierownik: '', miejsce: '', termin: '', date_start: '', date_end: '' },
@@ -47,6 +47,10 @@ export default function App() {
   })
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiOrigin, setConfettiOrigin] = useState(null)
+  // Checklista Instrukcji — stan { 'UP.1': true, 'PR.1': false, ... }
+  const [checklist, setChecklist] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skauting_checklist') || '{}') } catch { return {} }
+  })
   const [showMenu, setShowMenu] = useState(false)
   const [externalUser, setExternalUser] = useState(() => {
     try {
@@ -126,6 +130,13 @@ export default function App() {
       const profile = await getProfile(u.id)
       const savedMeta = await loadCampMeta(u.id)
 
+      // Wczytaj checklistę z Supabase
+      const savedChecklist = savedMeta?.checklist
+      if (savedChecklist && Object.keys(savedChecklist).length > 0) {
+        setChecklist(savedChecklist)
+        try { localStorage.setItem('skauting_checklist', JSON.stringify(savedChecklist)) } catch {}
+      }
+
       if (savedMeta && Object.keys(savedMeta).length > 0) {
         // Przywróć pełne zapisane dane obozu
         update({ meta: { ...savedMeta, email: savedMeta.email || u.email || '' } })
@@ -162,6 +173,34 @@ export default function App() {
   const { meta, activities, days, template, activityLog = [], mealTemplate = [], mealActivities = [] } = state
 
   useEffect(() => { saveState(state) }, [state])
+
+  // ── Auto-generowanie dni gdy zmienią się daty obozu ───────────────────────
+  useEffect(() => {
+    const { date_start, date_end } = state.meta
+    if (!date_start || !date_end) return
+    const start = new Date(date_start)
+    const end = new Date(date_end)
+    const n = Math.round((end - start) / 86400000) + 1
+    if (n <= 0 || n > 35 || n === state.days.length) return
+
+    const newDays = Array.from({ length: n }, (_, i) => {
+      const d = new Date(start); d.setDate(start.getDate() + i)
+      return state.days[i] || makeDay(i)
+    })
+    const newMeals = Array.from({ length: n }, (_, i) =>
+      state.mealTemplate[i] || { day: i + 1, slots: [] }
+    )
+    setState(s => ({ ...s, days: newDays, mealTemplate: newMeals }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.meta.date_start, state.meta.date_end])
+
+  // ── Zapis/sync checklisty ──────────────────────────────────────────────────
+  const updateChecklist = (itemId, checked) => {
+    const next = { ...checklist, [itemId]: checked }
+    setChecklist(next)
+    try { localStorage.setItem('skauting_checklist', JSON.stringify(next)) } catch {}
+    if (user?.id) saveChecklist(user.id, next).catch(() => {})
+  }
 
   const update = (patch) => setState(s => ({ ...s, ...patch }))
 
@@ -418,7 +457,7 @@ export default function App() {
 
       {/* PULPIT */}
       {mainSection === 'dashboard' && (
-        <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} progress={progress} />
+        <DashboardTab meta={meta} days={days} user={user} onNavigate={navigateToSection} activityLog={activityLog} checklist={checklist} onChecklistUpdate={updateChecklist} />
       )}
 
       {/* PRZED OBOZEM */}
