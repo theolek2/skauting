@@ -48,9 +48,17 @@ export default function App() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiOrigin, setConfettiOrigin] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
-  const [externalUser, setExternalUser] = useState(null)  // przyboczny
+  const [externalUser, setExternalUser] = useState(() => {
+    // Sprawdź localStorage PRZED pierwszym renderem (unikaj race condition)
+    try {
+      const raw = localStorage.getItem('skauting_external_session')
+      if (!raw) return null
+      const sess = JSON.parse(raw)
+      return sess?.user || null
+    } catch { return null }
+  })
 
-  // Sprawdź sesję przybocznego
+  // Weryfikuj sesję przy starcie (odśwież permisje)
   useEffect(() => {
     try {
       const raw = localStorage.getItem('skauting_external_session')
@@ -68,6 +76,7 @@ export default function App() {
             }))
           } else {
             localStorage.removeItem('skauting_external_session')
+            setExternalUser(null)
           }
         })
         .catch(() => {})
