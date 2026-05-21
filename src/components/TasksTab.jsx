@@ -237,6 +237,7 @@ export default function TasksTab({ user, meta }) {
                     <select className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5" value={newAssignee}
                       onChange={e => setNewAssignee(e.target.value)}>
                       <option value="">Bez przypisania</option>
+                      {members.length === 0 && <option disabled>⏳ Ładowanie...</option>}
                       {members.map(m => (
                         <option key={m.id} value={m.id}>{m.display_name || m.email}</option>
                       ))}

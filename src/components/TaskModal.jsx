@@ -17,8 +17,9 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
   const [commentText, setCommentText] = useState('')
   const [newSubtask, setNewSubtask] = useState('')
   const [attachments, setAttachments] = useState([])
+  const [assignee, setAssignee] = useState(task.assigned_to || '')
+  const [members, setMembers] = useState([])
   const [saving, setSaving] = useState(false)
-  const fileRef = useRef(null)
 
   const load = async () => {
     const { data: cl } = await supabase.from('task_checklists').select('*').eq('task_id', task.id).order('order')
@@ -27,6 +28,7 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
     setComments(cm || [])
     const { data: att } = await supabase.from('task_attachments').select('*').eq('task_id', task.id)
     setAttachments(att || [])
+    try { const { data: m } = await supabase.from('external_users').select('id,display_name,email'); setMembers(m || []) } catch {}
   }
 
   useEffect(() => { load() }, [task.id])
@@ -128,6 +130,17 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Deadline</label>
                   <input type="date" className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm"
                     value={deadline} onChange={e => { setDeadline(e.target.value); save({ deadline: e.target.value || null }) }} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Przypisany</label>
+                  <select className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm"
+                    value={assignee} onChange={e => { setAssignee(e.target.value); save({ assigned_to: e.target.value || null }) }}>
+                    <option value="">Brak</option>
+                    {members.length === 0 && <option disabled>⏳ Ładowanie...</option>}
+                    {members.map(m => (
+                      <option key={m.id} value={m.id}>{m.display_name || m.email}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Kolumns</label>
