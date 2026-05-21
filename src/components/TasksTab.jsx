@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getTasks, createTask, updateTask, deleteTask, logActivity, getActivityFeed, getDefaultTemplate, supabase } from '../lib/supabase'
 import TaskModal from './TaskModal'
+import Confetti from './Confetti'
 
 const COLUMNS = [
   { id: 'todo',       label: 'Do zrobienia',  color: 'bg-gray-100',    dot: '⚪' },
@@ -14,7 +15,7 @@ const PRIORITY_LABELS = { urgent: 'Pilne', high: 'Wysoki', medium: 'Średni', lo
 
 const NEXT_COLUMN = { todo: 'in_progress', in_progress: 'done' }
 
-function TaskCard({ task, onClick, members, onUpdate }) {
+function TaskCard({ task, onClick, members, onUpdate, onComplete }) {
   const [hovered, setHovered] = useState(false)
   const [showAssign, setShowAssign] = useState(false)
 
@@ -37,6 +38,7 @@ function TaskCard({ task, onClick, members, onUpdate }) {
   const handleQuickMove = async (e) => {
     e.stopPropagation()
     await updateTask(task.id, { column: nextCol })
+    if (nextCol === 'done') onComplete?.(e)
     onUpdate?.()
   }
 
@@ -203,6 +205,8 @@ export default function TasksTab({ user, meta }) {
   const [newAssignee, setNewAssignee] = useState('')
   const [members, setMembers] = useState([])
   const [filterPriority, setFilterPriority] = useState('')
+  const [confetti, setConfetti] = useState(false)
+  const [confettiOrigin, setConfettiOrigin] = useState(null)
 
   const load = useCallback(async () => {
     const t = await getTasks()
@@ -225,6 +229,12 @@ export default function TasksTab({ user, meta }) {
 
   useEffect(() => { load() }, [load])
 
+  const fireConfetti = (e) => {
+    const rect = e?.currentTarget?.getBoundingClientRect?.() || { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 }
+    setConfettiOrigin(rect)
+    setConfetti(true)
+  }
+
   const handleDrop = async (e, toColumn) => {
     e.preventDefault()
     const taskId = e.dataTransfer.getData('taskId')
@@ -232,6 +242,7 @@ export default function TasksTab({ user, meta }) {
     if (fromColumn === toColumn) return
     await updateTask(taskId, { column: toColumn, status: toColumn === 'done' ? 'done' : toColumn === 'archived' ? 'archived' : 'in_progress' })
     await logActivity(`task_move_${toColumn}`, { taskId, from: fromColumn, to: toColumn })
+    if (toColumn === 'done') fireConfetti(e)
     load()
   }
 
@@ -319,7 +330,7 @@ export default function TasksTab({ user, meta }) {
               </div>
               <div className="flex-1 space-y-0.5 overflow-y-auto">
                 {colTasks.map(task => (
-                  <TaskCard key={task.id} task={task} onClick={setSelectedTask} members={members} onUpdate={load} />
+                  <TaskCard key={task.id} task={task} onClick={setSelectedTask} members={members} onUpdate={load} onComplete={fireConfetti} />
                 ))}
 
                     {addingCol === col.id ? (
@@ -387,6 +398,8 @@ export default function TasksTab({ user, meta }) {
           isDruzynowy={true}
         />
       )}
+
+      <Confetti active={confetti} origin={confettiOrigin} onDone={() => setConfetti(false)} />
     </div>
   )
 }
