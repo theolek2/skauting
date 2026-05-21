@@ -52,50 +52,41 @@ function InviteModal({ onClose, onInvited }) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
-  const [inviteUrl, setInviteUrl] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [guestLogin, setGuestLogin] = useState(null)
 
   const handle = async e => {
     e.preventDefault()
     setLoading(true)
     setErr('')
     try {
-      const res = await fetch('/api/invite', {
+      const res = await fetch('/api/create-guest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), name: name.trim(), role: 'przyboczny' }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Błąd zaproszenia')
-      setInviteUrl(data.url)
+      if (!res.ok) throw new Error(data.error || 'Błąd')
+      setGuestLogin({ email: data.email, password: data.password })
     } catch (e) { setErr(e.message) }
     finally { setLoading(false) }
   }
 
-  const copy = () => {
-    navigator.clipboard.writeText(inviteUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   return (
     <div className="fixed inset-0 bg-black/40 z-[2000] flex items-center justify-center p-4">
-      {inviteUrl ? (
+      {guestLogin ? (
         <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
           <div className="text-4xl mb-3">✅</div>
-          <h3 className="font-bold text-gray-800 mb-2">Zaproszenie utworzone!</h3>
-          <p className="text-xs text-gray-500 mb-3">Skopiuj link i wyślij przybocznemu (SMS, Messenger, WhatsApp)</p>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 break-all mb-3 select-all">{inviteUrl}</div>
-          <div className="flex gap-2">
-            <button onClick={copy}
-              className="flex-1 bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 transition">
-              {copied ? '✅ Skopiowano!' : '📋 Kopiuj link'}
-            </button>
-            <button onClick={() => { onInvited(); onClose() }}
-              className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition">
-              Zamknij
-            </button>
+          <h3 className="font-bold text-gray-800 mb-2">Konto utworzone!</h3>
+          <p className="text-xs text-gray-500 mb-3">Przekaż dane logowania przybocznemu</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 text-sm text-left space-y-1.5">
+            <div><b className="text-gray-500">Email:</b> <span className="text-gray-800 select-all">{guestLogin.email}</span></div>
+            <div><b className="text-gray-500">Hasło:</b> <span className="text-green-700 font-mono font-bold select-all">{guestLogin.password}</span></div>
+            <div className="text-xs text-gray-400 pt-1 border-t border-gray-200">Przyboczny loguje się tym hasłem, potem może je zmienić</div>
           </div>
+          <button onClick={() => { onInvited(); onClose() }}
+            className="w-full bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 transition">
+            OK, zamknij
+          </button>
         </div>
       ) : (
         <form onSubmit={handle} className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
@@ -108,7 +99,7 @@ function InviteModal({ onClose, onInvited }) {
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 border rounded-lg py-2 text-sm text-gray-600">Anuluj</button>
             <button type="submit" disabled={loading} className="flex-1 bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 disabled:opacity-50">
-              {loading ? 'Tworzę...' : 'Wyślij zaproszenie'}
+              {loading ? 'Tworzę...' : 'Utwórz konto'}
             </button>
           </div>
         </form>

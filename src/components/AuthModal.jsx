@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { signIn, signUp, upsertProfile } from '../lib/supabase'
 
 export default function AuthModal({ onClose, onAuth }) {
-  const [mode, setMode]         = useState('login')   // 'login' | 'register'
+  const [mode, setMode]         = useState('login')   // 'login' | 'register' | 'guest'
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [name, setName]         = useState('')
@@ -11,19 +11,35 @@ export default function AuthModal({ onClose, onAuth }) {
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
-  const ALLOWED_DOMAIN = 'skauci-europy.pl'
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
-    // Weryfikacja domeny
-    if (!email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
-      setError(`Rejestracja dostępna tylko dla adresów @${ALLOWED_DOMAIN}`)
+    // Guest login
+    if (mode === 'guest') {
+      try {
+        const res = await fetch('/api/guest-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Błąd logowania')
+        localStorage.setItem('skauting_external_session', JSON.stringify({
+          token: data.session_token,
+          user: data.user,
+        }))
+        onClose()
+        window.location.reload()
+      } catch (err) {
+        setError(err.message)
+        setLoading(false)
+      }
       return
     }
 
-    setLoading(true)
+    // Regular Supabase auth
     try {
       if (mode === 'login') {
         const { data, error: err } = await signIn(email, password)
@@ -125,18 +141,29 @@ export default function AuthModal({ onClose, onAuth }) {
                   Zarejestruj się
                 </button>
               </>
-            ) : (
+            ) : mode === 'register' ? (
               <>Masz już konto?{' '}
+                <button type="button" onClick={() => setMode('login')} className="text-green-700 font-semibold hover:underline">
+                  Zaloguj się
+                </button>
+              </>
+            ) : (
+              <>Drużynowy?{' '}
                 <button type="button" onClick={() => setMode('login')} className="text-green-700 font-semibold hover:underline">
                   Zaloguj się
                 </button>
               </>
             )}
           </p>
+          <div className="border-t border-gray-100 pt-2 text-center">
+            <button type="button" onClick={() => setMode('guest')}
+              className={`text-xs font-semibold transition ${mode === 'guest' ? 'text-green-700' : 'text-gray-400 hover:text-green-600'}`}>
+              {mode === 'guest' ? '✓ Tryb gościa' : 'Jestem przybocznym (gość) →'}
+            </button>
+          </div>
           {mode === 'register' && (
             <p className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-lg">
-              🔒 Rejestracja dostępna wyłącznie dla adresów <b>@skauci-europy.pl</b>.
-              Po rejestracji otrzymasz email z linkiem aktywacyjnym.
+              🔒 Po rejestracji otrzymasz email z linkiem aktywacyjnym.
             </p>
           )}
         </form>}
