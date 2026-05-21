@@ -12,37 +12,118 @@ const COLUMNS = [
 const PRIORITY_COLORS = { urgent: '#ef4444', high: '#f97316', medium: '#eab308', low: '#6b7280' }
 const PRIORITY_LABELS = { urgent: 'Pilne', high: 'Wysoki', medium: 'Średni', low: 'Niski' }
 
-function TaskCard({ task, onMove, onClick }) {
+const NEXT_COLUMN = { todo: 'in_progress', in_progress: 'done' }
+
+function TaskCard({ task, onClick, members, onUpdate }) {
+  const [hovered, setHovered] = useState(false)
+  const [showAssign, setShowAssign] = useState(false)
+
   const deadline = task.deadline ? new Date(task.deadline) : null
   const isOverdue = deadline && deadline < new Date() && task.column !== 'done' && task.column !== 'archived'
+  const checklists = task.checklists || []
+  const doneCount = checklists.filter(c => c.done).length
+  const nextCol = NEXT_COLUMN[task.column]
+
+  const assignee = task.assigned?.display_name || task.assigned?.email || null
+  const initials = assignee ? assignee.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : null
+
+  const handleQuickAssign = async (e, memberId) => {
+    e.stopPropagation()
+    await updateTask(task.id, { assigned_to: memberId || null })
+    setShowAssign(false)
+    onUpdate?.()
+  }
+
+  const handleQuickMove = async (e) => {
+    e.stopPropagation()
+    await updateTask(task.id, { column: nextCol })
+    onUpdate?.()
+  }
 
   return (
     <div
       draggable
       onDragStart={e => { e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('fromColumn', task.column) }}
       onClick={() => onClick(task)}
-      className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 cursor-pointer hover:shadow-md hover:border-green-400 transition mb-2 text-sm"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setShowAssign(false) }}
+      className="relative bg-white border border-gray-200 rounded-xl px-3 py-2.5 cursor-pointer hover:shadow-md hover:border-green-400 transition mb-2 text-sm overflow-visible"
+      style={{ borderLeft: `3px solid ${PRIORITY_COLORS[task.priority] || '#e5e7eb'}` }}
     >
       <div className="flex items-start gap-2">
-        <span className="text-xs mt-0.5" style={{ color: PRIORITY_COLORS[task.priority] || '#888' }}>●</span>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-gray-800 truncate">{task.title}</div>
+          <div className="font-medium text-gray-800 truncate pr-6">{task.title}</div>
           {task.description && <div className="text-xs text-gray-400 truncate mt-0.5">{task.description}</div>}
         </div>
+        {/* Quick move arrow */}
+        {hovered && nextCol && (
+          <button onClick={handleQuickMove}
+            className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-xs hover:bg-green-200 transition shrink-0"
+            title={`Przesuń do: ${nextCol === 'in_progress' ? 'W trakcie' : 'Zrobione'}`}>
+            →
+          </button>
+        )}
       </div>
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
+
+      {/* Pasek postępu subtasków */}
+      {checklists.length > 0 && (
+        <div className="mt-2">
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-green-500 rounded-full transition-all"
+                style={{ width: `${Math.round((doneCount / checklists.length) * 100)}%` }} />
+            </div>
+            <span className="text-[10px] text-gray-400">{doneCount}/{checklists.length}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mt-2 text-[10px] text-gray-400">
         {deadline && (
           <span className={isOverdue ? 'text-red-500 font-semibold' : ''}>
             📅 {deadline.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}
-            {isOverdue && ' (przekroczony)'}
+            {isOverdue && ' ⚠'}
           </span>
         )}
-        {task.assigned?.display_name && (
-          <span className="bg-gray-100 rounded-full px-2 py-0.5">{task.assigned.display_name}</span>
-        )}
-        {(task.checklists || []).length > 0 && (
-          <span>✅ {task.checklists.filter(c => c.done).length}/{task.checklists.length}</span>
-        )}
+        <div className="ml-auto relative">
+          {/* Quick assign button */}
+          <button
+            onClick={e => { e.stopPropagation(); setShowAssign(v => !v) }}
+            className={`flex items-center gap-1 rounded-full px-2 py-0.5 transition text-[10px] ${
+              assignee ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+            }`}
+          >
+            {initials ? (
+              <span className="w-4 h-4 rounded-full bg-green-600 text-white flex items-center justify-center text-[9px] font-bold">{initials}</span>
+            ) : (
+              <span>+ Przypisz</span>
+            )}
+            {assignee && <span className="max-w-[80px] truncate">{assignee}</span>}
+            <span>▾</span>
+          </button>
+
+          {/* Dropdown */}
+          {showAssign && (
+            <div className="absolute bottom-full right-0 mb-1 bg-white rounded-xl shadow-xl border border-gray-200 z-50 min-w-[160px] py-1"
+              onClick={e => e.stopPropagation()}>
+              <button onClick={e => handleQuickAssign(e, null)}
+                className="w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50">
+                — Brak przypisania
+              </button>
+              {members.map(m => (
+                <button key={m.id} onClick={e => handleQuickAssign(e, m.id)}
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-green-50 hover:text-green-800 ${
+                    task.assigned?.id === m.id ? 'bg-green-50 text-green-800 font-semibold' : 'text-gray-700'
+                  }`}>
+                  {m.display_name || m.email}
+                </button>
+              ))}
+              {members.length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-400">Brak członków zespołu</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -121,6 +202,7 @@ export default function TasksTab({ user, meta }) {
   const [newTitle, setNewTitle] = useState('')
   const [newAssignee, setNewAssignee] = useState('')
   const [members, setMembers] = useState([])
+  const [filterPriority, setFilterPriority] = useState('')
 
   const load = useCallback(async () => {
     const t = await getTasks()
@@ -188,6 +270,9 @@ export default function TasksTab({ user, meta }) {
     const d = new Date(filterDeadline)
     filtered = filtered.filter(t => t.deadline && new Date(t.deadline) <= d)
   }
+  if (filterPriority) {
+    filtered = filtered.filter(t => t.priority === filterPriority)
+  }
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col bg-gray-50">
@@ -198,8 +283,17 @@ export default function TasksTab({ user, meta }) {
           placeholder="Filtruj osobę..." value={filterPerson} onChange={e => setFilterPerson(e.target.value)} />
         <input type="date" className="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-400"
           value={filterDeadline} onChange={e => setFilterDeadline(e.target.value)} />
-        {(filterPerson || filterDeadline) && (
-          <button onClick={() => { setFilterPerson(''); setFilterDeadline('') }} className="text-xs text-gray-400 underline">Wyczyść</button>
+        {/* Filtr priorytetów */}
+        <div className="flex gap-1">
+          {[['', 'Wszystkie'], ['urgent', '🔴 Pilne'], ['high', '🟠 Wysoki'], ['medium', '🟡 Średni'], ['low', '⚪ Niski']].map(([val, lbl]) => (
+            <button key={val} onClick={() => setFilterPriority(val)}
+              className={`text-[10px] px-2 py-1 rounded-full border transition ${
+                filterPriority === val ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-500 border-gray-200 hover:border-green-400'
+              }`}>{lbl}</button>
+          ))}
+        </div>
+        {(filterPerson || filterDeadline || filterPriority) && (
+          <button onClick={() => { setFilterPerson(''); setFilterDeadline(''); setFilterPriority('') }} className="text-xs text-gray-400 underline">Wyczyść</button>
         )}
         <div className="ml-auto flex gap-2">
           <button onClick={handleLoadTemplate}
@@ -225,7 +319,7 @@ export default function TasksTab({ user, meta }) {
               </div>
               <div className="flex-1 space-y-0.5 overflow-y-auto">
                 {colTasks.map(task => (
-                  <TaskCard key={task.id} task={task} onClick={setSelectedTask} />
+                  <TaskCard key={task.id} task={task} onClick={setSelectedTask} members={members} onUpdate={load} />
                 ))}
 
                     {addingCol === col.id ? (

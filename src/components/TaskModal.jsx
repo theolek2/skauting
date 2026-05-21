@@ -152,7 +152,7 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Kolumns</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Kolumna</label>
                   <select className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm"
                     value={col} onChange={e => { setCol(e.target.value); save({ column: e.target.value }) }}>
                     <option value="todo">Do zrobienia</option>
