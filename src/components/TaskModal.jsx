@@ -26,6 +26,7 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
   const [assignee, setAssignee] = useState(getAssignedId())
   const [members, setMembers] = useState([])
   const [saving, setSaving] = useState(false)
+  const fileRef = useRef(null)
 
   const load = async () => {
     const { data: cl } = await supabase.from('task_checklists').select('*').eq('task_id', task.id).order('order')
