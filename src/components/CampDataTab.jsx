@@ -36,6 +36,7 @@ const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm foc
 // ── Główna zakładka ──────────────────────────────────────────────────────────
 export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onToggleProgress }) {
   const [showCampModal, setShowCampModal] = useState(false)
+  const [activeSubTab, setActiveSubTab] = useState('oboz')
   const [geoLat, setGeoLat] = useState(meta.coords?.lat?.toString() || '')
   const [geoLng, setGeoLng] = useState(meta.coords?.lng?.toString() || '')
   const [gpsLoading, setGpsLoading] = useState(false)
@@ -72,37 +73,52 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
     finally { setGpsLoading(false) }
   }
 
+  const SUB_TABS = [
+    { id: 'oboz',  icon: '🏕️', label: 'Obóz' },
+    { id: 'kadra', icon: '👥', label: 'Kadra' },
+    { id: 'teren', icon: '📍', label: 'Teren' },
+    { id: 'org',   icon: '🏛️', label: 'Org.' },
+  ]
+
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50">
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+
+      {/* Nagłówek + sub-zakładki */}
+      <div className="bg-white border-b border-gray-200 shrink-0 px-6 pt-4 pb-0">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-xl font-bold text-green-900">🏕️ Dane obozu</h2>
+            {!metaOk && <p className="text-xs text-orange-600 mt-0.5">⚠️ Uzupełnij Jednostkę i Kierownika</p>}
+            {metaOk && <p className="text-xs text-green-600 mt-0.5">✅ Dane kompletne</p>}
+          </div>
+          <button onClick={(e) => onToggleProgress?.('camp', e)}
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+              progress?.camp ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
+            }`}>
+            {progress?.camp ? '✅' : '⬜'} Zrobione
+          </button>
+        </div>
+        {/* Sub-zakładki */}
+        <div className="flex gap-1">
+          {SUB_TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveSubTab(t.id)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition ${
+                activeSubTab === t.id
+                  ? 'border-green-600 text-green-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}>
+              <span>{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto p-6">
 
-        {/* Nagłówek */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-green-900">🏕️ Dane obozu</h2>
-          <div className="flex items-center gap-2 mt-2">
-            <button onClick={(e) => { onToggleProgress?.('camp', e); if (meta.jednostka && meta.kierownik) onToggleProgress?.('kadra', e) }}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
-                progress?.camp ? 'bg-green-500 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300 hover:border-green-400'
-              }`}>
-              {progress?.camp ? '✅' : '⬜'} Zrobione
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Wypełnij dane obozu — pojawią się na stronie tytułowej eksportowanego PDF
-          </p>
-          {!metaOk && (
-            <div className="mt-3 bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 text-sm text-orange-700">
-              ⚠️ Uzupełnij Jednostkę i Kierownika aby aktywować eksport PDF
-            </div>
-          )}
-          {metaOk && (
-            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg px-4 py-2 text-sm text-green-700">
-              ✅ Dane kompletne — eksport PDF aktywny
-            </div>
-          )}
-        </div>
-
-        {/* Moduł 1: Podstawowe dane */}
+        {/* ── ZAKŁADKA: OBÓZ ── */}
+        {activeSubTab === 'oboz' && <>
         <Module icon="📋" title="Podstawowe dane obozu">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -186,7 +202,10 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
           </div>
         </Module>
 
-        {/* Moduł 3: Kadra — kierownik + wychowawcy */}
+        </> /* koniec zakładki Obóz */}
+
+        {/* ── ZAKŁADKA: KADRA ── */}
+        {activeSubTab === 'kadra' && <>
         <Module icon="👥" title="Kadra obozu">
           <p className="text-xs text-gray-400 mb-4">
             Uzupełnij dane kierownika i wychowawców — będą widoczni w dzienniku zajęć i dokumentach.
@@ -304,8 +323,11 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
           </div>
         </Module>
 
-        {/* Moduł 3: Informacje organizacyjne */}
-        <Module icon="🏛️" title="Informacje organizacyjne" defaultOpen={false}>
+        </> /* koniec zakładki Kadra */}
+
+        {/* ── ZAKŁADKA: ORG (Informacje + Hufiec) ── */}
+        {activeSubTab === 'org' && <>
+        <Module icon="🏛️" title="Informacje organizacyjne" defaultOpen={true}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Organ prowadzący / hufiec">
               <input className={inputCls}
@@ -346,25 +368,24 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
           </div>
         </Module>
 
-        {/* Opublikuj na mapie */}
-        <div className="bg-gradient-to-r from-green-700 to-green-600 rounded-2xl p-6 text-white">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">🌍</span>
-            <h3 className="font-bold text-lg">Mapa obozów Skautów Europy</h3>
+        {/* Opublikuj na mapie — na dole zakładki Org */}
+        <div className="bg-gradient-to-r from-green-700 to-green-600 rounded-2xl p-5 text-white mt-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold">🌍 Mapa obozów Skautów Europy</h3>
+              <p className="text-green-200 text-xs mt-0.5">Opublikuj obóz — inni drużynowi zobaczą gdzie jesteś</p>
+            </div>
+            <button onClick={() => setShowCampModal(true)}
+              className="bg-white text-green-800 font-bold px-4 py-2 rounded-xl hover:bg-green-50 transition text-sm shrink-0">
+              + Dodaj na mapę
+            </button>
           </div>
-          <p className="text-green-200 text-sm mb-4">
-            Opublikuj swój obóz na wspólnej mapie — inni drużynowi zobaczą gdzie i kiedy jesteś.
-          </p>
-          <button
-            onClick={() => setShowCampModal(true)}
-            className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-green-50 transition text-sm"
-          >
-            + Dodaj obóz na mapę
-          </button>
         </div>
+        </> /* koniec zakładki Org */}
 
-        {/* Moduł 4: Dane lokalne (GPS) */}
-        <Module icon="📍" title="Dane lokalne" defaultOpen={true}>
+        {/* ── ZAKŁADKA: TEREN (GPS + Schronienie) ── */}
+        {activeSubTab === 'teren' && <>
+        <Module icon="📍" title="Dane lokalne — GPS" defaultOpen={true}>
           <p className="text-xs text-gray-400 mb-3">Wpisz współrzędne i pobierz dane o służbach, nadleśnictwie i administracji.</p>
           <div className="flex items-end gap-2 mb-4">
             <div className="flex-1">
@@ -447,7 +468,7 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
             </div>)}
         </Module>
 
-        {/* Moduł 5: Miejsce bezpieczne (schronienie) */}
+        {/* Moduł: Miejsce bezpieczne (schronienie) */}
         <Module icon="🏠" title="Miejsce bezpieczne (schronienie)">
           <p className="text-xs text-gray-400 mb-4">Miejsce tymczasowego schronienia na wypadek ewakuacji — wymagane przed obozem.</p>
           <div className="grid grid-cols-1 gap-3">
@@ -469,7 +490,10 @@ export default function CampDataTab({ meta, onUpdateMeta, userId, progress, onTo
           </div>
         </Module>
 
+        </> /* koniec zakładki Teren */}
+
       </div>
+      </div> {/* koniec flex-1 overflow-y-auto */}
 
       {showCampModal && (
         <CampRegistrationModal
