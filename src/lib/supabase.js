@@ -287,9 +287,15 @@ export async function toggleChecklistItem(itemId, done, userId) {
 }
 
 export async function addChecklistItem(taskId, item) {
-  const { data, error } = await supabase.from('task_checklists').insert([{ task_id: taskId, ...item }]).select().single()
+  const { data, error } = await supabase.from('task_checklists').insert([{ task_id: taskId, done: false, ...item }]).select().single()
   if (error) throw error
   return data
+}
+
+export async function deleteAllTasks() {
+  // Usuwa WSZYSTKIE taski (używaj ostrożnie — tylko do resetu szablonu)
+  const { error } = await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  if (error) throw error
 }
 
 export async function addTaskComment(taskId, comment) {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTasks, createTask, updateTask, deleteTask, logActivity, getActivityFeed, getDefaultTemplate, supabase } from '../lib/supabase'
+import { getTasks, createTask, updateTask, deleteTask, deleteAllTasks, logActivity, getActivityFeed, getDefaultTemplate, supabase } from '../lib/supabase'
 import TaskModal from './TaskModal'
 import Confetti from './Confetti'
 
@@ -196,7 +196,7 @@ export default function TasksTab({ user, meta }) {
   const [tasks, setTasks] = useState([])
   const [feed, setFeed] = useState([])
   const [filterPerson, setFilterPerson] = useState('')
-  const [filterDeadline, setFilterDeadline] = useState('')
+  const [filterDeadline, setFilterDeadline] = useState('') // 'overdue'|'today'|'week'|'month'|''
   const [showInvite, setShowInvite] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -265,6 +265,11 @@ export default function TasksTab({ user, meta }) {
   const handleLoadTemplate = async () => {
     const tmpl = await getDefaultTemplate()
     if (!tmpl?.tasks) return alert('Brak szablonu')
+    if (tasks.length > 0) {
+      const ok = window.confirm(`Masz już ${tasks.length} zadań. Usunąć wszystkie i załadować szablon od nowa?`)
+      if (!ok) return
+      await deleteAllTasks()
+    }
     for (const t of tmpl.tasks) {
       await createTask({ ...t, column: 'todo', created_by: user?.id })
     }
@@ -272,14 +277,36 @@ export default function TasksTab({ user, meta }) {
     load()
   }
 
+  const handleResetTasks = async () => {
+    if (!window.confirm(`Usunąć WSZYSTKIE ${tasks.length} zadań? Tej akcji nie można cofnąć.`)) return
+    await deleteAllTasks()
+    await logActivity('tasks_reset', {})
+    load()
+  }
+
+  // Wszyscy członkowie: właściciel konta + external_users
+  const allMembers = [
+    ...(user ? [{ id: user.id, display_name: meta?.kierownik || user.email?.split('@')[0] || 'Ja (kierownik)', isOwner: true }] : []),
+    ...members,
+  ]
+
   // Filtrowanie
+  const today = new Date(); today.setHours(0,0,0,0)
+  const endOfWeek = new Date(today); endOfWeek.setDate(today.getDate() + (7 - today.getDay()))
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
   let filtered = tasks
   if (filterPerson) {
-    filtered = filtered.filter(t => t.assigned?.display_name?.toLowerCase().includes(filterPerson.toLowerCase()))
+    filtered = filtered.filter(t => t.assigned?.id === filterPerson)
   }
-  if (filterDeadline) {
-    const d = new Date(filterDeadline)
-    filtered = filtered.filter(t => t.deadline && new Date(t.deadline) <= d)
+  if (filterDeadline === 'overdue') {
+    filtered = filtered.filter(t => t.deadline && new Date(t.deadline) < today && t.column !== 'done' && t.column !== 'archived')
+  } else if (filterDeadline === 'today') {
+    filtered = filtered.filter(t => { const d = t.deadline && new Date(t.deadline); d?.setHours(0,0,0,0); return d?.getTime() === today.getTime() })
+  } else if (filterDeadline === 'week') {
+    filtered = filtered.filter(t => t.deadline && new Date(t.deadline) <= endOfWeek)
+  } else if (filterDeadline === 'month') {
+    filtered = filtered.filter(t => t.deadline && new Date(t.deadline) <= endOfMonth)
   }
   if (filterPriority) {
     filtered = filtered.filter(t => t.priority === filterPriority)
@@ -289,28 +316,50 @@ export default function TasksTab({ user, meta }) {
     <div className="flex-1 overflow-hidden flex flex-col bg-gray-50">
       {/* Pasek narzędzi */}
       <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center gap-3 flex-wrap shrink-0">
-        <h2 className="font-bold text-gray-800 text-sm">📋 Zadania</h2>
-        <input className="border rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-green-400 w-36"
-          placeholder="Filtruj osobę..." value={filterPerson} onChange={e => setFilterPerson(e.target.value)} />
-        <input type="date" className="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-400"
-          value={filterDeadline} onChange={e => setFilterDeadline(e.target.value)} />
-        {/* Filtr priorytetów */}
-        <div className="flex gap-1">
-          {[['', 'Wszystkie'], ['urgent', '🔴 Pilne'], ['high', '🟠 Wysoki'], ['medium', '🟡 Średni'], ['low', '⚪ Niski']].map(([val, lbl]) => (
-            <button key={val} onClick={() => setFilterPriority(val)}
-              className={`text-[10px] px-2 py-1 rounded-full border transition ${
-                filterPriority === val ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-500 border-gray-200 hover:border-green-400'
+        <h2 className="font-bold text-gray-800 text-sm shrink-0">📋 Zadania</h2>
+
+        {/* Filtr osoby — dropdown */}
+        <select className="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-400 max-w-[140px]"
+          value={filterPerson} onChange={e => setFilterPerson(e.target.value)}>
+          <option value="">👤 Wszyscy</option>
+          {allMembers.map(m => (
+            <option key={m.id} value={m.id}>{m.display_name}</option>
+          ))}
+        </select>
+
+        {/* Filtr daty — chipy */}
+        <div className="flex gap-1 flex-wrap">
+          {[['','Wszystkie'],['overdue','⚠️ Przeterminowane'],['today','Dziś'],['week','Ten tydzień'],['month','Ten miesiąc']].map(([val, lbl]) => (
+            <button key={val} onClick={() => setFilterDeadline(val)}
+              className={`text-[10px] px-2 py-1 rounded-full border transition whitespace-nowrap ${
+                filterDeadline === val ? 'bg-green-700 text-white border-green-700' : 'bg-white text-gray-500 border-gray-200 hover:border-green-400'
               }`}>{lbl}</button>
           ))}
         </div>
+
+        {/* Filtr priorytetów */}
+        <div className="flex gap-1">
+          {[['', '●'],['urgent','🔴'],['high','🟠'],['medium','🟡'],['low','⚪']].map(([val, lbl]) => (
+            <button key={val} onClick={() => setFilterPriority(val)} title={val || 'Wszystkie'}
+              className={`text-sm px-2 py-1 rounded-full border transition ${
+                filterPriority === val ? 'bg-green-700 border-green-700 opacity-100' : 'bg-white border-gray-200 hover:border-green-400 opacity-70'
+              }`}>{lbl}</button>
+          ))}
+        </div>
+
         {(filterPerson || filterDeadline || filterPriority) && (
-          <button onClick={() => { setFilterPerson(''); setFilterDeadline(''); setFilterPriority('') }} className="text-xs text-gray-400 underline">Wyczyść</button>
+          <button onClick={() => { setFilterPerson(''); setFilterDeadline(''); setFilterPriority('') }} className="text-xs text-gray-400 underline shrink-0">Wyczyść</button>
         )}
-        <div className="ml-auto flex gap-2">
+
+        <div className="ml-auto flex gap-2 shrink-0">
+          {tasks.length > 0 && (
+            <button onClick={handleResetTasks}
+              className="text-xs border border-red-200 text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50">🗑 Reset</button>
+          )}
           <button onClick={handleLoadTemplate}
             className="text-xs border border-green-300 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-50">📋 Szablon obozu</button>
           <button onClick={() => setShowInvite(true)}
-            className="text-xs bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-800">+ Zaproś przybocznego</button>
+            className="text-xs bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-800">+ Zaproś</button>
         </div>
       </div>
 
@@ -330,7 +379,7 @@ export default function TasksTab({ user, meta }) {
               </div>
               <div className="flex-1 space-y-0.5 overflow-y-auto">
                 {colTasks.map(task => (
-                  <TaskCard key={task.id} task={task} onClick={setSelectedTask} members={members} onUpdate={load} onComplete={fireConfetti} />
+                  <TaskCard key={task.id} task={task} onClick={setSelectedTask} members={allMembers} onUpdate={load} onComplete={fireConfetti} />
                 ))}
 
                     {addingCol === col.id ? (
@@ -342,9 +391,8 @@ export default function TasksTab({ user, meta }) {
                     <select className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5" value={newAssignee}
                       onChange={e => setNewAssignee(e.target.value)}>
                       <option value="">Bez przypisania</option>
-                      {members.length === 0 && <option disabled>⏳ Ładowanie...</option>}
-                      {members.map(m => (
-                        <option key={m.id} value={m.id}>{m.display_name || m.email}</option>
+                      {allMembers.map(m => (
+                        <option key={m.id} value={m.id}>{m.display_name}{m.isOwner ? ' 👑' : ''}</option>
                       ))}
                     </select>
                     <div className="flex gap-1">
@@ -396,6 +444,7 @@ export default function TasksTab({ user, meta }) {
           onClose={() => setSelectedTask(null)}
           onUpdate={load}
           isDruzynowy={true}
+          user={user}
         />
       )}
 

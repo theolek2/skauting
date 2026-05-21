@@ -6,7 +6,7 @@ import {
 
 const COLORS = { urgent: '#ef4444', high: '#f97316', medium: '#eab308', low: '#6b7280' }
 
-export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
+export default function TaskModal({ task, onClose, onUpdate, isDruzynowy, user }) {
   const [title, setTitle] = useState(task.title || '')
   const [desc, setDesc] = useState(task.description || '')
   const [prio, setPrio] = useState(task.priority || 'medium')
@@ -68,7 +68,7 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
   const addComment = async () => {
     const text = commentText.trim()
     if (!text) return
-    await addTaskComment(task.id, { content: text, user_type: 'internal', user_id: '0' })
+    await addTaskComment(task.id, { content: text, user_type: user ? 'internal' : 'guest', user_id: user?.id || null })
     setCommentText('')
     load()
   }
