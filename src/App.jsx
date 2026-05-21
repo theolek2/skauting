@@ -49,7 +49,6 @@ export default function App() {
   const [confettiOrigin, setConfettiOrigin] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
   const [externalUser, setExternalUser] = useState(() => {
-    // Sprawdź localStorage PRZED pierwszym renderem (unikaj race condition)
     try {
       const raw = localStorage.getItem('skauting_external_session')
       if (!raw) return null
@@ -57,6 +56,7 @@ export default function App() {
       return sess?.user || null
     } catch { return null }
   })
+  const [showChangePwd, setShowChangePwd] = useState(false)
 
   // Weryfikuj sesję przy starcie (odśwież permisje)
   useEffect(() => {
@@ -332,6 +332,12 @@ export default function App() {
                 📄 PDF
               </button>
             )}
+            {externalUser && (
+              <button onClick={() => setShowChangePwd(true)}
+                className="text-xs text-green-400 hover:text-white px-2 py-1 rounded border border-green-700 hover:border-green-400 transition">
+                🔒 Hasło
+              </button>
+            )}
             <button onClick={() => externalUser ? logoutExternal() : signOut()}
               className="text-xs text-green-400 hover:text-white px-2 py-1 rounded border border-green-700 hover:border-green-400 transition">
               Wyloguj
@@ -572,6 +578,45 @@ export default function App() {
         const valid = ['camp','instructions','plan','jadlospis','diary','docs','map']
         if (valid.includes(tab)) { setActiveTabMain(tab); setMainSection('before') }
       }} />
+
+      {showChangePwd && (() => {
+        const [pwd, setPwd] = useState('')
+        const [msg, setMsg] = useState('')
+        const [loading, setLoading] = useState(false)
+        const handle = async () => {
+          if (pwd.length < 4) return setMsg('Minimum 4 znaki')
+          setLoading(true)
+          try {
+            const sess = JSON.parse(localStorage.getItem('skauting_external_session'))
+            const res = await fetch('/api/change-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionToken: sess?.token, newPassword: pwd }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            setMsg('✅ Hasło zmienione!')
+            setTimeout(() => setShowChangePwd(false), 1000)
+          } catch (e) { setMsg(e.message) }
+          finally { setLoading(false) }
+        }
+        return (
+          <div className="fixed inset-0 bg-black/40 z-[3000] flex items-center justify-center p-4" onClick={() => setShowChangePwd(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <h3 className="font-bold text-gray-800 mb-3">🔒 Zmiana hasła</h3>
+              <input type="text" className="w-full border rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-green-500"
+                placeholder="Nowe hasło (min 4 znaki)" value={pwd} onChange={e => setPwd(e.target.value)} />
+              {msg && <p className={`text-xs mb-2 ${msg.includes('✅') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>}
+              <div className="flex gap-2">
+                <button onClick={() => setShowChangePwd(false)} className="flex-1 border rounded-lg py-2 text-sm text-gray-600">Anuluj</button>
+                <button onClick={handle} disabled={loading} className="flex-1 bg-green-700 text-white rounded-lg py-2 text-sm font-bold hover:bg-green-800 disabled:opacity-50">
+                  {loading ? 'Zmieniam...' : 'Zmień hasło'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

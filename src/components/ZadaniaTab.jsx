@@ -33,7 +33,7 @@ export default function ZadaniaTab({ user, meta, isDruzynowy }) {
         ))}
       </div>
 
-      {subTab === 'tasks'    && <TasksTab user={user} meta={meta} />}
+      {subTab === 'tasks'    && <TasksTab user={user} meta={meta} isDruzynowy={isDruzynowy} />}
       {subTab === 'calendar' && <CalendarTab user={user} meta={meta} />}
       {subTab === 'files'    && <FilesTab user={user} meta={meta} />}
       {subTab === 'team'     && <TeamPanel user={user} />}

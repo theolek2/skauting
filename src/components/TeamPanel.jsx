@@ -35,6 +35,20 @@ export default function TeamPanel({ user }) {
     load()
   }
 
+  const resetPassword = async (m) => {
+    if (!confirm(`Zresetować hasło dla ${m.display_name || m.email}?`)) return
+    const res = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: m.id }),
+    })
+    const data = await res.json()
+    if (data.password) {
+      await navigator.clipboard.writeText(data.password)
+      alert(`Nowe hasło (skopiowane): ${data.password}`)
+    }
+  }
+
   const stats = {
     active: members.filter(m => m.active).length,
     total: members.length,
@@ -66,6 +80,10 @@ export default function TeamPanel({ user }) {
                   <div className="text-xs text-gray-400">{m.email}</div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <button onClick={() => resetPassword(m)}
+                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 hover:bg-gray-50" title="Reset hasła">
+                    🔑
+                  </button>
                   <button onClick={() => generateLink(m)}
                     className="text-xs border border-gray-300 rounded-lg px-2 py-1 hover:bg-gray-50" title="Generuj nowy link">
                     🔗
