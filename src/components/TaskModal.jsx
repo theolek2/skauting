@@ -17,7 +17,13 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
   const [commentText, setCommentText] = useState('')
   const [newSubtask, setNewSubtask] = useState('')
   const [attachments, setAttachments] = useState([])
-  const [assignee, setAssignee] = useState(task.assigned_to || '')
+  // assigned_to po joinie Supabase może być obiektem {id, display_name} — wyciągnij samo id
+  const getAssignedId = () => {
+    if (!task.assigned_to) return ''
+    if (typeof task.assigned_to === 'object') return task.assigned_to.id || ''
+    return task.assigned_to || ''
+  }
+  const [assignee, setAssignee] = useState(getAssignedId())
   const [members, setMembers] = useState([])
   const [saving, setSaving] = useState(false)
 
@@ -31,15 +37,17 @@ export default function TaskModal({ task, onClose, onUpdate, isDruzynowy }) {
     try { const { data: m } = await supabase.from('external_users').select('id,display_name,email'); setMembers(m || []) } catch {}
   }
 
-  useEffect(() => { load() }, [task.id])
-
   const save = async (patch) => {
     if (saving) return
     setSaving(true)
-    await updateTask(task.id, patch)
-    onUpdate?.()
+    try {
+      await updateTask(task.id, patch)
+      onUpdate?.()
+    } catch {}
     setSaving(false)
   }
+
+  useEffect(() => { load() }, [task.id])
 
   const toggleSubtask = async (item) => {
     const done = !item.done
