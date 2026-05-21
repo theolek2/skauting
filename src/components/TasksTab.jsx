@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getTasks, createTask, updateTask, deleteTask, logActivity, getActivityFeed, getDefaultTemplate, supabase } from '../lib/supabase'
+import TaskModal from './TaskModal'
 
 const COLUMNS = [
   { id: 'todo',       label: 'Do zrobienia',  color: 'bg-gray-100',    dot: '⚪' },
@@ -275,6 +276,15 @@ export default function TasksTab({ user, meta, isDruzynowy = true }) {
 
       {showInvite && (
         <InviteModal onClose={() => setShowInvite(false)} onInvited={() => { setShowInvite(false); load() }} />
+      )}
+
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={load}
+          isDruzynowy={isDruzynowy}
+        />
       )}
     </div>
   )
