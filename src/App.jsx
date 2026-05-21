@@ -277,8 +277,8 @@ export default function App() {
 
   const MAIN_SECTIONS = [
     { id: 'dashboard', label: 'Pulpit',           icon: '🏠' },
-    ...(!externalUser ? [{ id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
-      { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' }] : []),
+    { id: 'before',   label: 'Przed obozem',     icon: '🏕️' },
+    { id: 'during',   label: 'W trakcie obozu',  icon: '⛺' },
     { id: 'tasks',    label: 'Zadania',           icon: '📌' },
   ]
 
@@ -552,7 +552,7 @@ export default function App() {
       {/* ZADANIA */}
       {mainSection === 'tasks' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ZadaniaTab user={user} meta={meta} isDruzynowy={!!user} />
+          <ZadaniaTab user={user} meta={meta} />
         </div>
       )}
 

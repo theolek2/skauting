@@ -109,7 +109,7 @@ function InviteModal({ onClose, onInvited }) {
   )
 }
 
-export default function TasksTab({ user, meta, isDruzynowy = true }) {
+export default function TasksTab({ user, meta }) {
   const [tasks, setTasks] = useState([])
   const [feed, setFeed] = useState([])
   const [filterPerson, setFilterPerson] = useState('')
@@ -192,12 +192,10 @@ export default function TasksTab({ user, meta, isDruzynowy = true }) {
           <button onClick={() => { setFilterPerson(''); setFilterDeadline('') }} className="text-xs text-gray-400 underline">Wyczyść</button>
         )}
         <div className="ml-auto flex gap-2">
-          {isDruzynowy && (<>
-            <button onClick={handleLoadTemplate}
-              className="text-xs border border-green-300 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-50">📋 Szablon obozu</button>
-            <button onClick={() => setShowInvite(true)}
-              className="text-xs bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-800">+ Zaproś przybocznego</button>
-          </>)}
+          <button onClick={handleLoadTemplate}
+            className="text-xs border border-green-300 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-50">📋 Szablon obozu</button>
+          <button onClick={() => setShowInvite(true)}
+            className="text-xs bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-800">+ Zaproś przybocznego</button>
         </div>
       </div>
 
@@ -220,32 +218,30 @@ export default function TasksTab({ user, meta, isDruzynowy = true }) {
                   <TaskCard key={task.id} task={task} onClick={setSelectedTask} />
                 ))}
 
-                {addingCol === col.id ? (
+                    {addingCol === col.id ? (
                   <div className="bg-white border border-green-300 rounded-xl p-2 space-y-1.5">
                     <input autoFocus className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-green-400"
                       placeholder="Nazwa zadania..." value={newTitle}
                       onChange={e => setNewTitle(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleAddTask(); if (e.key === 'Escape') setAddingCol(null) }} />
-                    {members.length > 0 && (
-                      <select className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5" value={newAssignee}
-                        onChange={e => setNewAssignee(e.target.value)}>
-                        <option value="">Bez przypisania</option>
-                        {members.map(m => (
-                          <option key={m.id} value={m.id}>{m.display_name || m.email}</option>
-                        ))}
-                      </select>
-                    )}
+                    <select className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5" value={newAssignee}
+                      onChange={e => setNewAssignee(e.target.value)}>
+                      <option value="">Bez przypisania</option>
+                      {members.map(m => (
+                        <option key={m.id} value={m.id}>{m.display_name || m.email}</option>
+                      ))}
+                    </select>
                     <div className="flex gap-1">
                       <button onClick={handleAddTask} className="flex-1 bg-green-700 text-white text-xs rounded-lg py-1 font-bold">Dodaj</button>
                       <button onClick={() => setAddingCol(null)} className="text-xs px-2 text-gray-400">×</button>
                     </div>
                   </div>
-                ) : isDruzynowy ? (
+                ) : (
                   <button onClick={() => setAddingCol(col.id)}
                     className="mt-2 text-xs text-gray-400 hover:text-green-600 border border-dashed border-gray-300 rounded-lg py-1.5 hover:border-green-400 transition">
                     + Dodaj zadanie
                   </button>
-                ) : null}
+                )}
               </div>
             </div>
           )
@@ -283,7 +279,7 @@ export default function TasksTab({ user, meta, isDruzynowy = true }) {
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
           onUpdate={load}
-          isDruzynowy={isDruzynowy}
+          isDruzynowy={true}
         />
       )}
     </div>

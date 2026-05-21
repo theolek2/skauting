@@ -10,12 +10,10 @@ const SUBTABS = [
   { id: 'files',    label: 'Pliki',     icon: '📁' },
 ]
 
-export default function ZadaniaTab({ user, meta, isDruzynowy }) {
+export default function ZadaniaTab({ user, meta }) {
   const [subTab, setSubTab] = useState('tasks')
 
-  const allTabs = isDruzynowy
-    ? [...SUBTABS, { id: 'team', label: '👥 Zespół', icon: '👥' }]
-    : SUBTABS
+  const allTabs = [...SUBTABS, { id: 'team', label: '👥 Zespół', icon: '👥' }]
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
