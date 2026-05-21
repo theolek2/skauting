@@ -1,7 +1,7 @@
 // POST /api/guest-login — gość loguje się hasłem
 import { createHash } from 'crypto'
 
-const SECRET = process.env.VITE_SUPABASE_URL || 'campos-secret'
+const SECRET = 'campos-guest-hash-2026'
 
 function hashPassword(password, email) {
   return createHash('sha256').update(password + ':' + SECRET + ':' + email).digest('hex')
