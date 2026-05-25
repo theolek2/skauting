@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { INSTRUKCJA_PHASES, ALL_ITEMS, TOTAL_ITEMS } from '../data/instrukcja-items'
 import { createTask, getTasks } from '../lib/supabase'
+import TaskModal from './TaskModal'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ function CountdownCard({ label, days, urgent }) {
 }
 
 // ── Item row ──────────────────────────────────────────────────────────────────
-function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNavigate, fileMap, tasks }) {
+function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNavigate, fileMap, tasks, onOpenTask }) {
   const handleNav = (e) => {
     e.stopPropagation()
     if (item.action === 'download' && item.pdf) {
@@ -108,22 +109,22 @@ function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNaviga
           )}
         </div>
       </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); onCreateTask(item) }}
-        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition shrink-0 ${
-          taskExists
-            ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
-            : 'bg-gray-100 text-gray-500 border border-gray-300 hover:bg-green-100 hover:text-green-600 hover:border-green-400'
-        }`}
-        title={taskExists ? 'Przejdź do istniejącego zadania' : 'Utwórz zadanie w Kanban'}>
-        {taskExists ? `📋 ${existingTask.column === 'done' ? 'Gotowe' : 'Otwórz'}` : '+⬜'}
-      </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); taskExists ? onOpenTask(existingTask) : onCreateTask(item) }}
+          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition shrink-0 ${
+            taskExists
+              ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
+              : 'bg-gray-100 text-gray-500 border border-gray-300 hover:bg-green-100 hover:text-green-600 hover:border-green-400'
+          }`}
+          title={taskExists ? 'Otwórz istniejące zadanie' : 'Utwórz zadanie w Kanban'}>
+          {taskExists ? `📋 ${existingTask.column === 'done' ? 'Gotowe' : 'Otwórz'}` : '+⬜'}
+        </button>
     </div>
   )
 }
 
 // ── Sub-section ───────────────────────────────────────────────────────────────
-function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavigate, fileMap, tasks }) {
+function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavigate, fileMap, tasks, onOpenTask }) {
   const [open, setOpen] = useState(false)
   const done = sub.items.filter(i => checklist[i.id]).length
   const total = sub.items.length
@@ -146,7 +147,7 @@ function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavi
           {sub.items.map(item => (
               <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
                 onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phaseColor}
-                onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} />
+                onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} onOpenTask={onOpenTask} />
           ))}
         </div>
       )}
@@ -155,7 +156,7 @@ function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavi
 }
 
 // ── Phase accordion ───────────────────────────────────────────────────────────
-function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileMap, tasks }) {
+function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileMap, tasks, onOpenTask }) {
   const [open, setOpen] = useState(false)
   const { done, total, pct } = countPhase(phase, checklist)
   const allDone = done === total && total > 0
@@ -193,12 +194,12 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileM
           {phase.items?.map(item => (
             <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
               onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color}
-              onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} />
+              onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} onOpenTask={onOpenTask} />
           ))}
           {phase.subs?.map(sub => (
             <SubSection key={sub.sub} sub={sub} checklist={checklist}
               onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color}
-              onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} />
+              onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} onOpenTask={onOpenTask} />
           ))}
           {/* Sub-sections */}
           {phase.subs?.map(sub => (
@@ -216,9 +217,33 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileM
 export default function DashboardTab({ meta, days, user, onNavigate, checklist = {}, onChecklistUpdate }) {
   const [fileMap, setFileMap] = useState({})
   const [tasks, setTasks] = useState([])
+  const [selectedTask, setSelectedTask] = useState(null)
   useEffect(() => {
     import('../data/file-map.json').then(m => setFileMap(m.default || {})).catch(() => {})
-    getTasks().then(setTasks).catch(() => {})
+    getTasks().then(async (existing) => {
+      setTasks(existing)
+      // Auto-twórz taski dla itemów które nie istnieją
+      if (existing.length < 10) {
+        for (const item of ALL_ITEMS.slice(0, 30)) {
+          const found = existing.find(t => (t.title || '').toLowerCase() === item.title.toLowerCase())
+          if (!found) {
+            try {
+              const { data: newT } = await createTask({
+                title: item.title,
+                column: 'todo',
+                priority: item.urgent ? 'urgent' : item.star ? 'high' : 'medium',
+                notes: `instrukcja:${item.id}`,
+                created_by: user?.id || '00000000-0000-0000-0000-000000000000',
+              })
+              if (newT) existing.push(newT)
+            } catch {}
+          }
+        }
+        // Po stworzeniu batchu — załaduj ponownie
+        const all = await getTasks()
+        setTasks(all)
+      }
+    }).catch(() => {})
   }, [])
   const daysToStart = daysUntil(meta.date_start)
   const daysToKuratorium = meta.date_start ? daysUntil(
@@ -237,16 +262,22 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
 
   const handleCreateTask = async (item) => {
     try {
-      await createTask({
+      const data = await createTask({
         title: item.title,
         column: 'todo',
         priority: item.urgent ? 'urgent' : item.star ? 'high' : 'medium',
         notes: `instrukcja:${item.id}`,
-        created_by: user?.id || null,
+        created_by: user?.id || '00000000-0000-0000-0000-000000000000',
       })
-      const updated = await getTasks()
-      setTasks(updated)
+      // Dodaj do stanu lokalnego natychmiast
+      setTasks(prev => [...prev, data])
+      // Ot�j nowo stworzony task
+      setSelectedTask(data)
     } catch (e) { console.warn('createTask:', e.message) }
+  }
+
+  const handleOpenTask = (task) => {
+    setSelectedTask(task)
   }
 
   return (
@@ -305,6 +336,7 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
             onNavigate={onNavigate}
             fileMap={fileMap}
             tasks={tasks}
+            onOpenTask={handleOpenTask}
           />
         ))}
 
@@ -312,6 +344,13 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
           Kurs św. Marty i św. Józefa · Skauci Europy · wypoczynek@skauci-europy.pl
         </p>
       </div>
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={() => getTasks().then(setTasks)}
+        />
+      )}
     </div>
   )
 }
