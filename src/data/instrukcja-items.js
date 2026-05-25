@@ -6,6 +6,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'PR',
     phase: 'PRZYGOTOWANIE',
+    tab: 'camp',
     icon: '📋',
     color: '#6b7280',
     bg: '#f3f4f6',
@@ -19,6 +20,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'UC_KADRA',
     phase: 'UCZESTNICY I KADRA',
+    tab: 'camp',
     icon: '👥',
     color: '#3b82f6',
     bg: '#eff6ff',
@@ -52,8 +54,8 @@ export const INSTRUKCJA_PHASES = [
         items: [
           { id: 'OK.1', title: 'Skład i funkcje', desc: 'Skompletowanie kadry i podział zadań i odpowiedzialności.' },
           { id: 'OK.2', title: 'Zakres obowiązków', desc: 'Każdy wychowawca i kierownik musi podpisać dokument określający zakres jego obowiązków.' },
-          { id: 'OK.3', title: 'Łączność — zagrożenia i telefony', desc: 'Aplikacja RSO, śledzenie pogody (Monitor Burz, IMGW). Sprawne komórki z zapasowymi ładowarkami.' },
-          { id: 'OK.4', title: 'Dziennik zajęć', desc: 'Sukcesywnie uzupełniany dokument. Dostępny w wersji A4 lub jako książeczka A5.' },
+          { id: 'OK.3', title: 'Łączność — zagrożenia i telefony', desc: 'Aplikacja RSO, śledzenie pogody (Monitor Burz, IMGW). Sprawne komórki z zapasowymi ładowarkami.', tab: 'camp' },
+          { id: 'OK.4', title: 'Dziennik zajęć', desc: 'Sukcesywnie uzupełniany dokument. Dostępny w wersji A4 lub jako książeczka A5.', tab: 'diary' },
           { id: 'OK.5', title: 'Wypadki — procedura i protokoły', desc: 'Zasady postępowania w razie wypadku. Protokół w 3 egz. min. 12 szt. Rejestr wypadków.' },
         ],
       },
@@ -66,7 +68,7 @@ export const INSTRUKCJA_PHASES = [
           { id: 'UC.3', title: 'Lista uczestników', desc: 'Aktualna lista osób zakwalifikowanych przez organizatora.' },
           { id: 'UC.4', title: 'Ekwipunek uczestnika', desc: 'Każdy uczestnik ma określoną listę rzeczy osobistych do zabrania.' },
           { id: 'UC.5', title: 'Transport — dojazd i powrót', desc: 'Ustalić sposób dotarcia i powrotu (rodzice, PKP, autokar, koszty, miejsce). Umowa ewakuacyjna.' },
-          { id: 'UC.6', title: 'Zapoznanie z regulaminami', desc: 'Wykaz osób zapoznanych z Instrukcją ppoż., Regulaminem obozu i Regulaminem sanitarnym — do podpisu 1. dnia.' },
+          { id: 'UC.6', title: 'Zapoznanie z regulaminami', desc: 'Wykaz osób zapoznanych z Instrukcją ppoż., Regulaminem obozu i Regulaminem sanitarnym — do podpisu 1. dnia.', action: 'download', pdf: 'Regulamin obozu' },
           { id: 'UC.7', title: 'Kontakty do rodziców', desc: 'Do informowania w nagłych przypadkach i/lub o stanie zdrowia dziecka.' },
         ],
       },
@@ -84,6 +86,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'PLAN',
     phase: 'PLAN OBOZU',
+    tab: 'plan',
     icon: '🗺️',
     color: '#22c55e',
     bg: '#f0fdf4',
@@ -93,10 +96,10 @@ export const INSTRUKCJA_PHASES = [
         sub: 'TR',
         label: 'Teren Obozu',
         items: [
-          { id: 'TR.1', title: 'Miejsce obozowe', desc: 'Kontakt z właścicielem (Nadleśnictwo/osoba prywatna) — najlepiej przez telefon. Miejsce osiągalne dla służb ratowniczych (do 100 m od drogi).', star: true, urgent: true },
+          { id: 'TR.1', title: 'Miejsce obozowe', desc: 'Kontakt z właścicielem (Nadleśnictwo/osoba prywatna) — najlepiej przez telefon. Miejsce osiągalne dla służb ratowniczych (do 100 m od drogi).', star: true, urgent: true, tab: 'camp' },
           { id: 'TR.2', title: 'Rekonesans', desc: 'Lustracja terenu: położenie gniazd, kaplicy, placu apelowego, magazynu żywnościowego, latryn. Spotkanie ze strażą pożarną na miejscu.' },
           { id: 'TR.3', title: 'Miejsce bezpieczne w terenie', desc: 'Otwarty teren z dala od drzew (młodnik/pole), niedaleko drogi asfaltowej dla autokaru ewakuacyjnego.' },
-          { id: 'TR.4', title: 'Szkic zagospodarowania terenu', desc: 'Mapa obozu: namioty, gniazda, ustępy, kaplica, paleniska, punkty ppoż., miejsca zbiórki, drogi ewakuacyjne. Załącznik do opinii PSP.', urgent: true },
+          { id: 'TR.4', title: 'Szkic zagospodarowania terenu', desc: 'Mapa obozu: namioty, gniazda, ustępy, kaplica, paleniska, punkty ppoż., miejsca zbiórki, drogi ewakuacyjne. Załącznik do opinii PSP.', urgent: true, tab: 'map' },
         ],
       },
       {
@@ -104,7 +107,7 @@ export const INSTRUKCJA_PHASES = [
         label: 'Ewakuacja',
         items: [
           { id: 'EW.1', title: 'Zasady ewakuacji', desc: 'Prosta grafika z krokami ewakuacji. Kopia na tablicę ogłoszeń. Ewakuacja powinna przebiegać PRZED kataklizmem, nie w trakcie.' },
-          { id: 'EW.2', title: 'Miejsce tymczasowego schronienia (MTS)', desc: 'Budynek wyznaczony w porozumieniu z Wójtem Gminy. Pisemna umowa z zarządcą. Straż może wymagać tej umowy do wystawienia opinii.', star: true },
+          { id: 'EW.2', title: 'Miejsce tymczasowego schronienia (MTS)', desc: 'Budynek wyznaczony w porozumieniu z Wójtem Gminy. Pisemna umowa z zarządcą. Straż może wymagać tej umowy do wystawienia opinii.', star: true, tab: 'camp' },
           { id: 'EW.3', title: 'Mapy ewakuacyjne', desc: 'Mapa dojścia do MTS + szkic dojazdu dla służb z zaznaczonymi miejscami bezpiecznymi.' },
         ],
       },
@@ -112,8 +115,8 @@ export const INSTRUKCJA_PHASES = [
         sub: 'PR_PROG',
         label: 'Program',
         items: [
-          { id: 'PR_PROG.1', title: 'Plan pracy (ramowy plan dnia)', desc: 'Rozkład zajęć w ciągu dnia (może być bez godzin). Kopia na tablicę ogłoszeń.' },
-          { id: 'PR_PROG.2', title: 'Jadłospis', desc: 'Lista posiłków na cały wypoczynek. Ważne: wykaz alergenów, pokrycie z fakturami.' },
+          { id: 'PR_PROG.1', title: 'Plan pracy (ramowy plan dnia)', desc: 'Rozkład zajęć w ciągu dnia (może być bez godzin). Kopia na tablicę ogłoszeń.', tab: 'plan' },
+          { id: 'PR_PROG.2', title: 'Jadłospis', desc: 'Lista posiłków na cały wypoczynek. Ważne: wykaz alergenów, pokrycie z fakturami.', tab: 'jadlospis' },
           { id: 'PR_PROG.3', title: 'Lista zakupów', desc: 'Lista potrzebnych produktów i materiałów.' },
         ],
       },
@@ -121,10 +124,10 @@ export const INSTRUKCJA_PHASES = [
         sub: 'RG',
         label: 'Regulaminy',
         items: [
-          { id: 'RG.1.1', title: 'Regulamin obozu', desc: 'Wymagany spis zasad podpisywany przez uczestnika i rodzica. Kopia na tablicę ogłoszeń.', star: true },
+          { id: 'RG.1.1', title: 'Regulamin obozu', desc: 'Wymagany spis zasad podpisywany przez uczestnika i rodzica. Kopia na tablicę ogłoszeń.', star: true, action: 'download', pdf: 'Regulamin obozu' },
           { id: 'RG.1.2', title: 'Prawo Harcerskie + Zasady Podstawowe', desc: 'Kopia na tablicę ogłoszeń.' },
           { id: 'RG.1.3', title: 'Regulamin zajęć harcerskich', desc: 'Z 2008 roku — z załącznikami: ubezpieczeń, poruszania, kąpieli, instrukcją ppoż., zajęciami niebezpiecznymi.' },
-          { id: 'RG.2.1', title: 'Instrukcja ppoż. i ewakuacji', desc: 'Uzgodniona z właściwą PSP. Załącznik do opinii Straży. Kopia na tablicę ogłoszeń.', urgent: true },
+          { id: 'RG.2.1', title: 'Instrukcja ppoż. i ewakuacji', desc: 'Uzgodniona z właściwą PSP. Załącznik do opinii Straży. Kopia na tablicę ogłoszeń.', urgent: true, action: 'download', pdf: 'Instrukcja ppoż. i ewakuacji' },
           { id: 'RG.2.2', title: 'Regulamin sanitarny', desc: 'Na podstawie Instrukcji Sanitarnej — trzeba edytować. Kopia na tablicę ogłoszeń.' },
         ],
       },
@@ -134,6 +137,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'INST',
     phase: 'INSTYTUCJE',
+    tab: 'docs',
     icon: '🏛️',
     color: '#eab308',
     bg: '#fefce8',
@@ -198,6 +202,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'FIN',
     phase: 'FINANSE I SPRZĘT',
+    tab: 'tasks',
     icon: '💰',
     color: '#ef4444',
     bg: '#fef2f2',
@@ -226,7 +231,7 @@ export const INSTRUKCJA_PHASES = [
         sub: 'PJ',
         label: 'Pojazdy',
         items: [
-          { id: 'PJ.1', title: 'Umowa użyczenia pojazdu', desc: 'Jeśli szef nie ma własnego samochodu — umowa z właścicielem na cały okres faktur.' },
+          { id: 'PJ.1', title: 'Umowa użyczenia pojazdu', desc: 'Jeśli szef nie ma własnego samochodu — umowa z właścicielem na cały okres faktur.', tab: 'docs' },
           { id: 'PJ.2', title: 'Zlecenie wyjazdu służbowego', desc: 'Podpisane przez dwie osoby w hufcu (skarbnik + hufcowy). Nie można wysłać samego siebie.' },
           { id: 'PJ.3', title: 'Ewidencja przebiegu pojazdu', desc: 'Wszystkie trasy powiązane z konkretnym poleceniem wyjazdu.' },
           { id: 'PJ.4', title: 'Faktury za paliwo', desc: 'Faktury muszą zawierać numer rejestracyjny pojazdu.' },
@@ -248,6 +253,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'NA',
     phase: 'NA OBOZIE',
+    tab: 'during',
     icon: '⛺',
     color: '#f97316',
     bg: '#fff7ed',
@@ -283,6 +289,7 @@ export const INSTRUKCJA_PHASES = [
   {
     id: 'PO',
     phase: 'PO OBOZIE',
+    tab: 'tasks',
     icon: '🏁',
     color: '#8b5cf6',
     bg: '#f5f3ff',

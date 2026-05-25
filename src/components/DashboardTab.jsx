@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { INSTRUKCJA_PHASES, ALL_ITEMS, TOTAL_ITEMS } from '../data/instrukcja-items'
 import { createTask } from '../lib/supabase'
 
@@ -48,7 +48,22 @@ function CountdownCard({ label, days, urgent }) {
 }
 
 // ── Item row ──────────────────────────────────────────────────────────────────
-function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor }) {
+function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNavigate, fileMap }) {
+  const handleNav = (e) => {
+    e.stopPropagation()
+    if (item.action === 'download' && item.pdf) {
+      // Szukaj URL w file-map.json
+      const key = item.pdf + '.txt'
+      const entry = fileMap?.[item.pdf] || fileMap?.[item.pdf + '.txt']
+      if (entry?.url) window.open(entry.url, '_blank')
+      else if (item.tab) onNavigate(item.tab)
+      else onNavigate(item.tab || 'docs')
+    } else if (item.tab) {
+      onNavigate(item.tab)
+    }
+  }
+  const canNav = item.tab || item.action === 'download'
+
   return (
     <div className={`flex items-start gap-3 px-4 py-2.5 rounded-lg transition group ${
       checked ? 'bg-green-50' : 'hover:bg-gray-50'
@@ -65,6 +80,11 @@ function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor }) {
           {item.title}
           {item.star && <span className="text-yellow-500 text-xs">⭐</span>}
           {item.urgent && <span className="text-red-500 text-xs font-bold">❗</span>}
+          {canNav && !checked && (
+            <button onClick={handleNav} className="text-green-600 hover:text-green-800 text-xs ml-0.5" title={item.action === 'download' ? 'Pobierz PDF' : 'Przejdź do zakładki'}>
+              {item.action === 'download' ? '📥' : '→'}
+            </button>
+          )}
         </div>
         {item.desc && !checked && (
           <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{item.desc}</div>
@@ -81,7 +101,7 @@ function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor }) {
 }
 
 // ── Sub-section ───────────────────────────────────────────────────────────────
-function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor }) {
+function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavigate, fileMap }) {
   const [open, setOpen] = useState(false)
   const done = sub.items.filter(i => checklist[i.id]).length
   const total = sub.items.length
@@ -102,8 +122,9 @@ function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor }) {
       {open && (
         <div className="ml-2">
           {sub.items.map(item => (
-            <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
-              onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phaseColor} />
+              <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
+                onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phaseColor}
+                onNavigate={onNavigate} fileMap={fileMap} />
           ))}
         </div>
       )}
@@ -112,7 +133,7 @@ function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor }) {
 }
 
 // ── Phase accordion ───────────────────────────────────────────────────────────
-function PhaseCard({ phase, checklist, onToggle, onCreateTask }) {
+function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileMap }) {
   const [open, setOpen] = useState(false)
   const { done, total, pct } = countPhase(phase, checklist)
   const allDone = done === total && total > 0
@@ -127,6 +148,10 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask }) {
             <span className={`font-bold text-sm ${allDone ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
               {phase.phase}
             </span>
+            {phase.tab && (
+              <button onClick={(e) => { e.stopPropagation(); onNavigate(phase.tab) }}
+                className="text-green-600 hover:text-green-800 text-xs" title="Przejdź do zakładki">→</button>
+            )}
             {phase.note && <span className="text-[10px] text-gray-400 hidden md:inline truncate">{phase.note}</span>}
           </div>
           <div className="mt-1.5 flex items-center gap-2">
@@ -145,12 +170,14 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask }) {
           {/* Flat items */}
           {phase.items?.map(item => (
             <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
-              onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color} />
+              onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color}
+              onNavigate={onNavigate} fileMap={fileMap} />
           ))}
           {/* Sub-sections */}
           {phase.subs?.map(sub => (
             <SubSection key={sub.sub} sub={sub} checklist={checklist}
-              onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color} />
+              onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color}
+              onNavigate={onNavigate} fileMap={fileMap} />
           ))}
         </div>
       )}
@@ -160,6 +187,10 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function DashboardTab({ meta, days, user, onNavigate, checklist = {}, onChecklistUpdate }) {
+  const [fileMap, setFileMap] = useState({})
+  useEffect(() => {
+    import('../data/file-map.json').then(m => setFileMap(m.default || {})).catch(() => {})
+  }, [])
   const daysToStart = daysUntil(meta.date_start)
   const daysToKuratorium = meta.date_start ? daysUntil(
     new Date(new Date(meta.date_start).getTime() - 21 * 86400000).toISOString().split('T')[0]
@@ -240,6 +271,8 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
             checklist={checklist}
             onToggle={onChecklistUpdate}
             onCreateTask={handleCreateTask}
+            onNavigate={onNavigate}
+            fileMap={fileMap}
           />
         ))}
 

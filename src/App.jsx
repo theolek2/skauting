@@ -105,14 +105,26 @@ export default function App() {
   }
 
   // Nawigacja z DashboardTab
-  const navigateToSection = (section) => {
+  const navigateToSection = (tab) => {
+    // Akceptuje bezpośrednie ID zakładek
+    const tabs = ['camp','instructions','plan','jadlospis','diary','docs','map','tasks','calendar','files']
+    if (tabs.includes(tab)) {
+      setActiveTabMain(tab)
+      setMainSection('before')
+      return
+    }
+    // Sekcje główne (during, dashboard)
+    if (tab === 'during') { setMainSection('during'); return }
+    if (tab === 'tasks_section') { setMainSection('tasks'); return }
+    if (tab === 'dashboard') { setMainSection('dashboard'); return }
+    // Legacy: nazwy opisowe
     const map = {
       'Dane obozu':  'camp',
       'Plan zajęć':  'plan',
       'Dokumenty':   'docs',
       'Mapa terenu': 'map',
     }
-    if (map[section]) { setActiveTabMain(map[section]); setMainSection('before') }
+    if (map[tab]) { setActiveTabMain(map[tab]); setMainSection('before') }
   }
 
   const goMainSection = (id) => {
