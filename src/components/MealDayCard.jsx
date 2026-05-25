@@ -2,7 +2,7 @@ import { useState } from 'react'
 import MealSlotRow from './MealSlotRow'
 import { makeMealSlot } from './MealTemplatePanel'
 
-export default function MealDayCard({ day, index, mealActivities, onChange, onDelete }) {
+export default function MealDayCard({ day, index, mealActivities, onChange, onDelete, peopleCount }) {
   const [collapsed, setCollapsed] = useState(false)
   const slots = day.mealSlots || []
 
@@ -60,7 +60,8 @@ export default function MealDayCard({ day, index, mealActivities, onChange, onDe
               <div className="flex-1">
                 <MealSlotRow slot={slot} mealActivities={mealActivities}
                   onChange={updated => updateSlot(slot.id, updated)}
-                  onDelete={() => deleteSlot(slot.id)} />
+                  onDelete={() => deleteSlot(slot.id)}
+                  peopleCount={peopleCount} />
               </div>
             </div>
           ))}

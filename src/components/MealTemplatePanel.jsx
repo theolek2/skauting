@@ -31,7 +31,7 @@ export default function MealTemplatePanel({ slots, onChange, mealActivities = []
 
   const allMeals = [
     ...FIXED_MEALS,
-    ...mealActivities.map(a => ({ id: a.id, name: a.name, description: a.description, ingredients: a.ingredients || '' })),
+    ...(mealActivities || []).map(a => ({ id: a.id, name: a.name, description: a.description, ingredients: a.ingredients || '' })),
   ]
 
   return (

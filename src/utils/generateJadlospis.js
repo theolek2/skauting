@@ -60,11 +60,22 @@ export function getShoppingList(days, dateStart) {
     for (let j = i; j < Math.min(i + 2, days.length); j++) {
       const slots = days[j]?.mealSlots || []
       slots.forEach(s => {
-        if (!s.ingredients) return
-        s.ingredients.split(',').map(x => x.trim()).filter(Boolean).forEach(ing => {
-          const key = ing.toLowerCase()
-          items[key] = { name: ing, qty: (items[key]?.qty || 0) + 1 }
-        })
+        const ings = s.ingredients
+        if (!ings) return
+        // Nowy format: tablica obiektów {name, qty, unit}
+        if (Array.isArray(ings)) {
+          ings.forEach(ing => {
+            const key = (ing.name || '').toLowerCase()
+            const qty = ing.qty || 0
+            items[key] = { name: ing.name, qty: (items[key]?.qty || 0) + qty, unit: ing.unit || 'szt' }
+          })
+        // Stary format: string z przecinkami
+        } else if (typeof ings === 'string') {
+          ings.split(',').map(x => x.trim()).filter(Boolean).forEach(ing => {
+            const key = ing.toLowerCase()
+            items[key] = { name: ing, qty: (items[key]?.qty || 0) + 1, unit: '' }
+          })
+        }
       })
     }
     windows.push({ label, items: Object.values(items).sort((a, b) => a.name.localeCompare(b.name)) })
