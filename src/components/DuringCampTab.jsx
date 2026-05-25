@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { getShoppingList } from '../utils/generateJadlospis.js'
+import { getShoppingList, generateCompactShoppingPdf } from '../utils/generateJadlospis.js'
 
 // ── Pomocnicze ────────────────────────────────────────────────────────────────
 
@@ -244,7 +244,13 @@ export default function DuringCampTab({ meta, days }) {
           const windows = campStart ? getShoppingList(days, campStart) : []
           return (
             <div className="flex-1 overflow-y-auto p-4">
-              <h3 className="font-bold text-gray-800 mb-1">🛒 Lista zakupów</h3>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-bold text-gray-800">🛒 Lista zakupów</h3>
+                <button onClick={() => generateCompactShoppingPdf(days, meta)}
+                  className="text-xs bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-800">
+                  📥 PDF (A4)
+                </button>
+              </div>
               <p className="text-xs text-gray-400 mb-4">Agregacja składników z jadłospisu, grupowana co 2 dni</p>
               {windows.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">

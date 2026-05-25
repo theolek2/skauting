@@ -11,9 +11,18 @@ function IngredientRow({ ing, index, onChange, onDelete }) {
       <input className="w-14 border border-gray-200 rounded px-1.5 py-1 text-center focus:outline-none focus:border-blue-400"
         type="number" min="0" step="0.1" placeholder="ilość" value={ing.qty || ''}
         onChange={e => onChange({ ...ing, qty: parseFloat(e.target.value) || 0 })} />
-      <input className="w-12 border border-gray-200 rounded px-1.5 py-1 text-center focus:outline-none focus:border-blue-400"
-        placeholder="j.m." value={ing.unit || ''}
-        onChange={e => onChange({ ...ing, unit: e.target.value })} />
+      <select className="w-16 border border-gray-200 rounded px-1 py-1 text-center text-xs focus:outline-none focus:border-blue-400"
+        value={ing.unit || 'g'} onChange={e => onChange({ ...ing, unit: e.target.value })}>
+        <option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option>
+        <option value="L">L</option><option value="szt">szt</option>
+        <option value="łyżka">łyżka</option>
+        <option value="łyżeczka">łyżeczka</option>
+        <option value="szklanka">szklanka</option>
+        <option value="opakowanie">opak.</option>
+        <option value="plaster">plaster</option><option value="kromka">kromka</option>
+        <option value="ząbek">ząbek</option><option value="szczypta">szczypta</option>
+        <option value="puszka">puszka</option><option value="słoik">słoik</option>
+      </select>
       <label className="flex items-center gap-0.5 text-gray-400">
         <input type="checkbox" checked={ing.perPerson !== false} className="w-3 h-3"
           onChange={e => onChange({ ...ing, perPerson: e.target.checked })} />

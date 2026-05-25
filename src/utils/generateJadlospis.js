@@ -123,3 +123,96 @@ export function generateShoppingListPdf({ days, dateStart }) {
 
   doc.save('lista_zakupow.pdf')
 }
+
+// ── Agregowana lista (wszystkie dni razem) ──────────────────────────────────
+export function getAggregatedShoppingList(days) {
+  const items = {}
+  for (const day of (days || [])) {
+    const slots = day.mealSlots || []
+    for (const s of slots) {
+      const ings = s.ingredients
+      if (!ings) continue
+      if (Array.isArray(ings)) {
+        for (const ing of ings) {
+          const key = (ing.name || '').toLowerCase()
+          if (!key) continue
+          const qty = (ing.qty || 0) * (ing.perPerson !== false ? 1 : 1)
+          items[key] = { name: ing.name, qty: (items[key]?.qty || 0) + qty, unit: ing.unit || 'szt' }
+        }
+      }
+    }
+  }
+  return Object.values(items).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+// ── Kompaktowy PDF A4, 3 kolumny, z kategoriami ────────────────────────────
+export async function generateCompactShoppingPdf(days, meta) {
+  const all = getAggregatedShoppingList(days)
+  if (!all.length) { alert('Brak składników w jadłospisie'); return }
+
+  // Kategoryzuj przez AI
+  let categories = [{ category: 'Wszystko', items: all }]
+  try {
+    const res = await fetch('/api/categorize-shopping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ingredients: all }),
+    })
+    const data = await res.json()
+    if (data.categories?.length) categories = data.categories
+  } catch {}
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = 210, H = 297, M = 10
+
+  // Nagłówek
+  doc.setFillColor(34, 85, 34)
+  doc.rect(0, 0, W, 18, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(255, 255, 255)
+  doc.text('LISTA ZAKUPÓW', W / 2, 8, { align: 'center' })
+  doc.setFontSize(6)
+  doc.text(`${meta?.jednostka || ''} · ${meta?.date_start || ''} – ${meta?.date_end || ''} · ${all.length} produktów`, W / 2, 13, { align: 'center' })
+
+  let y = 22
+  const colW = (W - 2 * M) / 3
+
+  for (const cat of categories) {
+    if (!cat.items?.length) continue
+    if (y > H - 25) { doc.addPage(); y = 15 }
+
+    // Nagłówek kategorii
+    doc.setFillColor(240, 245, 240)
+    doc.rect(M, y, W - 2 * M, 7, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(34, 85, 34)
+    doc.text(`${cat.category.toUpperCase()} (${cat.items.length})`, M + 2, y + 5)
+    y += 9
+
+    // 3 kolumny
+    const totalRows = Math.ceil(cat.items.length / 3)
+    for (let r = 0; r < totalRows; r++) {
+      if (y > H - 12) { doc.addPage(); y = 15 }
+      for (let c = 0; c < 3; c++) {
+        const idx = c * totalRows + r
+        if (idx < cat.items.length) {
+          const item = cat.items[idx]
+          const x = M + c * colW
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(6)
+          doc.setTextColor(40)
+          doc.text(item.name, x, y)
+          doc.setTextColor(100)
+          const qtyStr = `${item.qty} ${item.unit || ''}`
+          doc.text(qtyStr, x, y + 3.5)
+        }
+      }
+      y += 7
+    }
+    y += 2
+  }
+
+  doc.save('lista_zakupow.pdf')
+}
