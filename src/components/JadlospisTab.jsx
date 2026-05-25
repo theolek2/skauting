@@ -39,6 +39,9 @@ export default function JadlospisTab({ meta, days, mealTemplate, mealActivities,
     onUpdate({ days: [...safeDays, day] })
   }
 
+  const deleteDay = (id) =>
+    onUpdate({ days: safeDays.filter(d => d.id !== id) })
+
   const handleAddMeal = () => {
     const name = newName.trim()
     if (!name) return
@@ -143,7 +146,7 @@ export default function JadlospisTab({ meta, days, mealTemplate, mealActivities,
         {safeDays.map((day, i) => (
           <MealDayCard key={day.id} day={day} index={i} mealActivities={safeMealActivities}
             onChange={updated => updateDay(day.id, updated)}
-            onDelete={() => {}}
+            onDelete={() => deleteDay(day.id)}
             peopleCount={ppl} />
         ))}
       </main>
