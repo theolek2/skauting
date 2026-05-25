@@ -49,7 +49,7 @@ export default function JadlospisTab({ meta, days, mealTemplate, mealActivities,
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Lewy panel — szablon (jak Plan zajęć) */}
-      <aside className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+      <aside className="w-[420px] shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
         {meta.date_start && meta.date_end && (
           <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 font-medium">
             Obóz: {meta.date_start} – {meta.date_end}
