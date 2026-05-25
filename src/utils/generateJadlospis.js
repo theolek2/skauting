@@ -1,5 +1,19 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { LATO_REGULAR_BASE64 } from '../assets/fonts/latoBase64.js'
+
+const FONT = 'Lato'
+
+// Rejestruj font raz (singleton)
+let _fontReady = false
+function ensureFont(doc) {
+  if (_fontReady) { doc.setFont(FONT); return }
+  doc.addFileToVFS('Lato-Regular.ttf', LATO_REGULAR_BASE64)
+  doc.addFont('Lato-Regular.ttf', FONT, 'normal')
+  doc.addFont('Lato-Regular.ttf', FONT, 'bold')
+  doc.setFont(FONT)
+  _fontReady = true
+}
 
 export function generateJadlospisPdf({ meta, days }) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
@@ -163,16 +177,18 @@ export async function generateCompactShoppingPdf(days, meta) {
   } catch {}
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  ensureFont(doc)
   const W = 210, H = 297, M = 10
 
   // Nagłówek
   doc.setFillColor(34, 85, 34)
   doc.rect(0, 0, W, 18, 'F')
-  doc.setFont('helvetica', 'bold')
+  doc.setFont(FONT, 'bold')
   doc.setFontSize(10)
   doc.setTextColor(255, 255, 255)
   doc.text('LISTA ZAKUPÓW', W / 2, 8, { align: 'center' })
   doc.setFontSize(6)
+  doc.setFont(FONT, 'normal')
   doc.text(`${meta?.jednostka || ''} · ${meta?.date_start || ''} – ${meta?.date_end || ''} · ${all.length} produktów`, W / 2, 13, { align: 'center' })
 
   let y = 22
@@ -185,10 +201,10 @@ export async function generateCompactShoppingPdf(days, meta) {
     // Nagłówek kategorii
     doc.setFillColor(240, 245, 240)
     doc.rect(M, y, W - 2 * M, 7, 'F')
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(FONT, 'bold')
     doc.setFontSize(7)
     doc.setTextColor(34, 85, 34)
-    doc.text(`${cat.category.toUpperCase()} (${cat.items.length})`, M + 2, y + 5)
+    doc.text(cat.category.toUpperCase() + ` (${cat.items.length})`, M + 2, y + 5)
     y += 9
 
     // 3 kolumny
@@ -200,7 +216,7 @@ export async function generateCompactShoppingPdf(days, meta) {
         if (idx < cat.items.length) {
           const item = cat.items[idx]
           const x = M + c * colW
-          doc.setFont('helvetica', 'normal')
+          doc.setFont(FONT, 'normal')
           doc.setFontSize(6)
           doc.setTextColor(40)
           doc.text(item.name, x, y)
