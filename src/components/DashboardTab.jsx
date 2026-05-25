@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { INSTRUKCJA_PHASES, ALL_ITEMS, TOTAL_ITEMS } from '../data/instrukcja-items'
-import { createTask } from '../lib/supabase'
+import { createTask, getTasks } from '../lib/supabase'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,21 +48,24 @@ function CountdownCard({ label, days, urgent }) {
 }
 
 // ── Item row ──────────────────────────────────────────────────────────────────
-function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNavigate, fileMap }) {
+function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNavigate, fileMap, tasks }) {
   const handleNav = (e) => {
     e.stopPropagation()
     if (item.action === 'download' && item.pdf) {
-      // Szukaj URL w file-map.json
-      const key = item.pdf + '.txt'
       const entry = fileMap?.[item.pdf] || fileMap?.[item.pdf + '.txt']
       if (entry?.url) window.open(entry.url, '_blank')
       else if (item.tab) onNavigate(item.tab)
-      else onNavigate(item.tab || 'docs')
+      else onNavigate('docs')
     } else if (item.tab) {
       onNavigate(item.tab)
     }
   }
   const canNav = item.tab || item.action === 'download'
+  const existingTask = (tasks || []).find(t =>
+    (t.title || '').toLowerCase().includes(item.title.toLowerCase()) ||
+    item.title.toLowerCase().includes((t.title || '').toLowerCase())
+  )
+  const taskExists = !!existingTask
 
   return (
     <div className={`flex items-start gap-3 px-4 py-2.5 rounded-lg transition group ${
@@ -80,28 +83,48 @@ function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNaviga
           {item.title}
           {item.star && <span className="text-yellow-500 text-xs">⭐</span>}
           {item.urgent && <span className="text-red-500 text-xs font-bold">❗</span>}
-          {canNav && !checked && (
-            <button onClick={handleNav} className="text-green-600 hover:text-green-800 text-xs ml-0.5" title={item.action === 'download' ? 'Pobierz PDF' : 'Przejdź do zakładki'}>
-              {item.action === 'download' ? '📥' : '→'}
-            </button>
-          )}
         </div>
         {item.desc && !checked && (
           <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{item.desc}</div>
         )}
+        <div className="flex items-center gap-1.5 mt-1">
+          {canNav && !checked && (
+            <button onClick={handleNav}
+              className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full transition ${
+                item.action === 'download'
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+              title={item.action === 'download' ? 'Pobierz PDF' : 'Przejdź do zakładki'}>
+              {item.action === 'download' ? '📥 PDF' : '→ Otwórz'}
+            </button>
+          )}
+          {taskExists && (
+            <span className="text-[10px] text-green-600 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              Zadanie w Kanban
+              {existingTask.assigned?.display_name && <span className="text-gray-400">· {existingTask.assigned.display_name}</span>}
+              <span className="text-gray-400">· {existingTask.column === 'todo' ? 'Do zrobienia' : existingTask.column === 'in_progress' ? 'W trakcie' : 'Zrobione'}</span>
+            </span>
+          )}
+        </div>
       </div>
       <button
         onClick={() => onCreateTask(item)}
-        className="opacity-0 group-hover:opacity-100 text-xs text-gray-400 hover:text-green-600 border border-gray-200 hover:border-green-400 rounded px-2 py-0.5 transition shrink-0"
-        title="Utwórz zadanie w Kanban">
-        +⬜
+        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition shrink-0 ${
+          taskExists
+            ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
+            : 'bg-gray-100 text-gray-500 border border-gray-300 hover:bg-green-100 hover:text-green-600 hover:border-green-400'
+        }`}
+        title={taskExists ? 'Przejdź do istniejącego zadania' : 'Utwórz zadanie w Kanban'}>
+        {taskExists ? `📋 ${existingTask.column === 'done' ? 'Gotowe' : 'Otwórz'}` : '+⬜'}
       </button>
     </div>
   )
 }
 
 // ── Sub-section ───────────────────────────────────────────────────────────────
-function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavigate, fileMap }) {
+function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavigate, fileMap, tasks }) {
   const [open, setOpen] = useState(false)
   const done = sub.items.filter(i => checklist[i.id]).length
   const total = sub.items.length
@@ -124,7 +147,7 @@ function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavi
           {sub.items.map(item => (
               <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
                 onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phaseColor}
-                onNavigate={onNavigate} fileMap={fileMap} />
+                onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} />
           ))}
         </div>
       )}
@@ -133,7 +156,7 @@ function SubSection({ sub, checklist, onToggle, onCreateTask, phaseColor, onNavi
 }
 
 // ── Phase accordion ───────────────────────────────────────────────────────────
-function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileMap }) {
+function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileMap, tasks }) {
   const [open, setOpen] = useState(false)
   const { done, total, pct } = countPhase(phase, checklist)
   const allDone = done === total && total > 0
@@ -171,7 +194,12 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileM
           {phase.items?.map(item => (
             <CheckItem key={item.id} item={item} checked={!!checklist[item.id]}
               onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color}
-              onNavigate={onNavigate} fileMap={fileMap} />
+              onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} />
+          ))}
+          {phase.subs?.map(sub => (
+            <SubSection key={sub.sub} sub={sub} checklist={checklist}
+              onToggle={onToggle} onCreateTask={onCreateTask} phaseColor={phase.color}
+              onNavigate={onNavigate} fileMap={fileMap} tasks={tasks} />
           ))}
           {/* Sub-sections */}
           {phase.subs?.map(sub => (
@@ -188,8 +216,10 @@ function PhaseCard({ phase, checklist, onToggle, onCreateTask, onNavigate, fileM
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function DashboardTab({ meta, days, user, onNavigate, checklist = {}, onChecklistUpdate }) {
   const [fileMap, setFileMap] = useState({})
+  const [tasks, setTasks] = useState([])
   useEffect(() => {
     import('../data/file-map.json').then(m => setFileMap(m.default || {})).catch(() => {})
+    getTasks().then(setTasks).catch(() => {})
   }, [])
   const daysToStart = daysUntil(meta.date_start)
   const daysToKuratorium = meta.date_start ? daysUntil(
@@ -208,6 +238,11 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
 
   const handleCreateTask = async (item) => {
     try {
+      const existing = tasks.find(t =>
+        t.title?.toLowerCase().includes(item.title.toLowerCase()) ||
+        item.title.toLowerCase().includes(t.title?.toLowerCase())
+      )
+      if (existing) return
       await createTask({
         title: item.title,
         column: 'todo',
@@ -215,6 +250,8 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
         notes: `instrukcja:${item.id}`,
         created_by: user?.id || null,
       })
+      const updated = await getTasks()
+      setTasks(updated)
     } catch (e) { console.warn('createTask:', e.message) }
   }
 
@@ -273,6 +310,7 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
             onCreateTask={handleCreateTask}
             onNavigate={onNavigate}
             fileMap={fileMap}
+            tasks={tasks}
           />
         ))}
 
