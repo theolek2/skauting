@@ -62,8 +62,7 @@ function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNaviga
   }
   const canNav = item.tab || item.action === 'download'
   const existingTask = (tasks || []).find(t =>
-    (t.title || '').toLowerCase().includes(item.title.toLowerCase()) ||
-    item.title.toLowerCase().includes((t.title || '').toLowerCase())
+    ((t.title || '').toLowerCase() === item.title.toLowerCase())
   )
   const taskExists = !!existingTask
 
@@ -110,7 +109,7 @@ function CheckItem({ item, checked, onToggle, onCreateTask, phaseColor, onNaviga
         </div>
       </div>
       <button
-        onClick={() => onCreateTask(item)}
+        onClick={(e) => { e.stopPropagation(); onCreateTask(item) }}
         className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition shrink-0 ${
           taskExists
             ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
@@ -238,11 +237,6 @@ export default function DashboardTab({ meta, days, user, onNavigate, checklist =
 
   const handleCreateTask = async (item) => {
     try {
-      const existing = tasks.find(t =>
-        t.title?.toLowerCase().includes(item.title.toLowerCase()) ||
-        item.title.toLowerCase().includes(t.title?.toLowerCase())
-      )
-      if (existing) return
       await createTask({
         title: item.title,
         column: 'todo',
